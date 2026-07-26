@@ -879,7 +879,7 @@ export default function App() {
         </div>
       </footer>
       {toastMessage && (
-        <div className="fixed bottom-12 right-6 bg-accent-main text-text-main text-xs px-4 py-2 border border-border-hover rounded shadow-2xl z-50 font-mono tracking-wider">
+        <div className="fixed bottom-12 right-6 bg-accent-main text-white text-xs px-4 py-2 border border-border-hover rounded shadow-2xl z-50 font-mono tracking-wider">
           {toastMessage}
         </div>
       )}
