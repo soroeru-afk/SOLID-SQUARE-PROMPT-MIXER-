@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MasterPrompt } from '../types';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { Pencil, Trash2, Check, X, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Plus, List } from 'lucide-react';
+import { Pencil, Trash2, Check, X, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Plus, List, ArrowRightToLine, ArrowLeftToLine } from 'lucide-react';
 import { Language, t } from '../i18n';
 
 interface MasterColumnProps {
@@ -24,13 +24,15 @@ interface MasterColumnProps {
   onMoveBulkNegative?: (ids: string[], direction: 'top' | 'up' | 'down' | 'bottom') => void;
   onReorder?: (startIndex: number, endIndex: number) => void;
   onReorderNegative?: (startIndex: number, endIndex: number) => void;
+  onCopyToPart?: (item: MasterPrompt) => void;
+  onCopyBulkToPart?: (items: MasterPrompt[]) => void;
   activeTab: 'master' | 'negative';
   setActiveTab: (tab: 'master' | 'negative') => void;
   lang: Language;
 }
 
 export const MasterColumn: React.FC<MasterColumnProps> = ({ 
-  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, activeTab, setActiveTab, lang 
+  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, onCopyToPart, onCopyBulkToPart, activeTab, setActiveTab, lang 
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'dropdown'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -127,18 +129,46 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
       <div className="flex items-center justify-between px-3 py-2 bg-bg-panel border-b border-border-main shrink-0">
         <div className="flex gap-2 text-[10px] font-mono w-full">
           {viewMode === 'dropdown' ? (
-            <select 
-              value={currentSelectedId || ''} 
-              onChange={(e) => currentOnSelect(e.target.value, false)}
-              className="flex-1 bg-bg-input border border-border-main text-text-main p-1.5 rounded focus:outline-none focus:border-blue-500 cursor-pointer"
-            >
-              <option value="" disabled>-- SELECT --</option>
-              {currentList.map(item => (
-                <option key={item.id} value={item.id} className={item.mark === '✔' ? 'text-blue-500' : ''}>
-                  {item.mark ? item.mark + ' ' : ''}{item.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative flex-1">
+              <button 
+                onClick={(e) => {
+                  e.currentTarget.nextElementSibling?.classList.toggle('hidden');
+                }}
+                onBlur={(e) => {
+                  // Small delay to allow click on options
+                  setTimeout(() => {
+                    e.target.nextElementSibling?.classList.add('hidden');
+                  }, 150);
+                }}
+                className="w-full flex items-center justify-between bg-bg-input border border-border-main text-text-main p-1.5 rounded focus:outline-none focus:border-blue-500 cursor-pointer text-left"
+              >
+                {currentSelectedId ? (() => {
+                  const item = currentList.find(i => i.id === currentSelectedId);
+                  if (!item) return '-- SELECT --';
+                  return (
+                    <span className="truncate">
+                      {item.mark && <span className={`mr-1 ${item.mark === '✔' ? 'text-blue-500' : ''}`}>{item.mark}</span>}
+                      {item.name}
+                    </span>
+                  );
+                })() : '-- SELECT --'}
+                <ChevronDown className="w-3 h-3 ml-2 shrink-0" />
+              </button>
+              <div className="hidden absolute top-full left-0 right-0 mt-1 max-h-[50vh] overflow-y-auto bg-bg-input border border-border-main rounded shadow-xl z-50">
+                {currentList.map(item => (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      currentOnSelect(item.id, false);
+                    }}
+                    className={`px-2 py-1.5 cursor-pointer hover:bg-bg-surface transition-colors flex items-center ${item.id === currentSelectedId ? 'bg-bg-surface' : ''}`}
+                  >
+                    {item.mark && <span className={`mr-1 shrink-0 ${item.mark === '✔' ? 'text-blue-500' : ''}`}>{item.mark}</span>}
+                    <span className="truncate text-text-main">{item.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="flex-1 text-text-dim flex items-center">{t('master_presets', lang)}</div>
           )}
@@ -204,6 +234,19 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
               <button onClick={() => setBulkSelectedIds(new Set())} className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[10px] font-mono text-text-dim transition-colors">
                 {t('clear_selection', lang)}
               </button>
+              {onCopyBulkToPart && (
+                <button 
+                  onClick={() => {
+                    const itemsToCopy = currentList.filter(item => bulkSelectedIds.has(item.id));
+                    onCopyBulkToPart(itemsToCopy);
+                    setBulkSelectedIds(new Set());
+                  }} 
+                  className="flex items-center gap-1 px-2 py-1 bg-transparent hover:bg-green-500/10 border border-green-500/50 rounded text-[10px] font-mono text-green-500 transition-colors"
+                  title="Copy to Variation Parts"
+                >
+                  <ArrowRightToLine className="w-3 h-3" /> COPY
+                </button>
+              )}
               <button onClick={() => setConfirmDeleteBulk(true)} className="flex items-center gap-1 px-2 py-1 bg-transparent hover:bg-red-500/10 border border-red-500/50 rounded text-[10px] font-mono text-red-500 transition-colors">
                 <Trash2 className="w-3 h-3" /> DELETE
               </button>
@@ -319,6 +362,11 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                   className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                   disabled={index === currentList.length - 1}
                 ><ChevronsDown className="w-3 h-3" /></button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onCopyToPart) onCopyToPart(item); }}
+                  className="p-1.5 text-text-dim hover:text-green-400 hover:bg-bg-input transition-colors"
+                  title="Copy to Variation Parts"
+                ><ArrowRightToLine className="w-3 h-3" /></button>
                 <button 
                   onClick={(e) => startEdit(item, e)}
                   className={`p-1.5 text-text-dim ${isNegative ? 'hover:text-red-400' : 'hover:text-blue-400'} hover:bg-bg-input transition-colors`}

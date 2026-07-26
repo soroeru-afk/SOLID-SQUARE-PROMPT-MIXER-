@@ -4,31 +4,35 @@ import { Language, t } from '../i18n';
 
 interface SavePartModalProps {
   isOpen: boolean;
-  content: string;
+  content?: string;
+  defaultName?: string;
+  items?: {name: string, content: string}[];
   categories: [string, number][]; // [category, section]
-  onConfirm: (name: string, category: string, section: number) => void;
+  onConfirm: (name: string, category: string, section: number, items?: {name: string, content: string}[]) => void;
   onCancel: () => void;
   lang: Language;
 }
 
-export const SavePartModal: React.FC<SavePartModalProps> = ({ isOpen, content, categories, onConfirm, onCancel, lang }) => {
+export const SavePartModal: React.FC<SavePartModalProps> = ({ isOpen, content, defaultName, items, categories, onConfirm, onCancel, lang }) => {
   const [name, setName] = useState('');
   const [selectedCat, setSelectedCat] = useState<string>('');
 
+  const isBulk = items && items.length > 0;
+
   useEffect(() => {
     if (isOpen) {
-      setName('');
+      setName(defaultName || '');
       if (categories.length > 0 && !selectedCat) {
         setSelectedCat(`${categories[0][1]}:${categories[0][0]}`);
       }
     }
-  }, [isOpen, categories]);
+  }, [isOpen, defaultName, categories]);
 
   const handleConfirm = () => {
-    if (!name.trim() || !selectedCat) return;
+    if ((!isBulk && !name.trim()) || !selectedCat) return;
     const [sectionStr, ...catParts] = selectedCat.split(':');
     const categoryName = catParts.join(':');
-    onConfirm(name, categoryName, Number(sectionStr));
+    onConfirm(name, categoryName, Number(sectionStr), items);
   };
 
   return (
@@ -41,18 +45,22 @@ export const SavePartModal: React.FC<SavePartModalProps> = ({ isOpen, content, c
             exit={{ opacity: 0, scale: 0.9 }}
             className="bg-bg-panel border border-border-main rounded-lg shadow-xl p-6 w-full max-w-sm m-4 flex flex-col gap-4"
           >
-            <h2 className="text-text-main text-sm font-mono font-bold">{t('save_as_part', lang)}</h2>
+            <h2 className="text-text-main text-sm font-mono font-bold">
+              {isBulk ? `Save ${items.length} items to parts` : t('save_as_part', lang)}
+            </h2>
             
-            <div>
-              <label className="block text-[10px] font-mono text-text-dim mb-1">{t('name', lang)}</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t('name', lang)}
-                className="w-full bg-bg-input border border-border-main text-text-main text-xs font-mono p-2 rounded focus:outline-none focus:border-blue-500"
-                autoFocus
-              />
-            </div>
+            {!isBulk && (
+              <div>
+                <label className="block text-[10px] font-mono text-text-dim mb-1">{t('name', lang)}</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t('name', lang)}
+                  className="w-full bg-bg-input border border-border-main text-text-main text-xs font-mono p-2 rounded focus:outline-none focus:border-blue-500"
+                  autoFocus
+                />
+              </div>
+            )}
 
             <div>
               <label className="block text-[10px] font-mono text-text-dim mb-1">{t('category', lang)}</label>
@@ -69,12 +77,14 @@ export const SavePartModal: React.FC<SavePartModalProps> = ({ isOpen, content, c
               </select>
             </div>
 
-            <div>
-              <label className="block text-[10px] font-mono text-text-dim mb-1">{t('content', lang)}</label>
-              <div className="bg-bg-base border border-border-main text-text-dim text-[10px] font-mono p-2 rounded max-h-20 overflow-y-auto whitespace-pre-wrap">
-                {content}
+            {!isBulk && (
+              <div>
+                <label className="block text-[10px] font-mono text-text-dim mb-1">{t('content', lang)}</label>
+                <div className="bg-bg-base border border-border-main text-text-dim text-[10px] font-mono p-2 rounded max-h-20 overflow-y-auto whitespace-pre-wrap">
+                  {content}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex justify-end space-x-3 mt-4">
               <button
@@ -85,7 +95,7 @@ export const SavePartModal: React.FC<SavePartModalProps> = ({ isOpen, content, c
               </button>
               <button
                 onClick={handleConfirm}
-                disabled={!name.trim() || !selectedCat}
+                disabled={(!isBulk && !name.trim()) || !selectedCat}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold rounded transition-colors disabled:opacity-50"
               >
                 {t('confirm', lang)}

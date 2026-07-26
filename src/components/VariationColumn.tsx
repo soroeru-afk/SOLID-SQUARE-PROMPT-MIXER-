@@ -3,7 +3,7 @@ import { VariationPart } from '../types';
 import { Accordion } from './Accordion';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import { Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ArrowLeftToLine } from 'lucide-react';
 import { Language, t } from '../i18n';
 
 interface VariationColumnProps {
@@ -15,11 +15,13 @@ interface VariationColumnProps {
   onUpdate: (id: string, updates: Partial<VariationPart>) => void;
   onDelete: (id: string) => void;
   onReorder?: (draggedId: string, targetId: string) => void;
+  onCopyToMaster?: (part: VariationPart) => void;
+  onCopyBulkToMaster?: (items: VariationPart[]) => void;
   lang: Language;
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onReorder, lang 
+  parts, selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onReorder, onCopyToMaster, onCopyBulkToMaster, lang 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -41,6 +43,17 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   const handleBulkMove = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     if (!val) return;
+    
+    if (val === 'copy_to_master') {
+      if (onCopyBulkToMaster) {
+        const itemsToCopy = parts.filter(p => bulkSelectedIds.has(p.id));
+        onCopyBulkToMaster(itemsToCopy);
+      }
+      setBulkSelectedIds(new Set());
+      e.target.value = ''; // reset
+      return;
+    }
+
     const [sectionStr, ...catParts] = val.split(':');
     const category = catParts.join(':');
     const section = Number(sectionStr);
@@ -173,6 +186,8 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
             className="bg-bg-input border border-border-main text-text-main text-[10px] font-mono px-2 py-1 rounded outline-none disabled:opacity-50"
           >
             <option value="" disabled>Move to...</option>
+            <option value="copy_to_master">{t('copy_to_master_prompts', lang)}</option>
+            <option disabled>──────────</option>
             {uniqueCategories.map(([cat, sec]) => (
               <option key={`${sec}:${cat}`} value={`${sec}:${cat}`}>
                 {t(cat as any, lang) || cat} ({t(`sec_${sec === 1 ? 'composition' : sec === 2 ? 'pose' : sec === 3 ? 'details' : 'context'}` as any, lang)})
@@ -319,6 +334,13 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                       disabled={index === catParts.length - 1}
                                     ><ChevronDown className="w-3 h-3" /></button>
                                   </div>
+                                  <button 
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onCopyToMaster) onCopyToMaster(part); }}
+                                    className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-green-400 transition-opacity p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                                    title="Copy to Master Prompts"
+                                  >
+                                    <ArrowLeftToLine className="w-3 h-3" />
+                                  </button>
                                   <button 
                                     onClick={(e) => startEdit(part, e)}
                                     className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-blue-400 transition-opacity p-1 bg-bg-panel rounded shadow-sm border border-border-main"

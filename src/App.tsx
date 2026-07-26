@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { MasterColumn } from './components/MasterColumn';
 import { VariationColumn } from './components/VariationColumn';
 import { PreviewColumn } from './components/PreviewColumn';
+import { SavePartModal } from './components/SavePartModal';
+import { SaveMasterModal } from './components/SaveMasterModal';
 import { initialData } from './data';
 import { AppData, MasterPrompt, VariationPart } from './types';
 import { Language, t, translations } from './i18n';
@@ -31,6 +33,9 @@ export default function App() {
     }
     return initialData;
   });
+
+  const [savePartFromMasterData, setSavePartFromMasterData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
+  const [saveMasterFromPartData, setSaveMasterFromPartData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
@@ -519,6 +524,8 @@ export default function App() {
               onUpdate={handleUpdatePart}
               onDelete={handleDeletePart}
               onReorder={handleReorderParts}
+              onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
+              onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               lang={lang}
             />
           ) : (
@@ -541,6 +548,8 @@ export default function App() {
               onMoveBulkNegative={handleMoveBulkNegatives}
               onReorder={handleReorderMasters}
               onReorderNegative={handleReorderNegatives}
+              onCopyToPart={(item) => setSavePartFromMasterData({ name: item.name, content: item.content })}
+              onCopyBulkToPart={(items) => setSavePartFromMasterData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               activeTab={activeMasterTab}
               setActiveTab={setActiveMasterTab}
               lang={lang}
@@ -596,6 +605,46 @@ export default function App() {
           />
         </section>
 
+        <SavePartModal
+          isOpen={savePartFromMasterData !== null}
+          content={savePartFromMasterData?.content || ''}
+          defaultName={savePartFromMasterData?.name || ''}
+          items={savePartFromMasterData?.items}
+          categories={uniqueCategories}
+          onConfirm={(name, category, section, items) => {
+            if (items && items.length > 0) {
+              items.forEach(item => {
+                handleAddPart(category, section, item.name, item.content);
+              });
+            } else {
+              handleAddPart(category, section, name, savePartFromMasterData?.content || '');
+            }
+            setSavePartFromMasterData(null);
+          }}
+          onCancel={() => setSavePartFromMasterData(null)}
+          lang={lang}
+        />
+
+        <SaveMasterModal
+          isOpen={saveMasterFromPartData !== null}
+          content={saveMasterFromPartData?.content || ''}
+          defaultTitle={saveMasterFromPartData?.name || ''}
+          items={saveMasterFromPartData?.items}
+          isNegative={activeMasterTab === 'negative'}
+          onConfirm={(title, content, isNegative, items) => {
+            if (items && items.length > 0) {
+              items.forEach(item => {
+                handleSaveAsMaster(item.name, item.content, isNegative);
+              });
+            } else {
+              handleSaveAsMaster(title, content, isNegative);
+            }
+            setSaveMasterFromPartData(null);
+          }}
+          onCancel={() => setSaveMasterFromPartData(null)}
+          lang={lang}
+        />
+
         <button 
           onClick={() => setIsRightOpen(!isRightOpen)}
           className="self-center shrink-0 z-20 flex items-center justify-center w-5 h-24 bg-bg-panel hover:bg-bg-input text-text-main border border-border-main border-r-0 shadow-md rounded-l-md transition-colors"
@@ -630,6 +679,8 @@ export default function App() {
               onMoveBulkNegative={handleMoveBulkNegatives}
               onReorder={handleReorderMasters}
               onReorderNegative={handleReorderNegatives}
+              onCopyToPart={(item) => setSavePartFromMasterData({ name: item.name, content: item.content })}
+              onCopyBulkToPart={(items) => setSavePartFromMasterData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               activeTab={activeMasterTab}
               setActiveTab={setActiveMasterTab}
               lang={lang}
@@ -644,6 +695,8 @@ export default function App() {
               onUpdate={handleUpdatePart}
               onDelete={handleDeletePart}
               onReorder={handleReorderParts}
+              onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
+              onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               lang={lang}
             />
           )}
