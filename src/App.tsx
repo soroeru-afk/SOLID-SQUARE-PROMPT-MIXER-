@@ -47,6 +47,19 @@ export default function App() {
   const [savePartFromMasterData, setSavePartFromMasterData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
   const [saveMasterFromPartData, setSaveMasterFromPartData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
 
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+  const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToastMessage(msg);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage(null);
+      toastTimerRef.current = null;
+    }, 2000);
+  }, []);
+
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
   }, [theme]);
@@ -293,9 +306,10 @@ export default function App() {
     if (selectedMasterId && ids.includes(selectedMasterId)) setSelectedMasterId(null);
   };
 
-  const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content') => {
+   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content') => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
+    showToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -315,6 +329,7 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = 'new negative content') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
+    showToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -401,6 +416,7 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = 'new content') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
+    showToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -460,6 +476,7 @@ export default function App() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      showToast("エクスポート完了！");
     };
 
     if ('showSaveFilePicker' in window && window.self === window.top) {
@@ -498,6 +515,7 @@ export default function App() {
           const writable = await fileHandle.createWritable();
           await writable.write(jsonString);
           await writable.close();
+          showToast("エクスポート完了！");
         }
       } catch (err: any) {
         if (err.name !== 'AbortError') {
@@ -521,6 +539,7 @@ export default function App() {
         if (parsed.masters && parsed.parts) {
           setData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
+          showToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }
@@ -859,6 +878,11 @@ export default function App() {
           <span className="text-[9px] font-mono text-text-main">{new Date().toISOString().slice(0, 19).replace('T', ' ')}</span>
         </div>
       </footer>
+      {toastMessage && (
+        <div className="fixed bottom-12 right-6 bg-accent-main text-text-main text-xs px-4 py-2 border border-border-hover rounded shadow-2xl z-50 font-mono tracking-wider">
+          {toastMessage}
+        </div>
+      )}
       {iframeWarning && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-bg-panel border border-border-main p-6 rounded-lg max-w-md w-full shadow-2xl">
