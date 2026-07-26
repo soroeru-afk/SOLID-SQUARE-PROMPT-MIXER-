@@ -14,7 +14,7 @@ const STORAGE_KEY = 'prompt_console_data';
 
 export default function App() {
   const [lang, setLang] = useState<Language>('ja');
-  const [theme, setTheme] = useState<'dark' | 'red' | 'light' | 'navy' | 'black'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'red' | 'light' | 'navy' | 'black'>('light');
   const [paperMode, setPaperMode] = useState<boolean>(false);
   const [activeMasterTab, setActiveMasterTab] = useState<'master' | 'negative'>('master');
   const [data, setData] = useState<AppData>(() => {
@@ -704,7 +704,7 @@ export default function App() {
                 {t('import_json', lang)}
                 <input type="file" accept=".json" className="hidden" onChange={handleImport} />
               </label>
-              <button onClick={handleExport} className="flex-1 flex items-center justify-center px-2 py-1.5 bg-accent-main hover:opacity-80 text-[10px] font-mono border border-accent-dim rounded text-text-main transition-opacity cursor-pointer">
+              <button onClick={handleExport} className="flex-1 flex items-center justify-center px-2 py-1.5 bg-accent-main hover:opacity-80 text-[10px] font-mono border border-accent-dim rounded text-white transition-opacity cursor-pointer">
                 {t('export_config', lang)}
               </button>
             </div>
