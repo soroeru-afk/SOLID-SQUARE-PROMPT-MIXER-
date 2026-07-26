@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trash2, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, RotateCcw, ArrowDown, ArrowUp, Copy } from 'lucide-react';
 import { Language, t } from '../i18n';
-import { ConfirmModal } from './ConfirmModal';
 import { SavePartModal } from './SavePartModal';
 import { SaveMasterModal } from './SaveMasterModal';
 
@@ -47,7 +46,6 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const [copied, setCopied] = useState(false);
   const [findText, setFindText] = useState('');
   const [replaceText, setReplaceText] = useState('');
-  const [confirmClear, setConfirmClear] = useState(false);
   
   const [isSavePartModalOpen, setIsSavePartModalOpen] = useState(false);
   const [savePartContent, setSavePartContent] = useState('');
@@ -746,7 +744,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <option value="font-[Meiryo,sans-serif]">Meiryo</option>
         </select>
         <button 
-          onClick={() => setConfirmClear(true)}
+          onClick={() => {            setEditorText('');            setNegativeEditorText('');          }}
           className="ml-auto px-3 py-1.5 bg-bg-input hover:bg-border-main text-text-dim hover:text-text-main border border-border-hover rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0"
         >
           <Trash2 className="w-3 h-3" /> {t('clear_all', lang)}
@@ -945,17 +943,6 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         )}
       </AnimatePresence>
 
-      <ConfirmModal
-        isOpen={confirmClear}
-        message={t('clear_all', lang) + '?'}
-        onConfirm={() => {
-          setEditorText('');
-          setNegativeEditorText('');
-          setConfirmClear(false);
-        }}
-        onCancel={() => setConfirmClear(false)}
-        lang={lang}
-      />
       <SavePartModal
         isOpen={isSavePartModalOpen}
         content={savePartContent}

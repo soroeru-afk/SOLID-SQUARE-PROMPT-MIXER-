@@ -177,13 +177,13 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       </div>
 
       <div className="p-4 flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
-        <div className={`flex items-center gap-2 bg-bg-surface p-2 border ${bulkSelectedIds.size > 0 ? 'border-blue-500/30' : 'border-border-main'} rounded shadow-sm shrink-0 min-h-[42px]`}>
-          <span className="text-[10px] font-mono text-text-dim flex-1">{bulkSelectedIds.size} selected</span>
+        <div className={`flex flex-wrap items-center gap-2 bg-bg-surface p-2 border ${bulkSelectedIds.size > 0 ? 'border-blue-500/30' : 'border-border-main'} rounded shadow-sm shrink-0 min-h-[42px]`}>
+          <span className="text-[10px] font-mono text-text-dim flex-shrink-0 flex items-center justify-center w-6 h-6 bg-bg-input rounded-full font-bold">{bulkSelectedIds.size}</span>
           <select 
             onChange={handleBulkMove}
             value=""
             disabled={bulkSelectedIds.size === 0}
-            className="bg-bg-input border border-border-main text-text-main text-[10px] font-mono px-2 py-1 rounded outline-none disabled:opacity-50"
+            className="flex-1 min-w-[70px] bg-bg-input border border-border-main text-text-main text-[10px] font-mono px-2 py-1 rounded outline-none disabled:opacity-50"
           >
             <option value="" disabled>Move to...</option>
             <option value="copy_to_master">{t('copy_to_master_prompts', lang)}</option>
