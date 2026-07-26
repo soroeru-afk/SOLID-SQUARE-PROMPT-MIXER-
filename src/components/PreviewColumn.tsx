@@ -246,7 +246,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   };
 
   const handleMergeDupes = () => {
-    const process = (text: string) => {
+    const processMerge = (text: string) => {
       const parts = text.split(',').map(s => s.trim()).filter(Boolean);
       const counts = new Map<string, number>();
       
@@ -273,10 +273,93 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       return cleanString(result.join(', '));
     };
 
+    const processScale = (text: string) => {
+      const regex = /\(([^)]+?)[: ]([0-9.]+)\)/g;
+      let match;
+      let minWeight = Infinity;
+      let maxWeight = -Infinity;
+      
+      // 1. 最小値と最大値を見つける
+      while ((match = regex.exec(text)) !== null) {
+        const weight = parseFloat(match[2]);
+        if (!isNaN(weight)) {
+          if (weight < minWeight) minWeight = weight;
+          if (weight > maxWeight) maxWeight = weight;
+        }
+      }
+
+      // 差がない、または見つからない場合はそのまま返す
+      if (minWeight === Infinity || minWeight === maxWeight) {
+        return text;
+      }
+
+      // 2. 対象の文字列だけを置換する
+      return text.replace(/\(([^)]+?)[: ]([0-9.]+)\)/g, (fullMatch, content, weightStr) => {
+        const weight = parseFloat(weightStr);
+        if (isNaN(weight)) return fullMatch;
+        
+        const scaledWeight = 0.1 + ((weight - minWeight) / (maxWeight - minWeight)) * (1.4 - 0.1);
+        const finalWeightStr = parseFloat(scaledWeight.toFixed(2)).toString();
+        
+        return `(${content}:${finalWeightStr})`;
+      });
+    };
+
+    const processBoth = (text: string) => processScale(processMerge(text));
+
     if (activeMasterTab === 'master') {
-      setEditorText(prev => process(prev));
+      setEditorText(prev => processBoth(prev));
     } else if (activeMasterTab === 'negative') {
-      setNegativeEditorText(prev => process(prev));
+      setNegativeEditorText(prev => processBoth(prev));
+    }
+  };
+
+  const handleAdjustWeights = (delta: number) => {
+    const isPositive = activeMasterTab === 'master';
+    const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
+    if (!textarea) return;
+
+    const text = isPositive ? editorText : negativeEditorText;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const isSelected = start !== end;
+
+    const processText = (targetText: string) => {
+      return targetText.replace(/\(([^)]+?)[: ]([0-9.]+)\)/g, (fullMatch, content, weightStr) => {
+        const weight = parseFloat(weightStr);
+        if (isNaN(weight)) return fullMatch;
+        const newWeight = Math.max(0.01, weight + delta);
+        const finalWeightStr = parseFloat(newWeight.toFixed(2)).toString();
+        return `(${content}:${finalWeightStr})`;
+      });
+    };
+
+    if (isSelected) {
+      const before = text.substring(0, start);
+      const selected = text.substring(start, end);
+      const after = text.substring(end);
+      
+      const newSelected = processText(selected);
+      const newText = before + newSelected + after;
+      
+      if (isPositive) {
+        setEditorText(newText);
+      } else {
+        setNegativeEditorText(newText);
+      }
+      
+      setTimeout(() => {
+        if (textarea) {
+          textarea.focus();
+          textarea.setSelectionRange(start, start + newSelected.length);
+        }
+      }, 0);
+    } else {
+      if (isPositive) {
+        setEditorText(processText(text));
+      } else {
+        setNegativeEditorText(processText(text));
+      }
     }
   };
 
@@ -340,83 +423,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
   const [editorFontSize, setEditorFontSize] = useState(14);
   const [editorFontFamily, setEditorFontFamily] = useState('font-mono');
-  const [globalWeight, setGlobalWeight] = useState(1.5);
 
   const positiveHighlightRef = useRef<HTMLDivElement>(null);
   const negativeHighlightRef = useRef<HTMLDivElement>(null);
   const positiveTextRef = useRef<HTMLTextAreaElement>(null);
   const negativeTextRef = useRef<HTMLTextAreaElement>(null);
-
-  const handleApplyGlobalWeight = (mode: 'all' | 'selection') => {
-    const process = (text: string) => {
-      return text.replace(/\(([^():]+?)[: ]x?([0-9.]+)\)/g, `($1:${globalWeight.toFixed(1)})`);
-    };
-
-    const applyToSelection = (selected: string) => {
-      const match = selected.match(/^(\s*)(.*?)(\s*)$/);
-      const prefix = match ? match[1] : '';
-      const core = match ? match[2] : selected;
-      const suffix = match ? match[3] : '';
-
-      if (/\(([^():]+?)[: ]x?([0-9.]+)\)/.test(core)) {
-        return prefix + process(core) + suffix;
-      }
-      if (/^\(([^()]+)\)$/.test(core)) {
-         return prefix + `(${core.replace(/^\((.*)\)$/, '$1')}:${globalWeight.toFixed(1)})` + suffix;
-      }
-      return prefix + `(${core}:${globalWeight.toFixed(1)})` + suffix;
-    };
-
-    if (mode === 'all') {
-      if (activeMasterTab === 'master') {
-        setEditorText(prev => process(prev));
-      } else if (activeMasterTab === 'negative') {
-        setNegativeEditorText(prev => process(prev));
-      }
-    } else {
-      // Selection mode
-      if (activeEditor === 'positive') {
-        const textarea = positiveTextRef.current;
-        if (!textarea) return;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        if (start === end) return; // No selection
-        
-        setEditorText(prev => {
-          const before = prev.substring(0, start);
-          const selected = prev.substring(start, end);
-          const after = prev.substring(end);
-          return before + applyToSelection(selected) + after;
-        });
-        
-        // Try to maintain selection
-        setTimeout(() => {
-          if (positiveTextRef.current) {
-            positiveTextRef.current.focus();
-          }
-        }, 0);
-      } else {
-        const textarea = negativeTextRef.current;
-        if (!textarea) return;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        if (start === end) return; // No selection
-        
-        setNegativeEditorText(prev => {
-          const before = prev.substring(0, start);
-          const selected = prev.substring(start, end);
-          const after = prev.substring(end);
-          return before + applyToSelection(selected) + after;
-        });
-        
-        setTimeout(() => {
-          if (negativeTextRef.current) {
-            negativeTextRef.current.focus();
-          }
-        }, 0);
-      }
-    }
-  };
 
   const handleMoveSelection = (position: 'start' | 'end') => {
     const isPositive = activeEditor === 'positive';
@@ -656,10 +667,27 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <button 
           onClick={handleMergeDupes}
           className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
-          title="Merge duplicate phrases"
+          title="Merge duplicate phrases and normalize ratios"
         >
           {t('merge_dupes', lang)}
         </button>
+        <div className="flex items-center space-x-1 px-2 py-1 bg-bg-input border border-border-main rounded shrink-0">
+          <span className="text-[10px] font-mono text-text-dim pr-1">{t('global_weight', lang)}</span>
+          <button 
+            onClick={() => handleAdjustWeights(-0.1)}
+            className="px-2 py-0.5 bg-bg-surface hover:bg-border-main text-[12px] font-mono border border-border-hover rounded text-text-main transition-colors"
+            title="Decrease weight by 0.1 (applies to selection or all)"
+          >
+            -0.1
+          </button>
+          <button 
+            onClick={() => handleAdjustWeights(0.1)}
+            className="px-2 py-0.5 bg-bg-surface hover:bg-border-main text-[12px] font-mono border border-border-hover rounded text-text-main transition-colors"
+            title="Increase weight by 0.1 (applies to selection or all)"
+          >
+            +0.1
+          </button>
+        </div>
         <button 
           onClick={handleOptimizeSyntax}
           className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
@@ -706,61 +734,6 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         >
           <Redo2 size={12} />
         </button>
-        <div className="w-px h-6 bg-border-main mx-1"></div>
-        <div className="flex items-center space-x-1 px-2 py-1 bg-bg-input border border-border-main rounded shrink-0">
-          <span className="text-[10px] font-mono text-text-dim">{t('global_weight', lang)}</span>
-          <div className="flex items-center">
-            <button 
-              onClick={() => setGlobalWeight(prev => Math.max(0.1, parseFloat((prev - 0.1).toFixed(1))))}
-              className="p-0.5 hover:bg-border-main rounded text-text-dim hover:text-text-main transition-colors"
-            >
-              <ChevronLeft size={12} />
-            </button>
-            <input 
-              type="range"
-              min="0.1"
-              max="3.0"
-              step="0.1"
-              value={globalWeight}
-              onChange={e => setGlobalWeight(parseFloat(e.target.value))}
-              className="custom-slider w-16 mx-1"
-            />
-            <button 
-              onClick={() => setGlobalWeight(prev => Math.min(3.0, parseFloat((prev + 0.1).toFixed(1))))}
-              className="p-0.5 hover:bg-border-main rounded text-text-dim hover:text-text-main transition-colors"
-            >
-              <ChevronRight size={12} />
-            </button>
-          </div>
-          <span className="text-[11px] font-mono font-bold text-text-main bg-bg-surface px-1.5 py-0.5 rounded border border-border-main min-w-[28px] text-center">
-            {globalWeight.toFixed(1)}
-          </span>
-          <button
-            onClick={() => setGlobalWeight(1.0)}
-            className="ml-0.5 p-1 hover:bg-border-main rounded text-text-dim hover:text-text-main transition-colors flex items-center justify-center"
-            title={t('reset_weight', lang)}
-          >
-            <RotateCcw size={10} />
-          </button>
-          <button 
-            onClick={() => handleApplyGlobalWeight('all')}
-            className={`ml-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${
-              theme === 'red'
-                ? 'bg-red-600 hover:bg-red-500 text-white border border-red-500'
-                : 'bg-bg-surface hover:bg-red-500/10 text-red-500 border border-red-500/50 hover:border-red-500'
-            }`}
-            title={t('set_weight_tooltip', lang)}
-          >
-            {t('set_weight', lang)}
-          </button>
-          <button 
-            onClick={() => handleApplyGlobalWeight('selection')}
-            className="ml-0.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors bg-bg-surface hover:bg-blue-500/10 text-blue-500 border border-blue-500/50 hover:border-blue-500"
-            title={t('set_weight_selection_tooltip', lang)}
-          >
-            {t('set_weight_selection', lang)}
-          </button>
-        </div>
         <div className="w-px h-6 bg-border-main mx-1"></div>
         <button 
           onClick={() => handleMoveSelection('start')}

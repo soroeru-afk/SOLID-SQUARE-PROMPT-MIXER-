@@ -7,8 +7,8 @@ import { SaveMasterModal } from './components/SaveMasterModal';
 import { initialData } from './data';
 import { AppData, MasterPrompt, VariationPart } from './types';
 import { Language, t, translations } from './i18n';
-import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getFileHandle, setFileHandle } from './idb';
+import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 
 const STORAGE_KEY = 'prompt_console_data';
 
@@ -46,19 +46,6 @@ export default function App() {
 
   const [savePartFromMasterData, setSavePartFromMasterData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
   const [saveMasterFromPartData, setSaveMasterFromPartData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
-
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const toastTimerRef = useRef<number | null>(null);
-  const showToast = useCallback((msg: string) => {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-    }
-    setToastMessage(msg);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToastMessage(null);
-      toastTimerRef.current = null;
-    }, 2000);
-  }, []);
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
@@ -154,6 +141,18 @@ export default function App() {
 
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+  const showSaveToast = useCallback((msg: string) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    setSaveSuccessMessage(msg);
+    saveTimerRef.current = window.setTimeout(() => {
+      setSaveSuccessMessage(null);
+      saveTimerRef.current = null;
+    }, 2000);
+  }, []);
 
   useEffect(() => {
     getFileHandle('export_directory').then(handle => {
@@ -306,10 +305,10 @@ export default function App() {
     if (selectedMasterId && ids.includes(selectedMasterId)) setSelectedMasterId(null);
   };
 
-   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content') => {
+  const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content') => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
-    showToast("セーブ完了！");
+    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -329,7 +328,7 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = 'new negative content') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
-    showToast("セーブ完了！");
+    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -416,7 +415,7 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = 'new content') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
-    showToast("セーブ完了！");
+    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -476,7 +475,6 @@ export default function App() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast("エクスポート完了！");
     };
 
     if ('showSaveFilePicker' in window && window.self === window.top) {
@@ -515,16 +513,21 @@ export default function App() {
           const writable = await fileHandle.createWritable();
           await writable.write(jsonString);
           await writable.close();
-          showToast("エクスポート完了！");
+          setSaveSuccessMessage('セーブ完了！ (Save Completed!)');
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
         }
       } catch (err: any) {
         if (err.name !== 'AbortError') {
           console.error('File System API Error:', err);
           fallbackDownload();
+          setSaveSuccessMessage('セーブ完了！ (Downloaded)');
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
         }
       }
     } else {
       fallbackDownload();
+      setSaveSuccessMessage('セーブ完了！ (Downloaded)');
+      setTimeout(() => setSaveSuccessMessage(null), 3000);
     }
   };
 
@@ -539,7 +542,7 @@ export default function App() {
         if (parsed.masters && parsed.parts) {
           setData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
-          showToast("インポート完了！");
+          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }
@@ -878,9 +881,10 @@ export default function App() {
           <span className="text-[9px] font-mono text-text-main">{new Date().toISOString().slice(0, 19).replace('T', ' ')}</span>
         </div>
       </footer>
-      {toastMessage && (
-        <div className="fixed bottom-12 right-6 bg-accent-main text-white text-xs px-4 py-2 border border-border-hover rounded shadow-2xl z-50 font-mono tracking-wider">
-          {toastMessage}
+      {saveSuccessMessage && (
+        <div className="fixed bottom-10 right-10 bg-accent-main text-white px-4 py-2 rounded shadow-lg text-sm font-bold font-mono z-50 flex items-center space-x-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <Check className="w-4 h-4" />
+          <span>{saveSuccessMessage}</span>
         </div>
       )}
       {iframeWarning && (
