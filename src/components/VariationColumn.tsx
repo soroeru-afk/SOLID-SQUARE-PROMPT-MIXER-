@@ -176,7 +176,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
         </div>
       </div>
 
-      <div className="p-4 flex-1 flex flex-col space-y-4 overflow-hidden">
+      <div className="p-4 flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
         <div className={`flex items-center gap-2 bg-bg-surface p-2 border ${bulkSelectedIds.size > 0 ? 'border-blue-500/30' : 'border-border-main'} rounded shadow-sm shrink-0 min-h-[42px]`}>
           <span className="text-[10px] font-mono text-text-dim flex-1">{bulkSelectedIds.size} selected</span>
           <select 
@@ -216,7 +216,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-scroll pr-2 space-y-4 content-start">
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4 content-start min-h-0 pb-12">
           {(Object.entries(groupedParts) as [string, any][]).map(([secId, secData]) => {
             const catEntries = Object.entries(secData.categories) as [string, VariationPart[]][];
             if (catEntries.length === 0) return null;
@@ -315,11 +315,11 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                 />
                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                                   <div className="flex justify-between items-center pr-6">
-                                    <span className={`text-[11px] font-mono truncate ${isSelected ? 'text-text-main' : 'text-text-dim'}`}>
+                                    <span className={`text-[13px] font-bold font-mono truncate ${isSelected ? 'text-text-main' : 'text-text-dim'}`}>
                                       {part.name}
                                     </span>
                                   </div>
-                                  <span className="text-[9px] font-mono text-text-dim truncate mt-0.5">{part.content}</span>
+                                  <span className="text-[11px] font-mono text-text-dim truncate mt-0.5">{part.content}</span>
                                 </div>
                                 <div className="absolute right-2 flex items-center gap-1">
                                   <div className="opacity-0 group-hover:opacity-100 flex items-center transition-opacity bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden">
