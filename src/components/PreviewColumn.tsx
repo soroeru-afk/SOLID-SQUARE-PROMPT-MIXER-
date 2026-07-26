@@ -25,6 +25,8 @@ interface PreviewColumnProps {
   redo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
+  autoOptimize?: boolean;
+  onToggleAutoOptimize?: () => void;
 }
 
 export const PreviewColumn: React.FC<PreviewColumnProps> = ({ 
@@ -41,7 +43,9 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   undo,
   redo,
   canUndo = false,
-  canRedo = false
+  canRedo = false,
+  autoOptimize = true,
+  onToggleAutoOptimize
 }) => {
   const [copied, setCopied] = useState(false);
   const [findText, setFindText] = useState('');
@@ -187,21 +191,29 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     setNegativeEditorText(prev => prev.replaceAll(findText, replaceText));
   };
 
-  const cleanString = (text: string) => {
+  const cleanString = (text: string, force: boolean = false) => {
+    if (!autoOptimize && !force) return text;
     return text
-      .replace(/[\u3000]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .replace(/ ,/g, ',')
-      .replace(/,+/g, ',')
+      .split('\n')
+      .map(line => 
+        line
+          .replace(/[\u3000]/g, ' ')
+          .replace(/[ \t]+/g, ' ')
+          .replace(/[ \t]+,/g, ',')
+          .replace(/,+/g, ',')
+          .replace(/,[ \t]*,/g, ',')
+          .replace(/,([^\s])/g, ', $1')
+          .trim()
+      )
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
       .replace(/^[\s,]+|[\s,]+$/g, '')
-      .replace(/,\s*,/g, ',')
-      .replace(/,(\S)/g, ', $1')
       .trim();
   };
 
   const handleCleanText = () => {
-    setEditorText(prev => cleanString(prev));
-    setNegativeEditorText(prev => cleanString(prev));
+    setEditorText(prev => cleanString(prev, true));
+    setNegativeEditorText(prev => cleanString(prev, true));
   };
 
   const handleFormatComma = () => {
@@ -975,9 +987,14 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         </div>
       </div>
       <div className="p-4 border-t border-border-main flex flex-col space-y-2 bg-bg-panel">
-        <div className="flex justify-between text-[9px] font-mono opacity-50 text-text-main">
-          <span>{t('auto_optimize', lang)}</span>
-          <span>VER: 4.1.2</span>
+        <div className="flex justify-between items-center text-[9px] font-mono text-text-main">
+          <button 
+            onClick={onToggleAutoOptimize}
+            className={`px-2 py-1 text-xs border rounded transition-colors outline-none cursor-pointer ${autoOptimize ? 'border-text-main text-text-main' : 'border-text-dim text-text-dim hover:border-text-main hover:text-text-main'}`}
+          >
+            {t(autoOptimize ? 'auto_optimize_on' : 'auto_optimize_off', lang)}
+          </button>
+          <span className="opacity-50">VER: 4.1.2</span>
         </div>
         <div className="h-1 w-full bg-bg-input rounded-full overflow-hidden">
            <div className="w-full h-full bg-gradient-to-r from-blue-900 via-blue-500 to-blue-900 animate-pulse"></div>

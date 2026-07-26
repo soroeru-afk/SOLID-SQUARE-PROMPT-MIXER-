@@ -34,6 +34,15 @@ export default function App() {
     return initialData;
   });
 
+  const [autoOptimize, setAutoOptimize] = useState<boolean>(() => {
+    const saved = localStorage.getItem('auto_optimize');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('auto_optimize', String(autoOptimize));
+  }, [autoOptimize]);
+
   const [savePartFromMasterData, setSavePartFromMasterData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
   const [saveMasterFromPartData, setSaveMasterFromPartData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
 
@@ -181,14 +190,22 @@ export default function App() {
   }, [data]);
 
   const cleanString = (text: string) => {
+    if (!autoOptimize) return text;
     return text
-      .replace(/[\u3000]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .replace(/ ,/g, ',')
-      .replace(/,+/g, ',')
+      .split('\n')
+      .map(line => 
+        line
+          .replace(/[\u3000]/g, ' ')
+          .replace(/[ \t]+/g, ' ')
+          .replace(/[ \t]+,/g, ',')
+          .replace(/,+/g, ',')
+          .replace(/,[ \t]*,/g, ',')
+          .replace(/,([^\s])/g, ', $1')
+          .trim()
+      )
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
       .replace(/^[\s,]+|[\s,]+$/g, '')
-      .replace(/,\s*,/g, ',')
-      .replace(/,(\S)/g, ', $1')
       .trim();
   };
 
@@ -200,8 +217,8 @@ export default function App() {
       const actualPos = pos === null ? prev.length : pos;
       const before = prev.slice(0, actualPos);
       const after = prev.slice(actualPos);
-      const prefix = before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') ? ', ' : '';
-      const suffix = after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') ? ', ' : '';
+      const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+      const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
       const insertedStr = prefix + part.content + suffix;
       setPos(actualPos + insertedStr.length);
       return cleanString(before + insertedStr + after);
@@ -435,8 +452,8 @@ export default function App() {
           const actualPos = positiveCursorPos === null ? prev.length : positiveCursorPos;
           const before = prev.slice(0, actualPos);
           const after = prev.slice(actualPos);
-          const prefix = before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') ? ', ' : '';
-          const suffix = after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') ? ', ' : '';
+          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
           const insertedStr = prefix + newMaster.content + suffix;
           newPos = actualPos + insertedStr.length;
           return cleanString(before + insertedStr + after);
@@ -456,8 +473,8 @@ export default function App() {
           const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
           const before = prev.slice(0, actualPos);
           const after = prev.slice(actualPos);
-          const prefix = before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') ? ', ' : '';
-          const suffix = after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') ? ', ' : '';
+          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
           const insertedStr = prefix + newNeg.content + suffix;
           newPos = actualPos + insertedStr.length;
           return cleanString(before + insertedStr + after);
@@ -618,6 +635,8 @@ export default function App() {
             redo={redo}
             canUndo={canUndo}
             canRedo={canRedo}
+            autoOptimize={autoOptimize}
+            onToggleAutoOptimize={() => setAutoOptimize(!autoOptimize)}
           />
         </section>
 
