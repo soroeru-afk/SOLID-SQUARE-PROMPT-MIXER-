@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MasterPrompt } from '../types';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { Pencil, Trash2, Check, X, ChevronUp, ChevronDown, Plus, List } from 'lucide-react';
+import { Pencil, Trash2, Check, X, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Plus, List } from 'lucide-react';
 import { Language, t } from '../i18n';
 
 interface MasterColumnProps {
@@ -20,6 +20,8 @@ interface MasterColumnProps {
   onDeleteNegative: (id: string) => void;
   onDeleteBulk?: (ids: string[]) => void;
   onDeleteBulkNegative?: (ids: string[]) => void;
+  onMoveBulk?: (ids: string[], direction: 'top' | 'up' | 'down' | 'bottom') => void;
+  onMoveBulkNegative?: (ids: string[], direction: 'top' | 'up' | 'down' | 'bottom') => void;
   onReorder?: (startIndex: number, endIndex: number) => void;
   onReorderNegative?: (startIndex: number, endIndex: number) => void;
   activeTab: 'master' | 'negative';
@@ -28,7 +30,7 @@ interface MasterColumnProps {
 }
 
 export const MasterColumn: React.FC<MasterColumnProps> = ({ 
-  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onReorder, onReorderNegative, activeTab, setActiveTab, lang 
+  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, activeTab, setActiveTab, lang 
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'dropdown'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -48,6 +50,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
   const currentOnUpdate = activeTab === 'master' ? onUpdate : onUpdateNegative;
   const currentOnDelete = activeTab === 'master' ? onDelete : onDeleteNegative;
   const currentOnDeleteBulk = activeTab === 'master' ? onDeleteBulk : onDeleteBulkNegative;
+  const currentOnMoveBulk = activeTab === 'master' ? onMoveBulk : onMoveBulkNegative;
   const currentOnReorder = activeTab === 'master' ? onReorder : onReorderNegative;
 
   const handleToggleBulk = (id: string, e: React.MouseEvent) => {
@@ -181,7 +184,23 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                 </div>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 items-center justify-end flex-1">
+              {currentOnMoveBulk && (
+                <div className="flex gap-1 p-0.5 bg-bg-base border border-border-main rounded shrink-0">
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'top')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move to Top">
+                    <ChevronsUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'up')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move Up">
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'down')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move Down">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'bottom')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move to Bottom">
+                    <ChevronsDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
               <button onClick={() => setBulkSelectedIds(new Set())} className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[10px] font-mono text-text-dim transition-colors">
                 {t('clear_selection', lang)}
               </button>
@@ -281,6 +300,11 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
               </div>
               <div className="absolute top-2 right-6 opacity-0 group-hover:opacity-100 flex items-center transition-opacity bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden">
                 <button 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnReorder && index > 0) currentOnReorder(index, 0); }}
+                  className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                  disabled={index === 0}
+                ><ChevronsUp className="w-3 h-3" /></button>
+                <button 
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnReorder && index > 0) currentOnReorder(index, index - 1); }}
                   className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                   disabled={index === 0}
@@ -290,6 +314,11 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                   className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                   disabled={index === currentList.length - 1}
                 ><ChevronDown className="w-3 h-3" /></button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnReorder && index < currentList.length - 1) currentOnReorder(index, currentList.length - 1); }}
+                  className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                  disabled={index === currentList.length - 1}
+                ><ChevronsDown className="w-3 h-3" /></button>
                 <button 
                   onClick={(e) => startEdit(item, e)}
                   className={`p-1.5 text-text-dim ${isNegative ? 'hover:text-red-400' : 'hover:text-blue-400'} hover:bg-bg-input transition-colors`}

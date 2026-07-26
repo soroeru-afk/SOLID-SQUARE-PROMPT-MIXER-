@@ -1,6 +1,6 @@
 {
-  "name": "■ SOLID SQUARE PROMPT MIXER  2026",
-  "description": "High-end multi-section prompt synthesis tool for AI image generation. ",
+  "name": "■ SOLID SQUARE PROMPT MIXER",
+  "description": "High-end multi-section prompt synthesis tool for AI image generation.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

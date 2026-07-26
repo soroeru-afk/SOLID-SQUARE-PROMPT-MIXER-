@@ -5,7 +5,7 @@ import { PreviewColumn } from './components/PreviewColumn';
 import { initialData } from './data';
 import { AppData, MasterPrompt, VariationPart } from './types';
 import { Language, t, translations } from './i18n';
-import { ArrowLeftRight, Undo2, Redo2 } from 'lucide-react';
+import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const STORAGE_KEY = 'prompt_console_data';
 
@@ -120,6 +120,9 @@ export default function App() {
   const [rightWidth, setRightWidth] = useState(() => {
     return Math.max(384, Number(localStorage.getItem('right_width')) || 384);
   });
+  
+  const [isLeftOpen, setIsLeftOpen] = useState(true);
+  const [isRightOpen, setIsRightOpen] = useState(true);
 
   useEffect(() => {
     localStorage.setItem('sidebar_swapped', String(sidebarSwapped));
@@ -274,6 +277,55 @@ export default function App() {
       newNegatives.splice(endIndex, 0, removed);
       return { ...prev, negatives: newNegatives };
     });
+  };
+
+  const moveItems = (list: any[], ids: string[], direction: 'top' | 'up' | 'down' | 'bottom') => {
+    const selectedSet = new Set(ids);
+    const selectedItems = list.filter(item => selectedSet.has(item.id));
+    const unselectedItems = list.filter(item => !selectedSet.has(item.id));
+    
+    if (selectedItems.length === 0) return list;
+
+    if (direction === 'top') {
+      return [...selectedItems, ...unselectedItems];
+    }
+    if (direction === 'bottom') {
+      return [...unselectedItems, ...selectedItems];
+    }
+    
+    const newList = [...list];
+    if (direction === 'up') {
+      for (let i = 1; i < newList.length; i++) {
+        if (selectedSet.has(newList[i].id) && !selectedSet.has(newList[i-1].id)) {
+          const temp = newList[i-1];
+          newList[i-1] = newList[i];
+          newList[i] = temp;
+        }
+      }
+    } else if (direction === 'down') {
+      for (let i = newList.length - 2; i >= 0; i--) {
+        if (selectedSet.has(newList[i].id) && !selectedSet.has(newList[i+1].id)) {
+          const temp = newList[i+1];
+          newList[i+1] = newList[i];
+          newList[i] = temp;
+        }
+      }
+    }
+    return newList;
+  };
+
+  const handleMoveBulkMasters = (ids: string[], direction: 'top' | 'up' | 'down' | 'bottom') => {
+    setData(prev => ({
+      ...prev,
+      masters: moveItems(prev.masters, ids, direction)
+    }));
+  };
+
+  const handleMoveBulkNegatives = (ids: string[], direction: 'top' | 'up' | 'down' | 'bottom') => {
+    setData(prev => ({
+      ...prev,
+      negatives: moveItems(prev.negatives || [], ids, direction)
+    }));
   };
 
   const handleUpdatePart = (id: string, updates: Partial<VariationPart>) => {
@@ -455,8 +507,9 @@ export default function App() {
       {/* Main Layout (3 Columns: Master -> Editor <- Variations) */}
       <main className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
-        <aside style={{ width: leftWidth }} className="border-r border-border-main bg-bg-panel flex flex-col shrink-0 relative">
-          {sidebarSwapped ? (
+        {isLeftOpen && (
+          <aside style={{ width: leftWidth }} className="border-r border-border-main bg-bg-panel flex flex-col shrink-0 relative">
+            {sidebarSwapped ? (
             <VariationColumn
               parts={data.parts}
               selectedIds={selectedPartIds}
@@ -484,6 +537,8 @@ export default function App() {
               onDeleteNegative={handleDeleteNegative}
               onDeleteBulk={handleDeleteBulkMaster}
               onDeleteBulkNegative={handleDeleteBulkNegative}
+              onMoveBulk={handleMoveBulkMasters}
+              onMoveBulkNegative={handleMoveBulkNegatives}
               onReorder={handleReorderMasters}
               onReorderNegative={handleReorderNegatives}
               activeTab={activeMasterTab}
@@ -507,6 +562,14 @@ export default function App() {
             className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-accent-main active:bg-accent-main transition-colors z-10"
           />
         </aside>
+        )}
+
+        <button 
+          onClick={() => setIsLeftOpen(!isLeftOpen)}
+          className="self-center shrink-0 z-20 flex items-center justify-center w-5 h-24 bg-bg-panel hover:bg-bg-input text-text-main border border-border-main border-l-0 shadow-md rounded-r-md transition-colors"
+        >
+          {isLeftOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </button>
 
         {/* Center: Text Editor & Output */}
         <section className="flex-1 flex flex-col bg-bg-base relative min-w-0">
@@ -533,12 +596,20 @@ export default function App() {
           />
         </section>
 
+        <button 
+          onClick={() => setIsRightOpen(!isRightOpen)}
+          className="self-center shrink-0 z-20 flex items-center justify-center w-5 h-24 bg-bg-panel hover:bg-bg-input text-text-main border border-border-main border-r-0 shadow-md rounded-l-md transition-colors"
+        >
+          {isRightOpen ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+
         {/* Right Sidebar */}
-        <aside style={{ width: rightWidth }} className="border-l border-border-main bg-bg-panel flex flex-col shrink-0 relative">
-          <div 
-            onMouseDown={startRightResize}
-            className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-accent-main active:bg-accent-main transition-colors z-10 -ml-[0.5px]"
-          />
+        {isRightOpen && (
+          <aside style={{ width: rightWidth }} className="border-l border-border-main bg-bg-panel flex flex-col shrink-0 relative">
+            <div 
+              onMouseDown={startRightResize}
+              className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-accent-main active:bg-accent-main transition-colors z-10 -ml-[0.5px]"
+            />
           {sidebarSwapped ? (
             <MasterColumn
               masters={data.masters}
@@ -555,6 +626,8 @@ export default function App() {
               onDeleteNegative={handleDeleteNegative}
               onDeleteBulk={handleDeleteBulkMaster}
               onDeleteBulkNegative={handleDeleteBulkNegative}
+              onMoveBulk={handleMoveBulkMasters}
+              onMoveBulkNegative={handleMoveBulkNegatives}
               onReorder={handleReorderMasters}
               onReorderNegative={handleReorderNegatives}
               activeTab={activeMasterTab}
@@ -574,7 +647,8 @@ export default function App() {
               lang={lang}
             />
           )}
-        </aside>
+          </aside>
+        )}
       </main>
 
       {/* Footer Status Bar */}
