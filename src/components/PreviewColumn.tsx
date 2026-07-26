@@ -56,15 +56,16 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const [saveMasterContent, setSaveMasterContent] = useState('');
   const [saveMasterDefaultTitle, setSaveMasterDefaultTitle] = useState('');
   const [saveMasterIsNegative, setSaveMasterIsNegative] = useState(false);
+  const [saveMasterItems, setSaveMasterItems] = useState<{name: string, content: string}[] | undefined>(undefined);
 
-  const handleSavePartClick = (isNegativeTextarea: boolean) => {
-    const text = isNegativeTextarea ? negativeEditorText : editorText;
-    if (!text.trim()) return;
-    
-    // Extract blocks starting with ▼
-    const blocks = text.split(/(?=^▼|\n▼)/).filter(b => b.trim());
-    if (blocks.length > 0 && (blocks.length > 1 || blocks[0].trim().startsWith('▼'))) {
-      const items: {name: string, content: string}[] = [];
+  const parsePromptBlocks = (text: string): { name: string; content: string }[] => {
+    const trimmed = text.trim();
+    if (!trimmed) return [];
+
+    // 1. Extract blocks starting with ▼ if ▼ exists anywhere in the text
+    if (trimmed.includes('▼')) {
+      const blocks = trimmed.split(/(?=^▼|\n▼)/).filter(b => b.trim());
+      const items: { name: string; content: string }[] = [];
       blocks.forEach(block => {
         const match = block.trim().match(/^▼\s*([^\n]+)\n+([\s\S]*)$/);
         if (match) {
@@ -73,11 +74,72 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           const matchSingle = block.trim().match(/^▼\s*([^\n]+)$/);
           if (matchSingle) {
             items.push({ name: matchSingle[1].trim(), content: '' });
+          } else {
+            const lines = block.trim().split('\n');
+            const name = lines[0].replace(/^▼\s*/, '').trim();
+            const content = lines.slice(1).join('\n').trim();
+            items.push({ name, content });
           }
         }
       });
-      setSavePartItems(items.length > 0 ? items : undefined);
-      setSavePartContent(items.length > 0 ? '' : text.trim());
+      if (items.length > 0) return items;
+    }
+
+    // 2. Separate by empty lines (\n\s*\n+)
+    const emptyLineBlocks = trimmed.split(/\n\s*\n+/).map(b => b.trim()).filter(Boolean);
+    if (emptyLineBlocks.length > 1) {
+      const items: { name: string; content: string }[] = [];
+      emptyLineBlocks.forEach(block => {
+        const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+        if (lines.length > 1) {
+          const name = lines[0];
+          const content = lines.slice(1).join('\n');
+          items.push({ name, content });
+        } else if (lines.length === 1) {
+          const line = lines[0];
+          const colonIdx = line.search(/[:：]/);
+          if (colonIdx > 0 && colonIdx < line.length - 1) {
+            items.push({
+              name: line.slice(0, colonIdx).trim(),
+              content: line.slice(colonIdx + 1).trim()
+            });
+          } else {
+            const title = line.length > 20 ? line.slice(0, 20) + '...' : line;
+            items.push({ name: title, content: line });
+          }
+        }
+      });
+      if (items.length > 0) return items;
+    }
+
+    // 3. Single block with multiple lines where every line has "name: content"
+    const lines = trimmed.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length > 1) {
+      const colonLines = lines.filter(l => /[:：]/.test(l));
+      if (colonLines.length === lines.length) {
+        const items: { name: string; content: string }[] = [];
+        lines.forEach(line => {
+          const colonIdx = line.search(/[:：]/);
+          items.push({
+            name: line.slice(0, colonIdx).trim(),
+            content: line.slice(colonIdx + 1).trim()
+          });
+        });
+        if (items.length > 0) return items;
+      }
+    }
+
+    return [];
+  };
+
+  const handleSavePartClick = (isNegativeTextarea: boolean) => {
+    const text = isNegativeTextarea ? negativeEditorText : editorText;
+    if (!text.trim()) return;
+    
+    const items = parsePromptBlocks(text);
+    if (items.length > 0) {
+      setSavePartItems(items);
+      setSavePartContent('');
       setSavePartDefaultName('');
       setIsSavePartModalOpen(true);
     } else {
@@ -153,24 +215,17 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     const targetIsNegative = saveAsNegative !== undefined ? saveAsNegative : isNegativeTextarea;
     if (!text.trim()) return;
 
-    // Extract blocks starting with ▼
-    const blocks = text.split(/(?=^▼|\n▼)/).filter(b => b.trim());
-
-    if (blocks.length > 0 && (blocks.length > 1 || blocks[0].trim().startsWith('▼'))) {
-      blocks.forEach(block => {
-        const match = block.trim().match(/^▼\s*([^\n]+)\n+([\s\S]*)$/);
-        if (match) {
-          onSaveAsMaster(match[1].trim(), match[2].trim(), targetIsNegative);
-        } else {
-          const matchSingle = block.trim().match(/^▼\s*([^\n]+)$/);
-          if (matchSingle) {
-            onSaveAsMaster(matchSingle[1].trim(), '', targetIsNegative);
-          }
-        }
-      });
+    const items = parsePromptBlocks(text);
+    if (items.length > 0) {
+      setSaveMasterItems(items);
+      setSaveMasterContent('');
+      setSaveMasterDefaultTitle('');
+      setSaveMasterIsNegative(targetIsNegative);
+      setIsSaveMasterModalOpen(true);
     } else {
       const firstLine = text.trim().split('\n')[0];
       const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+      setSaveMasterItems(undefined);
       setSaveMasterContent(text.trim());
       setSaveMasterDefaultTitle(title);
       setSaveMasterIsNegative(targetIsNegative);
@@ -962,10 +1017,17 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         isOpen={isSaveMasterModalOpen}
         content={saveMasterContent}
         defaultTitle={saveMasterDefaultTitle}
+        items={saveMasterItems}
         isNegative={saveMasterIsNegative}
-        onConfirm={(title, content, isNegative) => {
+        onConfirm={(title, content, isNegative, items) => {
           if (onSaveAsMaster) {
-            onSaveAsMaster(title, content, isNegative);
+            if (items && items.length > 0) {
+              items.forEach(item => {
+                onSaveAsMaster(item.name, item.content, isNegative);
+              });
+            } else {
+              onSaveAsMaster(title, content, isNegative);
+            }
           }
           setIsSaveMasterModalOpen(false);
         }}
