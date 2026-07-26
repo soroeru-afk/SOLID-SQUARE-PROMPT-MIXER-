@@ -8,6 +8,7 @@ import { initialData } from './data';
 import { AppData, MasterPrompt, VariationPart } from './types';
 import { Language, t, translations } from './i18n';
 import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getFileHandle, setFileHandle } from './idb';
 
 const STORAGE_KEY = 'prompt_console_data';
 
@@ -137,6 +138,44 @@ export default function App() {
   
   const [isLeftOpen, setIsLeftOpen] = useState(true);
   const [isRightOpen, setIsRightOpen] = useState(true);
+
+  const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
+  const [iframeWarning, setIframeWarning] = useState(false);
+
+  useEffect(() => {
+    getFileHandle('export_directory').then(handle => {
+      if (handle && handle.name) {
+        setExportDirectoryName(handle.name);
+      }
+    });
+  }, []);
+
+  const handleChangeExportDir = async () => {
+    if ('showDirectoryPicker' in window && window.self === window.top) {
+      try {
+        const handle = await (window as any).showDirectoryPicker({
+          id: 'prompt_mixer_export_dir',
+          mode: 'readwrite'
+        });
+        if (handle) {
+          await setFileHandle('export_directory', handle);
+          setExportDirectoryName(handle.name);
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Directory Picker API Error:', err);
+        }
+      }
+    } else {
+      setIframeWarning(true);
+    }
+  };
+
+  const handleClearExportDir = async () => {
+    await clearFileHandle('export_directory');
+    setExportDirectoryName('');
+  };
+
 
   useEffect(() => {
     localStorage.setItem('sidebar_swapped', String(sidebarSwapped));
@@ -389,7 +428,7 @@ export default function App() {
   };
 
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
     const formattedDate = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
@@ -410,15 +449,65 @@ export default function App() {
     };
 
     const jsonString = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Solid_Square_Prompt_Mixer_${dateStr}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+
+    const fallbackDownload = () => {
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Solid_Square_Prompt_Mixer_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    if ('showSaveFilePicker' in window && window.self === window.top) {
+      try {
+        let dirHandle = await getFileHandle('export_directory');
+        let fileHandle = null;
+        let hasDirPermission = false;
+
+        if (dirHandle) {
+          const permission = await dirHandle.queryPermission({ mode: 'readwrite' });
+          if (permission === 'granted') {
+            hasDirPermission = true;
+          } else {
+            const request = await dirHandle.requestPermission({ mode: 'readwrite' });
+            if (request === 'granted') {
+              hasDirPermission = true;
+            }
+          }
+        }
+
+        if (hasDirPermission && dirHandle) {
+           fileHandle = await dirHandle.getFileHandle(`Solid_Square_Prompt_Mixer_${dateStr}.json`, { create: true });
+        } else {
+           // Fallback to showSaveFilePicker if no directory handle
+           fileHandle = await (window as any).showSaveFilePicker({
+             id: 'prompt_mixer_export',
+             suggestedName: `Solid_Square_Prompt_Mixer_${dateStr}.json`,
+             types: [{
+               description: 'JSON Files',
+               accept: { 'application/json': ['.json'] },
+             }],
+           });
+        }
+
+        if (fileHandle) {
+          const writable = await fileHandle.createWritable();
+          await writable.write(jsonString);
+          await writable.close();
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('File System API Error:', err);
+          fallbackDownload();
+        }
+      }
+    } else {
+      fallbackDownload();
+    }
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -573,14 +662,33 @@ export default function App() {
             />
           )}
 
-          <div className="p-3 border-t border-border-main flex gap-2 shrink-0">
-            <label className="flex-1 flex items-center justify-center px-2 py-1.5 bg-border-main hover:bg-border-hover text-[10px] font-mono border border-border-hover rounded transition-colors cursor-pointer text-text-main">
-              {t('import_json', lang)}
-              <input type="file" accept=".json" className="hidden" onChange={handleImport} />
-            </label>
-            <button onClick={handleExport} className="flex-1 flex items-center justify-center px-2 py-1.5 bg-accent-main hover:opacity-80 text-[10px] font-mono border border-accent-dim rounded text-text-main transition-opacity cursor-pointer">
-              {t('export_config', lang)}
-            </button>
+          <div className="p-3 border-t border-border-main flex flex-col gap-2 shrink-0">
+            <div className="bg-bg-input border border-border-main rounded p-2 flex flex-col">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] font-mono text-text-main font-bold tracking-widest">08 DRIVE 保存先</span>
+                <div className="flex space-x-1">
+                  <button onClick={handleChangeExportDir} className="text-[10px] font-mono text-text-main font-bold hover:text-accent-main transition-colors">変更</button>
+                  {exportDirectoryName && (
+                    <button onClick={handleClearExportDir} className="text-[10px] font-mono text-text-main font-bold hover:text-accent-main transition-colors">(CLEAR)</button>
+                  )}
+                </div>
+              </div>
+              <button 
+                onClick={handleChangeExportDir}
+                className="w-full text-center px-2 py-1.5 bg-bg-panel hover:bg-border-main border border-border-main rounded text-[10px] font-mono text-text-main truncate transition-colors"
+              >
+                {exportDirectoryName || '未設定 (設定するにはクリック)'}
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <label className="flex-1 flex items-center justify-center px-2 py-1.5 bg-border-main hover:bg-border-hover text-[10px] font-mono border border-border-hover rounded transition-colors cursor-pointer text-text-main">
+                {t('import_json', lang)}
+                <input type="file" accept=".json" className="hidden" onChange={handleImport} />
+              </label>
+              <button onClick={handleExport} className="flex-1 flex items-center justify-center px-2 py-1.5 bg-accent-main hover:opacity-80 text-[10px] font-mono border border-accent-dim rounded text-text-main transition-opacity cursor-pointer">
+                {t('export_config', lang)}
+              </button>
+            </div>
           </div>
 
           <div 
@@ -751,6 +859,26 @@ export default function App() {
           <span className="text-[9px] font-mono text-text-main">{new Date().toISOString().slice(0, 19).replace('T', ' ')}</span>
         </div>
       </footer>
+      {iframeWarning && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-bg-panel border border-border-main p-6 rounded-lg max-w-md w-full shadow-2xl">
+            <h3 className="text-sm font-bold text-text-main mb-4 uppercase">機能制限のお知らせ</h3>
+            <p className="text-xs text-text-main leading-relaxed mb-6">
+              AI Studioのプレビュー画面（iframe）の中では、セキュリティの制限によりフォルダを選択するダイアログを表示することができません。
+              <br/><br/>
+              右上の「新しいタブで開く」アイコン（矢印のマーク）をクリックして、<strong>新しいタブでアプリを開き直してから</strong>、再度設定をお試しください。
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setIframeWarning(false)}
+                className="px-4 py-2 bg-accent-main text-text-main text-xs rounded hover:opacity-80 transition-opacity"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

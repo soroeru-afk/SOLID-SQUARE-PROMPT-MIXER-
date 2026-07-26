@@ -352,6 +352,21 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       return text.replace(/\(([^():]+?)[: ]x?([0-9.]+)\)/g, `($1:${globalWeight.toFixed(1)})`);
     };
 
+    const applyToSelection = (selected: string) => {
+      const match = selected.match(/^(\s*)(.*?)(\s*)$/);
+      const prefix = match ? match[1] : '';
+      const core = match ? match[2] : selected;
+      const suffix = match ? match[3] : '';
+
+      if (/\(([^():]+?)[: ]x?([0-9.]+)\)/.test(core)) {
+        return prefix + process(core) + suffix;
+      }
+      if (/^\(([^()]+)\)$/.test(core)) {
+         return prefix + `(${core.replace(/^\((.*)\)$/, '$1')}:${globalWeight.toFixed(1)})` + suffix;
+      }
+      return prefix + `(${core}:${globalWeight.toFixed(1)})` + suffix;
+    };
+
     if (mode === 'all') {
       if (activeMasterTab === 'master') {
         setEditorText(prev => process(prev));
@@ -371,7 +386,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           const before = prev.substring(0, start);
           const selected = prev.substring(start, end);
           const after = prev.substring(end);
-          return before + process(selected) + after;
+          return before + applyToSelection(selected) + after;
         });
         
         // Try to maintain selection
@@ -391,7 +406,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           const before = prev.substring(0, start);
           const selected = prev.substring(start, end);
           const after = prev.substring(end);
-          return before + process(selected) + after;
+          return before + applyToSelection(selected) + after;
         });
         
         setTimeout(() => {
