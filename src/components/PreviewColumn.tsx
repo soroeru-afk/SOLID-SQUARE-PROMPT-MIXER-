@@ -1,0 +1,960 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Trash2, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, RotateCcw, ArrowDown, ArrowUp, Copy } from 'lucide-react';
+import { Language, t } from '../i18n';
+import { ConfirmModal } from './ConfirmModal';
+import { SavePartModal } from './SavePartModal';
+import { SaveMasterModal } from './SaveMasterModal';
+
+interface PreviewColumnProps {
+  editorText: string;
+  setEditorText: React.Dispatch<React.SetStateAction<string>>;
+  negativeEditorText: string;
+  setNegativeEditorText: React.Dispatch<React.SetStateAction<string>>;
+  setPositiveCursorPos: (pos: number) => void;
+  setNegativeCursorPos: (pos: number) => void;
+  activeEditor: 'positive' | 'negative';
+  setActiveEditor: (editor: 'positive' | 'negative') => void;
+  onSaveAsMaster?: (title: string, content: string, isNegative: boolean) => void;
+  onSaveAsPart?: (name: string, content: string, category: string, section: number) => void;
+  uniqueCategories?: [string, number][];
+  activeMasterTab?: 'master' | 'negative';
+  lang: Language;
+  paperMode?: boolean;
+  theme?: string;
+  undo?: () => void;
+  redo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+}
+
+export const PreviewColumn: React.FC<PreviewColumnProps> = ({ 
+  editorText, setEditorText,
+  negativeEditorText, setNegativeEditorText,
+  activeEditor, setActiveEditor, setPositiveCursorPos, setNegativeCursorPos,
+  onSaveAsMaster,
+  onSaveAsPart,
+  uniqueCategories = [],
+  activeMasterTab = 'master',
+  lang,
+  paperMode = false,
+  theme = 'dark',
+  undo,
+  redo,
+  canUndo = false,
+  canRedo = false
+}) => {
+  const [copied, setCopied] = useState(false);
+  const [findText, setFindText] = useState('');
+  const [replaceText, setReplaceText] = useState('');
+  const [confirmClear, setConfirmClear] = useState(false);
+  
+  const [isSavePartModalOpen, setIsSavePartModalOpen] = useState(false);
+  const [savePartContent, setSavePartContent] = useState('');
+
+  const [isSaveMasterModalOpen, setIsSaveMasterModalOpen] = useState(false);
+  const [saveMasterContent, setSaveMasterContent] = useState('');
+  const [saveMasterDefaultTitle, setSaveMasterDefaultTitle] = useState('');
+  const [saveMasterIsNegative, setSaveMasterIsNegative] = useState(false);
+
+  const handleSavePartClick = (isNegativeTextarea: boolean) => {
+    const text = isNegativeTextarea ? negativeEditorText : editorText;
+    if (!text.trim()) return;
+    setSavePartContent(text.trim());
+    setIsSavePartModalOpen(true);
+  };
+
+  const handleCopy = async () => {
+    if (!editorText && !negativeEditorText) return;
+    try {
+      const cleanEditor = cleanString(editorText);
+      const cleanNegative = cleanString(negativeEditorText);
+      
+      let textToCopy = cleanEditor;
+      if (cleanNegative) {
+        textToCopy += `\n\nNegative Prompt:\n${cleanNegative}`;
+      }
+      
+      // Update editor state with cleaned version as well
+      setEditorText(cleanEditor);
+      if (negativeEditorText) setNegativeEditorText(cleanNegative);
+
+      await navigator.clipboard.writeText(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
+
+  const handleReplace = () => {
+    if (!findText) return;
+    setEditorText(prev => prev.replace(findText, replaceText));
+    setNegativeEditorText(prev => prev.replace(findText, replaceText));
+  };
+
+  const handleReplaceAll = () => {
+    if (!findText) return;
+    setEditorText(prev => prev.replaceAll(findText, replaceText));
+    setNegativeEditorText(prev => prev.replaceAll(findText, replaceText));
+  };
+
+  const cleanString = (text: string) => {
+    return text
+      .replace(/[\u3000]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/ ,/g, ',')
+      .replace(/,+/g, ',')
+      .replace(/^[\s,]+|[\s,]+$/g, '')
+      .replace(/,\s*,/g, ',')
+      .replace(/,(\S)/g, ', $1')
+      .trim();
+  };
+
+  const handleCleanText = () => {
+    setEditorText(prev => cleanString(prev));
+    setNegativeEditorText(prev => cleanString(prev));
+  };
+
+  const handleFormatComma = () => {
+    setEditorText(prev => cleanString(prev.replace(/\./g, ',')));
+    setNegativeEditorText(prev => cleanString(prev.replace(/\./g, ',')));
+  };
+
+  const handleSaveMasterClick = (isNegativeTextarea: boolean, saveAsNegative?: boolean) => {
+    if (!onSaveAsMaster) return;
+    const text = isNegativeTextarea ? negativeEditorText : editorText;
+    const targetIsNegative = saveAsNegative !== undefined ? saveAsNegative : isNegativeTextarea;
+    if (!text.trim()) return;
+
+    // Extract blocks starting with ▼
+    const blocks = text.split(/(?=^▼|\n▼)/).filter(b => b.trim());
+
+    if (blocks.length > 0 && (blocks.length > 1 || blocks[0].trim().startsWith('▼'))) {
+      blocks.forEach(block => {
+        const match = block.trim().match(/^▼\s*([^\n]+)\n+([\s\S]*)$/);
+        if (match) {
+          onSaveAsMaster(match[1].trim(), match[2].trim(), targetIsNegative);
+        } else {
+          const matchSingle = block.trim().match(/^▼\s*([^\n]+)$/);
+          if (matchSingle) {
+            onSaveAsMaster(matchSingle[1].trim(), '', targetIsNegative);
+          }
+        }
+      });
+    } else {
+      const firstLine = text.trim().split('\n')[0];
+      const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+      setSaveMasterContent(text.trim());
+      setSaveMasterDefaultTitle(title);
+      setSaveMasterIsNegative(targetIsNegative);
+      setIsSaveMasterModalOpen(true);
+    }
+  };
+
+  const handleMergeDupes = () => {
+    const process = (text: string) => {
+      const parts = text.split(',').map(s => s.trim()).filter(Boolean);
+      const counts = new Map<string, number>();
+      
+      parts.forEach(part => {
+        let cleanPart = part;
+        let weight = 1;
+        const match = part.match(/^\((.+?)[: ]x?([0-9.]+)\)$/);
+        if (match) {
+          cleanPart = match[1].trim();
+          weight = parseFloat(match[2]);
+        }
+        counts.set(cleanPart, (counts.get(cleanPart) || 0) + weight);
+      });
+      
+      const result = [];
+      for (const [part, count] of counts.entries()) {
+        if (count > 1) {
+          const numStr = Number.isInteger(count) ? count.toString() : count.toFixed(1);
+          result.push(`(${part}:${numStr})`);
+        } else {
+          result.push(part);
+        }
+      }
+      return cleanString(result.join(', '));
+    };
+
+    if (activeMasterTab === 'master') {
+      setEditorText(prev => process(prev));
+    } else if (activeMasterTab === 'negative') {
+      setNegativeEditorText(prev => process(prev));
+    }
+  };
+
+  const handleOptimizeSyntax = () => {
+    const process = (text: string) => {
+      if (/\({2,}/.test(text)) {
+        return text.replace(/(\(+)([^():]+?)(\)+)/g, (match, p1, p2, p3) => {
+          const depth = Math.min(p1.length, p3.length);
+          if (depth > 1) {
+            const extraLeft = p1.slice(depth);
+            const extraRight = p3.slice(0, p3.length - depth);
+            const val = 1.0 + (depth * 0.1); 
+            return `${extraLeft}(${p2}:${val.toFixed(1)})${extraRight}`;
+          }
+          return match;
+        });
+      } else {
+        return text.replace(/\(([^():]+?):([0-9.]+)\)/g, (match, p1, p2) => {
+          const val = parseFloat(p2);
+          if (val > 1.0) {
+            const depth = Math.round((val - 1.0) * 10);
+            if (depth > 1 && depth <= 10) {
+              return '('.repeat(depth) + p1 + ')'.repeat(depth);
+            }
+          }
+          return match;
+        });
+      }
+    };
+    
+    if (activeMasterTab === 'master') {
+      setEditorText(prev => cleanString(process(prev)));
+    } else if (activeMasterTab === 'negative') {
+      setNegativeEditorText(prev => cleanString(process(prev)));
+    }
+  };
+
+  const handleFormatHyphen = () => {
+    if (activeMasterTab === 'master') {
+      setEditorText(prev => cleanString(prev.replace(/\./g, ' - ')));
+    } else if (activeMasterTab === 'negative') {
+      setNegativeEditorText(prev => cleanString(prev.replace(/\./g, ' - ')));
+    }
+  };
+
+  const handleUppercase = () => {
+    if (activeMasterTab === 'master') {
+      setEditorText(prev => cleanString(prev.toUpperCase()));
+    } else if (activeMasterTab === 'negative') {
+      setNegativeEditorText(prev => cleanString(prev.toUpperCase()));
+    }
+  };
+
+  const handleLowercase = () => {
+    if (activeMasterTab === 'master') {
+      setEditorText(prev => cleanString(prev.toLowerCase()));
+    } else if (activeMasterTab === 'negative') {
+      setNegativeEditorText(prev => cleanString(prev.toLowerCase()));
+    }
+  };
+
+  const [editorFontSize, setEditorFontSize] = useState(14);
+  const [editorFontFamily, setEditorFontFamily] = useState('font-mono');
+  const [globalWeight, setGlobalWeight] = useState(1.5);
+
+  const positiveHighlightRef = useRef<HTMLDivElement>(null);
+  const negativeHighlightRef = useRef<HTMLDivElement>(null);
+  const positiveTextRef = useRef<HTMLTextAreaElement>(null);
+  const negativeTextRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleApplyGlobalWeight = (mode: 'all' | 'selection') => {
+    const process = (text: string) => {
+      return text.replace(/\(([^():]+?)[: ]x?([0-9.]+)\)/g, `($1:${globalWeight.toFixed(1)})`);
+    };
+
+    if (mode === 'all') {
+      if (activeMasterTab === 'master') {
+        setEditorText(prev => process(prev));
+      } else if (activeMasterTab === 'negative') {
+        setNegativeEditorText(prev => process(prev));
+      }
+    } else {
+      // Selection mode
+      if (activeEditor === 'positive') {
+        const textarea = positiveTextRef.current;
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        if (start === end) return; // No selection
+        
+        setEditorText(prev => {
+          const before = prev.substring(0, start);
+          const selected = prev.substring(start, end);
+          const after = prev.substring(end);
+          return before + process(selected) + after;
+        });
+        
+        // Try to maintain selection
+        setTimeout(() => {
+          if (positiveTextRef.current) {
+            positiveTextRef.current.focus();
+          }
+        }, 0);
+      } else {
+        const textarea = negativeTextRef.current;
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        if (start === end) return; // No selection
+        
+        setNegativeEditorText(prev => {
+          const before = prev.substring(0, start);
+          const selected = prev.substring(start, end);
+          const after = prev.substring(end);
+          return before + process(selected) + after;
+        });
+        
+        setTimeout(() => {
+          if (negativeTextRef.current) {
+            negativeTextRef.current.focus();
+          }
+        }, 0);
+      }
+    }
+  };
+
+  const handleMoveSelection = (position: 'start' | 'end') => {
+    const isPositive = activeEditor === 'positive';
+    const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) return;
+    
+    const currentText = isPositive ? editorText : negativeEditorText;
+    const before = currentText.substring(0, start);
+    const selected = currentText.substring(start, end);
+    const after = currentText.substring(end);
+    
+    let remaining = before + after;
+    remaining = remaining.replace(/\s*,\s*,/g, ',').replace(/^[\s,]+|[\s,]+$/g, '').trim();
+    
+    const newSelected = selected.replace(/^[\s,]+|[\s,]+$/g, '').trim();
+    if (!newSelected) return;
+
+    let newText = '';
+    let newSelectionStart = 0;
+    
+    if (position === 'start') {
+      newText = newSelected + (remaining ? ', ' + remaining : '');
+      newSelectionStart = 0;
+    } else {
+      newText = (remaining ? remaining + ', ' : '') + newSelected;
+      newSelectionStart = remaining ? remaining.length + 2 : 0;
+    }
+    
+    const newSelectionEnd = newSelectionStart + newSelected.length;
+    
+    if (isPositive) {
+      setEditorText(newText);
+    } else {
+      setNegativeEditorText(newText);
+    }
+    
+    setTimeout(() => {
+      if (textarea) {
+        textarea.focus();
+        textarea.setSelectionRange(newSelectionStart, newSelectionEnd);
+      }
+    }, 0);
+  };
+
+  const handleMoveSelectionStep = (direction: 'left' | 'right') => {
+    const isPositive = activeEditor === 'positive';
+    const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) return;
+    
+    const currentText = isPositive ? editorText : negativeEditorText;
+    
+    // Tokenize text by commas, respecting parentheses
+    const tokens: { text: string; start: number; end: number }[] = [];
+    let currentStart = 0;
+    let inParen = 0;
+    for (let i = 0; i < currentText.length; i++) {
+      if (currentText[i] === '(') inParen++;
+      else if (currentText[i] === ')') inParen--;
+      
+      if (currentText[i] === ',' && inParen <= 0) {
+        tokens.push({ text: currentText.substring(currentStart, i), start: currentStart, end: i });
+        currentStart = i + 1;
+      }
+    }
+    tokens.push({ text: currentText.substring(currentStart), start: currentStart, end: currentText.length });
+    
+    // Find selected tokens
+    let startIndex = tokens.findIndex(t => t.end >= start && t.start <= start);
+    let endIndex = tokens.findIndex(t => t.end >= (end > start ? end - 1 : end) && t.start <= (end > start ? end - 1 : end));
+    
+    if (startIndex === -1) startIndex = 0;
+    if (endIndex === -1) endIndex = tokens.length - 1;
+    
+    if (direction === 'left' && startIndex > 0) {
+      const prev = tokens[startIndex - 1];
+      const selected = tokens.slice(startIndex, endIndex + 1);
+      tokens.splice(startIndex - 1, endIndex - startIndex + 2, ...selected, prev);
+    } else if (direction === 'right' && endIndex < tokens.length - 1) {
+      const next = tokens[endIndex + 1];
+      const selected = tokens.slice(startIndex, endIndex + 1);
+      tokens.splice(startIndex, endIndex - startIndex + 2, next, ...selected);
+    } else {
+      return; // Cannot move further
+    }
+    
+    // Reconstruct text
+    let newText = '';
+    let newSelectionStart = -1;
+    let newSelectionEnd = -1;
+    const selectedTokensSet = new Set(tokens.slice(
+      direction === 'left' ? startIndex - 1 : startIndex + 1,
+      direction === 'left' ? endIndex : endIndex + 2
+    ).slice(0, endIndex - startIndex + 1)); // Exact selected elements in new array
+    
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+      const cleanText = t.text.trim();
+      if (!cleanText) continue;
+      
+      if (newText.length > 0) newText += ', ';
+      
+      const isSelected = selectedTokensSet.has(t);
+      if (isSelected && newSelectionStart === -1) {
+        newSelectionStart = newText.length;
+      }
+      
+      newText += cleanText;
+      
+      if (isSelected) {
+        newSelectionEnd = newText.length;
+      }
+    }
+    
+    if (isPositive) {
+      setEditorText(newText);
+    } else {
+      setNegativeEditorText(newText);
+    }
+    
+    setTimeout(() => {
+      if (textarea && newSelectionStart !== -1) {
+        textarea.focus();
+        textarea.setSelectionRange(newSelectionStart, newSelectionEnd);
+      }
+    }, 0);
+  };
+
+  const handleMoveTextBetweenEditors = (direction: 'down' | 'up') => {
+    if (direction === 'down') {
+      const textarea = positiveTextRef.current;
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      if (start === end) return;
+      const selectedText = editorText.substring(start, end).trim();
+      const newEditorText = editorText.substring(0, start) + editorText.substring(end);
+      setEditorText(cleanString(newEditorText));
+      
+      const newNegativeText = negativeEditorText ? `${negativeEditorText}, ${selectedText}` : selectedText;
+      setNegativeEditorText(cleanString(newNegativeText));
+    } else {
+      const textarea = negativeTextRef.current;
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      if (start === end) return;
+      const selectedText = negativeEditorText.substring(start, end).trim();
+      const newNegativeText = negativeEditorText.substring(0, start) + negativeEditorText.substring(end);
+      setNegativeEditorText(cleanString(newNegativeText));
+      
+      const newEditorText = editorText ? `${editorText}, ${selectedText}` : selectedText;
+      setEditorText(cleanString(newEditorText));
+    }
+  };
+
+  const handleCopyTextBetweenEditors = (direction: 'down' | 'up') => {
+    if (direction === 'down') {
+      const textarea = positiveTextRef.current;
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      if (start === end) return;
+      const selectedText = editorText.substring(start, end).trim();
+      
+      const newNegativeText = negativeEditorText ? `${negativeEditorText}, ${selectedText}` : selectedText;
+      setNegativeEditorText(cleanString(newNegativeText));
+    } else {
+      const textarea = negativeTextRef.current;
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      if (start === end) return;
+      const selectedText = negativeEditorText.substring(start, end).trim();
+      
+      const newEditorText = editorText ? `${editorText}, ${selectedText}` : selectedText;
+      setEditorText(cleanString(newEditorText));
+    }
+  };
+
+  const renderHighlightedText = (text: string) => {
+    const isLight = paperMode || theme === 'light' || theme === 'paper';
+    const highlightColorClass = isLight ? 'text-[#059669] font-bold drop-shadow-sm' : 'text-[#34d399] drop-shadow-sm';
+    
+    const parts = text.split(/(\([^)]+\))/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('(') && part.endsWith(')')) {
+        return <span key={i} className={highlightColorClass}>{part}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
+  return (
+    <>
+      <div className="p-3 border-b border-border-main flex items-center justify-between bg-bg-panel">
+        <span className="text-[10px] font-mono text-text-main font-bold uppercase tracking-widest">{t('output_synthesis', lang)}</span>
+        <span className="text-[9px] text-text-dim font-mono">CHAR: {editorText.length} / 4096</span>
+      </div>
+      
+      {/* Editor Toolbar (Find/Replace) */}
+      <div className="p-2 border-b border-border-main bg-bg-base flex flex-wrap items-center gap-2 shrink-0">
+        <input 
+          type="text" 
+          placeholder={t('find', lang)} 
+          value={findText}
+          onChange={e => setFindText(e.target.value)}
+          className="bg-bg-input border border-border-main text-[11px] font-mono px-3 py-1.5 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600 flex-1 min-w-[120px]"
+        />
+        <input 
+          type="text" 
+          placeholder={t('replace', lang)} 
+          value={replaceText}
+          onChange={e => setReplaceText(e.target.value)}
+          className="bg-bg-input border border-border-main text-[11px] font-mono px-3 py-1.5 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600 flex-1 min-w-[120px]"
+        />
+        <button 
+          onClick={handleReplace}
+          className="px-3 py-1.5 bg-bg-surface hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+        >
+          {t('replace', lang)}
+        </button>
+        <button 
+          onClick={handleReplaceAll}
+          className="px-3 py-1.5 bg-bg-surface hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+        >
+          {t('replace_all', lang)}
+        </button>
+        <div className="w-px h-6 bg-border-main mx-1"></div>
+        <button 
+          onClick={handleMergeDupes}
+          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          title="Merge duplicate phrases"
+        >
+          {t('merge_dupes', lang)}
+        </button>
+        <button 
+          onClick={handleOptimizeSyntax}
+          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          title="Optimize prompt weights syntax"
+        >
+          {t('optimize_syntax', lang)}
+        </button>
+        <button 
+          onClick={handleCleanText}
+          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          title="Clean spaces and commas"
+        >
+          {t('clean_text', lang)}
+        </button>
+        <div className="w-px h-6 bg-border-main mx-1"></div>
+        <button 
+          onClick={handleFormatComma}
+          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          title="Replace periods with commas"
+        >
+          {t('format_comma', lang)}
+        </button>
+        <button 
+          onClick={handleFormatHyphen}
+          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          title="Replace periods with hyphens"
+        >
+          {t('format_hyphen', lang)}
+        </button>
+        <div className="w-px h-6 bg-border-main mx-1"></div>
+        <button
+          onClick={undo}
+          disabled={!canUndo}
+          className="p-1.5 bg-bg-input hover:bg-border-main disabled:opacity-50 disabled:cursor-not-allowed border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center"
+          title={t('undo', lang)}
+        >
+          <Undo2 size={12} />
+        </button>
+        <button
+          onClick={redo}
+          disabled={!canRedo}
+          className="p-1.5 bg-bg-input hover:bg-border-main disabled:opacity-50 disabled:cursor-not-allowed border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center"
+          title={t('redo', lang)}
+        >
+          <Redo2 size={12} />
+        </button>
+        <div className="w-px h-6 bg-border-main mx-1"></div>
+        <div className="flex items-center space-x-1 px-2 py-1 bg-bg-input border border-border-main rounded shrink-0">
+          <span className="text-[10px] font-mono text-text-dim">{t('global_weight', lang)}</span>
+          <div className="flex items-center">
+            <button 
+              onClick={() => setGlobalWeight(prev => Math.max(0.1, parseFloat((prev - 0.1).toFixed(1))))}
+              className="p-0.5 hover:bg-border-main rounded text-text-dim hover:text-text-main transition-colors"
+            >
+              <ChevronLeft size={12} />
+            </button>
+            <input 
+              type="range"
+              min="0.1"
+              max="3.0"
+              step="0.1"
+              value={globalWeight}
+              onChange={e => setGlobalWeight(parseFloat(e.target.value))}
+              className="custom-slider w-16 mx-1"
+            />
+            <button 
+              onClick={() => setGlobalWeight(prev => Math.min(3.0, parseFloat((prev + 0.1).toFixed(1))))}
+              className="p-0.5 hover:bg-border-main rounded text-text-dim hover:text-text-main transition-colors"
+            >
+              <ChevronRight size={12} />
+            </button>
+          </div>
+          <span className="text-[11px] font-mono font-bold text-text-main bg-bg-surface px-1.5 py-0.5 rounded border border-border-main min-w-[28px] text-center">
+            {globalWeight.toFixed(1)}
+          </span>
+          <button
+            onClick={() => setGlobalWeight(1.0)}
+            className="ml-0.5 p-1 hover:bg-border-main rounded text-text-dim hover:text-text-main transition-colors flex items-center justify-center"
+            title={t('reset_weight', lang)}
+          >
+            <RotateCcw size={10} />
+          </button>
+          <button 
+            onClick={() => handleApplyGlobalWeight('all')}
+            className={`ml-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${
+              theme === 'red'
+                ? 'bg-red-600 hover:bg-red-500 text-white border border-red-500'
+                : 'bg-bg-surface hover:bg-red-500/10 text-red-500 border border-red-500/50 hover:border-red-500'
+            }`}
+            title={t('set_weight_tooltip', lang)}
+          >
+            {t('set_weight', lang)}
+          </button>
+          <button 
+            onClick={() => handleApplyGlobalWeight('selection')}
+            className="ml-0.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors bg-bg-surface hover:bg-blue-500/10 text-blue-500 border border-blue-500/50 hover:border-blue-500"
+            title={t('set_weight_selection_tooltip', lang)}
+          >
+            {t('set_weight_selection', lang)}
+          </button>
+        </div>
+        <div className="w-px h-6 bg-border-main mx-1"></div>
+        <button 
+          onClick={() => handleMoveSelection('start')}
+          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          title={t('move_to_front_tooltip', lang)}
+        >
+          {t('move_to_front', lang)}
+        </button>
+        <button 
+          onClick={() => handleMoveSelectionStep('left')}
+          className="p-1.5 bg-bg-input hover:bg-border-main border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center"
+          title={t('move_left', lang)}
+        >
+          <ChevronLeft size={12} />
+        </button>
+        <button 
+          onClick={() => handleMoveSelectionStep('right')}
+          className="p-1.5 bg-bg-input hover:bg-border-main border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center"
+          title={t('move_right', lang)}
+        >
+          <ChevronRight size={12} />
+        </button>
+        <button 
+          onClick={() => handleMoveSelection('end')}
+          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          title={t('move_to_back_tooltip', lang)}
+        >
+          {t('move_to_back', lang)}
+        </button>
+        <div className="w-px h-6 bg-border-main mx-1"></div>
+        <button 
+          onClick={handleUppercase}
+          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+        >
+          {t('uppercase', lang)}
+        </button>
+        <button 
+          onClick={handleLowercase}
+          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+        >
+          {t('lowercase', lang)}
+        </button>
+        <div className="w-px h-6 bg-border-main mx-1"></div>
+        <div className="flex items-center space-x-1">
+          <button 
+            onClick={() => setEditorFontSize(s => Math.max(8, s - 1))}
+            className="px-2 py-1 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim"
+          >A-</button>
+          <span className="text-[10px] font-mono text-text-main w-4 text-center">{editorFontSize}</span>
+          <button 
+            onClick={() => setEditorFontSize(s => Math.min(24, s + 1))}
+            className="px-2 py-1 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim"
+          >A+</button>
+        </div>
+        <select 
+          value={editorFontFamily}
+          onChange={e => setEditorFontFamily(e.target.value)}
+          className="bg-bg-input border border-border-main text-[10px] font-mono text-text-main rounded px-2 py-1.5 outline-none cursor-pointer uppercase font-bold tracking-wider hover:bg-border-main transition-colors shrink-0"
+        >
+          <option value="font-mono">Mono</option>
+          <option value="font-sans">Sans</option>
+          <option value="font-serif">Serif</option>
+          <option value="font-[Meiryo,sans-serif]">Meiryo</option>
+        </select>
+        <button 
+          onClick={() => setConfirmClear(true)}
+          className="ml-auto px-3 py-1.5 bg-bg-input hover:bg-border-main text-text-dim hover:text-text-main border border-border-hover rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0"
+        >
+          <Trash2 className="w-3 h-3" /> {t('clear_all', lang)}
+        </button>
+      </div>
+
+      <div className="flex-1 p-4 overflow-y-auto bg-bg-panel flex flex-col gap-4">
+        <div className={`flex-1 border border-border-main rounded-lg flex flex-col relative min-h-[100px] transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}>
+          <div className="absolute top-2 left-3 right-2 flex justify-between items-center pointer-events-none">
+            <span className={`text-[9px] font-mono font-bold uppercase ${paperMode ? 'text-gray-400' : 'text-text-dim/50'}`}>PROMPT</span>
+            <div className="flex items-center gap-2 pointer-events-auto">
+              <span className="text-[8px] text-text-dim/50 font-mono hidden sm:inline-block">{t('save_master_hint', lang)}</span>
+              <button 
+                onClick={() => handleSaveMasterClick(false, activeMasterTab === 'negative')}
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+              >
+                <Save className="w-3 h-3" /> {activeMasterTab === 'negative' ? t('save_to_negative', lang) : t('save_as_master', lang)}
+              </button>
+              <button 
+                onClick={() => handleSavePartClick(false)}
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+              >
+                <PlusSquare className="w-3 h-3" /> {t('save_as_part', lang)}
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 relative flex flex-col mt-6">
+            <div 
+              ref={positiveHighlightRef}
+              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-auto pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              style={{ fontSize: `${editorFontSize}px` }}
+              aria-hidden="true"
+            >
+              {editorText ? renderHighlightedText(editorText) : <span className="opacity-50">{t('placeholder', lang)}</span>}
+            </div>
+            <textarea
+              ref={positiveTextRef}
+              value={editorText}
+              onChange={(e) => {
+                setEditorText(e.target.value);
+                setActiveEditor('positive');
+                setPositiveCursorPos(e.target.selectionStart);
+              }}
+              onSelect={(e) => {
+                setActiveEditor('positive');
+                setPositiveCursorPos(e.currentTarget.selectionStart);
+              }}
+              onScroll={(e) => {
+                if (positiveHighlightRef.current) {
+                  positiveHighlightRef.current.scrollTop = e.currentTarget.scrollTop;
+                  positiveHighlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                }
+              }}
+              style={{ fontSize: `${editorFontSize}px` }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap selection:bg-blue-900 selection:text-text-main bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              spellCheck={false}
+            />
+          </div>
+        </div>
+        
+        {/* Move/Copy Text Buttons */}
+        <div className="flex justify-center -my-3 relative z-10">
+          <div className="flex gap-2 bg-bg-panel p-1 rounded-full border border-border-main shadow-sm">
+            <button 
+              onClick={() => handleCopyTextBetweenEditors('down')}
+              className="px-2 py-1 bg-bg-input hover:bg-border-main rounded-full text-text-dim hover:text-text-main transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono"
+              title={t('copy_to_negative', lang)}
+            >
+              <Copy size={12} /> <ArrowDown size={12} />
+            </button>
+            <button 
+              onClick={() => handleMoveTextBetweenEditors('down')}
+              className="p-1.5 bg-bg-input hover:bg-border-main rounded-full text-text-dim hover:text-text-main transition-colors border border-border-hover flex items-center justify-center"
+              title={t('move_to_negative', lang)}
+            >
+              <ArrowDown size={14} />
+            </button>
+            <div className="w-px h-6 bg-border-main my-auto mx-1"></div>
+            <button 
+              onClick={() => handleMoveTextBetweenEditors('up')}
+              className="p-1.5 bg-bg-input hover:bg-border-main rounded-full text-text-dim hover:text-text-main transition-colors border border-border-hover flex items-center justify-center"
+              title={t('move_to_positive', lang)}
+            >
+              <ArrowUp size={14} />
+            </button>
+            <button 
+              onClick={() => handleCopyTextBetweenEditors('up')}
+              className="px-2 py-1 bg-bg-input hover:bg-border-main rounded-full text-text-dim hover:text-text-main transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono"
+              title={t('copy_to_positive', lang)}
+            >
+              <Copy size={12} /> <ArrowUp size={12} />
+            </button>
+          </div>
+        </div>
+
+        <div className={`h-[120px] border border-border-main rounded-lg flex flex-col shrink-0 relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}>
+          <div className="absolute top-2 left-3 right-2 flex justify-between items-center pointer-events-none">
+            <span className={`text-[9px] font-mono font-bold uppercase ${paperMode ? 'text-gray-400' : 'text-text-dim/50'}`}>NEGATIVE PROMPT</span>
+            <div className="flex items-center gap-2 pointer-events-auto">
+              <span className="text-[8px] text-text-dim/50 font-mono hidden sm:inline-block">{t('save_master_hint', lang)}</span>
+              <button 
+                onClick={() => handleSaveMasterClick(true)}
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+              >
+                <Save className="w-3 h-3" /> {t('save_as_master', lang)}
+              </button>
+              <button 
+                onClick={() => handleSavePartClick(true)}
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+              >
+                <PlusSquare className="w-3 h-3" /> {t('save_as_part', lang)}
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 relative flex flex-col mt-6">
+            <div 
+              ref={negativeHighlightRef}
+              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-auto pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              style={{ fontSize: `${editorFontSize}px` }}
+              aria-hidden="true"
+            >
+              {negativeEditorText ? renderHighlightedText(negativeEditorText) : <span className="opacity-50">Negative prompt...</span>}
+            </div>
+            <textarea
+              ref={negativeTextRef}
+              value={negativeEditorText}
+              onChange={(e) => {
+                setNegativeEditorText(e.target.value);
+                setActiveEditor('negative');
+                setNegativeCursorPos(e.target.selectionStart);
+              }}
+              onSelect={(e) => {
+                setActiveEditor('negative');
+                setNegativeCursorPos(e.currentTarget.selectionStart);
+              }}
+              onScroll={(e) => {
+                if (negativeHighlightRef.current) {
+                  negativeHighlightRef.current.scrollTop = e.currentTarget.scrollTop;
+                  negativeHighlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                }
+              }}
+              style={{ fontSize: `${editorFontSize}px` }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap selection:bg-red-900 selection:text-text-main bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              spellCheck={false}
+            />
+          </div>
+        </div>
+      </div>
+        
+      <div className="bg-bg-panel p-4 pb-0 shrink-0 border-t border-border-main">
+        <div className="bg-bg-input border border-border-main rounded-lg p-4">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col">
+              <span className="text-[8px] text-text-dim uppercase font-mono">{t('complexity', lang)}</span>
+              <span className="text-[11px] font-mono text-text-main">{t('heavy_spec', lang)}</span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[8px] text-text-dim uppercase font-mono">{t('variation_key', lang)}</span>
+              <span className="text-[11px] font-mono text-text-main font-bold">#4X99-PRO</span>
+            </div>
+          </div>
+          <button 
+            onClick={handleCopy}
+            disabled={!editorText && !negativeEditorText}
+            className={`w-full py-4 transition-all font-mono font-bold text-sm rounded border ${
+              (editorText || negativeEditorText)
+                ? 'bg-bg-surface hover:bg-bg-input border-border-hover active:scale-[0.98] text-text-main cursor-pointer'
+                : 'bg-bg-panel text-text-dim border-border-main cursor-not-allowed'
+            }`}
+          >
+            {copied ? t('copied', lang) : t('copy_prompt', lang)}
+          </button>
+        </div>
+      </div>
+      <div className="p-4 border-t border-border-main flex flex-col space-y-2 bg-bg-panel">
+        <div className="flex justify-between text-[9px] font-mono opacity-50 text-text-main">
+          <span>{t('auto_optimize', lang)}</span>
+          <span>VER: 4.1.2</span>
+        </div>
+        <div className="h-1 w-full bg-bg-input rounded-full overflow-hidden">
+           <div className="w-full h-full bg-gradient-to-r from-blue-900 via-blue-500 to-blue-900 animate-pulse"></div>
+        </div>
+      </div>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {copied && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="absolute bottom-20 right-4 bg-bg-surface text-text-main px-4 py-2 rounded shadow-lg text-[10px] font-mono font-bold flex items-center gap-2 border border-border-main"
+          >
+            {t('copied', lang)}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={confirmClear}
+        message={t('clear_all', lang) + '?'}
+        onConfirm={() => {
+          setEditorText('');
+          setNegativeEditorText('');
+          setConfirmClear(false);
+        }}
+        onCancel={() => setConfirmClear(false)}
+        lang={lang}
+      />
+      <SavePartModal
+        isOpen={isSavePartModalOpen}
+        content={savePartContent}
+        categories={uniqueCategories}
+        onConfirm={(name, category, section) => {
+          if (onSaveAsPart) {
+            onSaveAsPart(name, savePartContent, category, section);
+          }
+          setIsSavePartModalOpen(false);
+        }}
+        onCancel={() => setIsSavePartModalOpen(false)}
+        lang={lang}
+      />
+      <SaveMasterModal
+        isOpen={isSaveMasterModalOpen}
+        content={saveMasterContent}
+        defaultTitle={saveMasterDefaultTitle}
+        isNegative={saveMasterIsNegative}
+        onConfirm={(title, content, isNegative) => {
+          if (onSaveAsMaster) {
+            onSaveAsMaster(title, content, isNegative);
+          }
+          setIsSaveMasterModalOpen(false);
+        }}
+        onCancel={() => setIsSaveMasterModalOpen(false)}
+        lang={lang}
+      />
+    </>
+  );
+};
