@@ -592,7 +592,23 @@ export default function App() {
             setPositiveCursorPos={setPositiveCursorPos}
             setNegativeCursorPos={setNegativeCursorPos}
             onSaveAsMaster={handleSaveAsMaster}
-            onSaveAsPart={(name, content, category, section) => handleAddPart(category, section, name, content)}
+            onSaveAsPart={(name, content, category, section, items) => {
+              if (items && items.length > 0) {
+                setData(prev => {
+                  const newParts: VariationPart[] = items.map((item, i) => ({
+                    id: `p_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`,
+                    name: item.name,
+                    content: item.content,
+                    category,
+                    section: section as 1 | 2 | 3 | 4,
+                    isPinned: false
+                  }));
+                  return { ...prev, parts: [...newParts, ...prev.parts] };
+                });
+              } else {
+                handleAddPart(category, section, name, content);
+              }
+            }}
             uniqueCategories={uniqueCategories}
             activeMasterTab={activeMasterTab}
             lang={lang}

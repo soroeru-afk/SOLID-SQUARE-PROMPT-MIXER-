@@ -201,6 +201,13 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
           >
             <Trash2 className="w-3 h-3" /> DELETE
           </button>
+          <button 
+            onClick={() => setBulkSelectedIds(new Set())} 
+            disabled={bulkSelectedIds.size === 0}
+            className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[10px] font-mono text-text-dim transition-colors whitespace-nowrap disabled:opacity-50"
+          >
+            {t('clear_selection', lang)}
+          </button>
         </div>
 
         <div className="flex space-x-2 shrink-0">

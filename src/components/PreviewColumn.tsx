@@ -16,7 +16,7 @@ interface PreviewColumnProps {
   activeEditor: 'positive' | 'negative';
   setActiveEditor: (editor: 'positive' | 'negative') => void;
   onSaveAsMaster?: (title: string, content: string, isNegative: boolean) => void;
-  onSaveAsPart?: (name: string, content: string, category: string, section: number) => void;
+  onSaveAsPart?: (name: string, content: string, category: string, section: number, items?: {name: string, content: string}[]) => void;
   uniqueCategories?: [string, number][];
   activeMasterTab?: 'master' | 'negative';
   lang: Language;
@@ -51,6 +51,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   
   const [isSavePartModalOpen, setIsSavePartModalOpen] = useState(false);
   const [savePartContent, setSavePartContent] = useState('');
+  const [savePartDefaultName, setSavePartDefaultName] = useState('');
+  const [savePartItems, setSavePartItems] = useState<{name: string, content: string}[] | undefined>(undefined);
 
   const [isSaveMasterModalOpen, setIsSaveMasterModalOpen] = useState(false);
   const [saveMasterContent, setSaveMasterContent] = useState('');
@@ -60,8 +62,34 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const handleSavePartClick = (isNegativeTextarea: boolean) => {
     const text = isNegativeTextarea ? negativeEditorText : editorText;
     if (!text.trim()) return;
-    setSavePartContent(text.trim());
-    setIsSavePartModalOpen(true);
+    
+    // Extract blocks starting with ▼
+    const blocks = text.split(/(?=^▼|\n▼)/).filter(b => b.trim());
+    if (blocks.length > 0 && (blocks.length > 1 || blocks[0].trim().startsWith('▼'))) {
+      const items: {name: string, content: string}[] = [];
+      blocks.forEach(block => {
+        const match = block.trim().match(/^▼\s*([^\n]+)\n+([\s\S]*)$/);
+        if (match) {
+          items.push({ name: match[1].trim(), content: match[2].trim() });
+        } else {
+          const matchSingle = block.trim().match(/^▼\s*([^\n]+)$/);
+          if (matchSingle) {
+            items.push({ name: matchSingle[1].trim(), content: '' });
+          }
+        }
+      });
+      setSavePartItems(items.length > 0 ? items : undefined);
+      setSavePartContent(items.length > 0 ? '' : text.trim());
+      setSavePartDefaultName('');
+      setIsSavePartModalOpen(true);
+    } else {
+      const firstLine = text.trim().split('\n')[0];
+      const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+      setSavePartItems(undefined);
+      setSavePartContent(text.trim());
+      setSavePartDefaultName(title);
+      setIsSavePartModalOpen(true);
+    }
   };
 
   const handleCopy = async () => {
@@ -931,10 +959,12 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       <SavePartModal
         isOpen={isSavePartModalOpen}
         content={savePartContent}
+        defaultName={savePartDefaultName}
+        items={savePartItems}
         categories={uniqueCategories}
-        onConfirm={(name, category, section) => {
+        onConfirm={(name, category, section, items) => {
           if (onSaveAsPart) {
-            onSaveAsPart(name, savePartContent, category, section);
+            onSaveAsPart(name, savePartContent, category, section, items);
           }
           setIsSavePartModalOpen(false);
         }}
