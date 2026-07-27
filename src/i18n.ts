@@ -45,7 +45,6 @@ export const translations = {
   paper_mode: { en: 'PAPER MODE', ja: 'ペーパーモード' },
   size: { en: 'UI SIZE', ja: 'UIサイズ' },
   format_comma: { en: '. to ,', ja: '. → ,' },
-  format_hyphen: { en: '. to -', ja: '. → -' },
   scale_ratios: { en: 'NORMALIZE RATIOS', ja: '比率を正規化 (0.1-1.4)' },
   merge_dupes: { en: 'MERGE & NORMALIZE', ja: '重複整理＆正規化' },
   optimize_syntax: { en: 'OPTIMIZE SYNTAX', ja: '構文を最適化' },

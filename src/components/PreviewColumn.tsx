@@ -225,9 +225,70 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     setNegativeEditorText(prev => cleanString(prev, true));
   };
 
+  const applyTransformToSelectionOrAll = (transformFn: (text: string) => string) => {
+    const isPositive = activeMasterTab === 'master';
+    const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
+    
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      
+      if (start !== end) {
+        const text = isPositive ? editorText : negativeEditorText;
+        const selectedText = text.substring(start, end);
+        const transformedText = transformFn(selectedText);
+        
+        const newText = text.substring(0, start) + transformedText + text.substring(end);
+        
+        if (isPositive) {
+          setEditorText(cleanString(newText));
+        } else {
+          setNegativeEditorText(cleanString(newText));
+        }
+        
+        setTimeout(() => {
+          if (textarea) {
+            textarea.setSelectionRange(start, start + transformedText.length);
+            textarea.focus();
+          }
+        }, 0);
+        return;
+      }
+    }
+    
+    if (isPositive) {
+      setEditorText(prev => cleanString(transformFn(prev)));
+    } else {
+      setNegativeEditorText(prev => cleanString(transformFn(prev)));
+    }
+  };
+
   const handleFormatComma = () => {
-    setEditorText(prev => cleanString(prev.replace(/\./g, ',')));
-    setNegativeEditorText(prev => cleanString(prev.replace(/\./g, ',')));
+    const toggle = (text: string) => {
+      const periodCount = (text.match(/\./g) || []).length;
+      const commaCount = (text.match(/,/g) || []).length;
+      if (periodCount > 0 && periodCount >= commaCount) {
+        return text.replace(/\./g, ',');
+      } else if (commaCount > 0) {
+        return text.replace(/,/g, '.');
+      }
+      return text;
+    };
+    applyTransformToSelectionOrAll(toggle);
+  };
+
+  const handleFormatHyphen = () => {
+    const toggle = (text: string) => {
+      const periodCount = (text.match(/\./g) || []).length;
+      const hyphenCount = (text.match(/-/g) || []).length;
+      if (periodCount > 0 && periodCount >= hyphenCount) {
+        return text.replace(/\./g, '-');
+      } else if (hyphenCount > 0) {
+        return text.replace(/-/g, '.');
+      }
+      return text;
+    };
+    applyTransformToSelectionOrAll(toggle);
   };
 
   const handleSaveMasterClick = (isNegativeTextarea: boolean, saveAsNegative?: boolean) => {
@@ -399,35 +460,15 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       }
     };
     
-    if (activeMasterTab === 'master') {
-      setEditorText(prev => cleanString(process(prev)));
-    } else if (activeMasterTab === 'negative') {
-      setNegativeEditorText(prev => cleanString(process(prev)));
-    }
-  };
-
-  const handleFormatHyphen = () => {
-    if (activeMasterTab === 'master') {
-      setEditorText(prev => cleanString(prev.replace(/\./g, ' - ')));
-    } else if (activeMasterTab === 'negative') {
-      setNegativeEditorText(prev => cleanString(prev.replace(/\./g, ' - ')));
-    }
+    applyTransformToSelectionOrAll(process);
   };
 
   const handleUppercase = () => {
-    if (activeMasterTab === 'master') {
-      setEditorText(prev => cleanString(prev.toUpperCase()));
-    } else if (activeMasterTab === 'negative') {
-      setNegativeEditorText(prev => cleanString(prev.toUpperCase()));
-    }
+    applyTransformToSelectionOrAll(text => text.toUpperCase());
   };
 
   const handleLowercase = () => {
-    if (activeMasterTab === 'master') {
-      setEditorText(prev => cleanString(prev.toLowerCase()));
-    } else if (activeMasterTab === 'negative') {
-      setNegativeEditorText(prev => cleanString(prev.toLowerCase()));
-    }
+    applyTransformToSelectionOrAll(text => text.toLowerCase());
   };
 
   const [editorFontSize, setEditorFontSize] = useState(14);
@@ -754,19 +795,19 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <button 
           onClick={handleFormatComma}
           className="px-3 py-1 bg-bg-input hover:bg-border-main font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5"
-          title="Replace periods with commas"
+          title="Toggle periods and commas"
         >
           <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
-          <span className="text-[10px] text-text-dim leading-none opacity-80">→</span>
+          <span className="text-[10px] text-text-dim leading-none opacity-80">↔</span>
           <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">,</span>
         </button>
         <button 
           onClick={handleFormatHyphen}
           className="px-3 py-1 bg-bg-input hover:bg-border-main font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5"
-          title="Replace periods with hyphens"
+          title="Toggle periods and hyphens"
         >
           <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
-          <span className="text-[10px] text-text-dim leading-none opacity-80">→</span>
+          <span className="text-[10px] text-text-dim leading-none opacity-80">↔</span>
           <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">-</span>
         </button>
         <div className="w-px h-6 bg-border-main mx-1"></div>
