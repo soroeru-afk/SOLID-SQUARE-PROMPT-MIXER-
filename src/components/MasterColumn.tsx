@@ -346,21 +346,13 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnReorder && index > 0) currentOnReorder(index, 0); }}
                   className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                   disabled={index === 0}
+                  title="Move to Top"
                 ><ChevronsUp className="w-3 h-3" /></button>
-                <button 
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnReorder && index > 0) currentOnReorder(index, index - 1); }}
-                  className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                  disabled={index === 0}
-                ><ChevronUp className="w-3 h-3" /></button>
-                <button 
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnReorder && index < currentList.length - 1) currentOnReorder(index, index + 1); }}
-                  className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                  disabled={index === currentList.length - 1}
-                ><ChevronDown className="w-3 h-3" /></button>
                 <button 
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnReorder && index < currentList.length - 1) currentOnReorder(index, currentList.length - 1); }}
                   className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                   disabled={index === currentList.length - 1}
+                  title="Move to Bottom"
                 ><ChevronsDown className="w-3 h-3" /></button>
                 <button 
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onCopyToPart) onCopyToPart(item); }}

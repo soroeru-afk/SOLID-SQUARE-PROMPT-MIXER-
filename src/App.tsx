@@ -13,10 +13,18 @@ import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 const STORAGE_KEY = 'prompt_console_data';
 
 export default function App() {
-  const [lang, setLang] = useState<Language>('ja');
-  const [theme, setTheme] = useState<'dark' | 'red' | 'light' | 'navy' | 'black'>('light');
-  const [paperMode, setPaperMode] = useState<boolean>(false);
-  const [activeMasterTab, setActiveMasterTab] = useState<'master' | 'negative'>('master');
+  const [lang, setLang] = useState<Language>(() => {
+    return (localStorage.getItem('ui_lang') as Language) || 'ja';
+  });
+  const [theme, setTheme] = useState<'dark' | 'red' | 'light' | 'navy' | 'black'>(() => {
+    return (localStorage.getItem('ui_theme') as any) || 'light';
+  });
+  const [paperMode, setPaperMode] = useState<boolean>(() => {
+    return localStorage.getItem('ui_paper_mode') === 'true';
+  });
+  const [activeMasterTab, setActiveMasterTab] = useState<'master' | 'negative'>(() => {
+    return (localStorage.getItem('ui_active_master_tab') as any) || 'master';
+  });
   const [data, setData] = useState<AppData>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -44,6 +52,22 @@ export default function App() {
     localStorage.setItem('auto_optimize', String(autoOptimize));
   }, [autoOptimize]);
 
+  useEffect(() => {
+    localStorage.setItem('ui_lang', lang);
+  }, [lang]);
+
+  useEffect(() => {
+    localStorage.setItem('ui_theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('ui_paper_mode', String(paperMode));
+  }, [paperMode]);
+
+  useEffect(() => {
+    localStorage.setItem('ui_active_master_tab', activeMasterTab);
+  }, [activeMasterTab]);
+
   const [savePartFromMasterData, setSavePartFromMasterData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
   const [saveMasterFromPartData, setSaveMasterFromPartData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
 
@@ -51,11 +75,43 @@ export default function App() {
     document.documentElement.className = `theme-${theme}`;
   }, [theme]);
 
-  const [selectedMasterId, setSelectedMasterId] = useState<string | null>(null);
-  const [selectedNegativeId, setSelectedNegativeId] = useState<string | null>(null);
-  const [editorText, setEditorText] = useState('');
-  const [negativeEditorText, setNegativeEditorText] = useState('');
-  const [activeEditor, setActiveEditor] = useState<'positive' | 'negative'>('positive');
+  const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
+    return localStorage.getItem('ui_selected_master_id');
+  });
+  const [selectedNegativeId, setSelectedNegativeId] = useState<string | null>(() => {
+    return localStorage.getItem('ui_selected_negative_id');
+  });
+  const [editorText, setEditorText] = useState(() => {
+    return localStorage.getItem('ui_editor_text') || '';
+  });
+  const [negativeEditorText, setNegativeEditorText] = useState(() => {
+    return localStorage.getItem('ui_negative_editor_text') || '';
+  });
+  const [activeEditor, setActiveEditor] = useState<'positive' | 'negative'>(() => {
+    return (localStorage.getItem('ui_active_editor') as any) || 'positive';
+  });
+
+  useEffect(() => {
+    if (selectedMasterId) localStorage.setItem('ui_selected_master_id', selectedMasterId);
+    else localStorage.removeItem('ui_selected_master_id');
+  }, [selectedMasterId]);
+
+  useEffect(() => {
+    if (selectedNegativeId) localStorage.setItem('ui_selected_negative_id', selectedNegativeId);
+    else localStorage.removeItem('ui_selected_negative_id');
+  }, [selectedNegativeId]);
+
+  useEffect(() => {
+    localStorage.setItem('ui_editor_text', editorText);
+  }, [editorText]);
+
+  useEffect(() => {
+    localStorage.setItem('ui_negative_editor_text', negativeEditorText);
+  }, [negativeEditorText]);
+
+  useEffect(() => {
+    localStorage.setItem('ui_active_editor', activeEditor);
+  }, [activeEditor]);
   const [positiveCursorPos, setPositiveCursorPos] = useState<number | null>(null);
   const [negativeCursorPos, setNegativeCursorPos] = useState<number | null>(null);
 
@@ -136,23 +192,24 @@ export default function App() {
     return Math.max(384, Number(localStorage.getItem('right_width')) || 384);
   });
   
-  const [isLeftOpen, setIsLeftOpen] = useState(true);
-  const [isRightOpen, setIsRightOpen] = useState(true);
+  const [isLeftOpen, setIsLeftOpen] = useState(() => {
+    return localStorage.getItem('ui_is_left_open') !== 'false';
+  });
+  const [isRightOpen, setIsRightOpen] = useState(() => {
+    return localStorage.getItem('ui_is_right_open') !== 'false';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ui_is_left_open', String(isLeftOpen));
+  }, [isLeftOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('ui_is_right_open', String(isRightOpen));
+  }, [isRightOpen]);
 
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
-  const saveTimerRef = useRef<number | null>(null);
-  const showSaveToast = useCallback((msg: string) => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-    setSaveSuccessMessage(msg);
-    saveTimerRef.current = window.setTimeout(() => {
-      setSaveSuccessMessage(null);
-      saveTimerRef.current = null;
-    }, 2000);
-  }, []);
 
   useEffect(() => {
     getFileHandle('export_directory').then(handle => {
@@ -308,7 +365,6 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content') => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -328,7 +384,6 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = 'new negative content') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
-    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -415,7 +470,6 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = 'new content') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -542,7 +596,6 @@ export default function App() {
         if (parsed.masters && parsed.parts) {
           setData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
-          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }
@@ -558,18 +611,33 @@ export default function App() {
     if (id && insert) {
       const newMaster = data.masters.find(m => m.id === id);
       if (newMaster) {
-        let newPos = 0;
-        setEditorText(prev => {
-          const actualPos = positiveCursorPos === null ? prev.length : positiveCursorPos;
-          const before = prev.slice(0, actualPos);
-          const after = prev.slice(actualPos);
-          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
-          const insertedStr = prefix + newMaster.content + suffix;
-          newPos = actualPos + insertedStr.length;
-          return cleanString(before + insertedStr + after);
-        });
-        setTimeout(() => setPositiveCursorPos(newPos), 0);
+        if (activeEditor === 'negative') {
+          let newPos = 0;
+          setNegativeEditorText(prev => {
+            const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
+            const before = prev.slice(0, actualPos);
+            const after = prev.slice(actualPos);
+            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+            const insertedStr = prefix + newMaster.content + suffix;
+            newPos = actualPos + insertedStr.length;
+            return cleanString(before + insertedStr + after);
+          });
+          setTimeout(() => setNegativeCursorPos(newPos), 0);
+        } else {
+          let newPos = 0;
+          setEditorText(prev => {
+            const actualPos = positiveCursorPos === null ? prev.length : positiveCursorPos;
+            const before = prev.slice(0, actualPos);
+            const after = prev.slice(actualPos);
+            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+            const insertedStr = prefix + newMaster.content + suffix;
+            newPos = actualPos + insertedStr.length;
+            return cleanString(before + insertedStr + after);
+          });
+          setTimeout(() => setPositiveCursorPos(newPos), 0);
+        }
       }
     }
     setSelectedMasterId(id);
@@ -579,18 +647,33 @@ export default function App() {
     if (id && insert) {
       const newNeg = data.negatives?.find(m => m.id === id);
       if (newNeg) {
-        let newPos = 0;
-        setNegativeEditorText(prev => {
-          const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
-          const before = prev.slice(0, actualPos);
-          const after = prev.slice(actualPos);
-          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
-          const insertedStr = prefix + newNeg.content + suffix;
-          newPos = actualPos + insertedStr.length;
-          return cleanString(before + insertedStr + after);
-        });
-        setTimeout(() => setNegativeCursorPos(newPos), 0);
+        if (activeEditor === 'positive') {
+          let newPos = 0;
+          setEditorText(prev => {
+            const actualPos = positiveCursorPos === null ? prev.length : positiveCursorPos;
+            const before = prev.slice(0, actualPos);
+            const after = prev.slice(actualPos);
+            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+            const insertedStr = prefix + newNeg.content + suffix;
+            newPos = actualPos + insertedStr.length;
+            return cleanString(before + insertedStr + after);
+          });
+          setTimeout(() => setPositiveCursorPos(newPos), 0);
+        } else {
+          let newPos = 0;
+          setNegativeEditorText(prev => {
+            const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
+            const before = prev.slice(0, actualPos);
+            const after = prev.slice(actualPos);
+            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+            const insertedStr = prefix + newNeg.content + suffix;
+            newPos = actualPos + insertedStr.length;
+            return cleanString(before + insertedStr + after);
+          });
+          setTimeout(() => setNegativeCursorPos(newPos), 0);
+        }
       }
     }
     setSelectedNegativeId(id);

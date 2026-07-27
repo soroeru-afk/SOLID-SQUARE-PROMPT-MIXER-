@@ -156,20 +156,29 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     }
   };
 
-  const handleCopy = async () => {
-    if (!editorText && !negativeEditorText) return;
+  const handleCopy = async (target: 'main' | 'negative' | 'all') => {
     try {
       const cleanEditor = cleanString(editorText);
       const cleanNegative = cleanString(negativeEditorText);
       
-      let textToCopy = cleanEditor;
-      if (cleanNegative) {
-        textToCopy += `\n\nNegative Prompt:\n${cleanNegative}`;
-      }
-      
       // Update editor state with cleaned version as well
       setEditorText(cleanEditor);
       if (negativeEditorText) setNegativeEditorText(cleanNegative);
+
+      let textToCopy = '';
+      if (target === 'main') {
+        if (!cleanEditor) return;
+        textToCopy = cleanEditor;
+      } else if (target === 'negative') {
+        if (!cleanNegative) return;
+        textToCopy = cleanNegative;
+      } else {
+        if (!cleanEditor && !cleanNegative) return;
+        textToCopy = cleanEditor;
+        if (cleanNegative) {
+          textToCopy += (textToCopy ? `\n\nNegative Prompt:\n` : `Negative Prompt:\n`) + cleanNegative;
+        }
+      }
 
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
@@ -423,6 +432,33 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
   const [editorFontSize, setEditorFontSize] = useState(14);
   const [editorFontFamily, setEditorFontFamily] = useState('font-mono');
+  
+  const [negativeHeight, setNegativeHeight] = useState(120);
+  const dragStartY = useRef(0);
+  const dragStartHeight = useRef(0);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    dragStartY.current = e.clientY;
+    dragStartHeight.current = negativeHeight;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const delta = dragStartY.current - e.clientY;
+      const newHeight = Math.max(60, Math.min(800, dragStartHeight.current + delta));
+      setNegativeHeight(newHeight);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
 
   const positiveHighlightRef = useRef<HTMLDivElement>(null);
   const negativeHighlightRef = useRef<HTMLDivElement>(null);
@@ -630,8 +666,16 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
   return (
     <>
-      <div className="p-3 border-b border-border-main flex items-center justify-between bg-bg-panel">
-        <span className="text-[10px] font-mono text-text-main font-bold uppercase tracking-widest">{t('output_synthesis', lang)}</span>
+      <div className="p-3 border-b border-border-main flex items-center justify-between bg-bg-panel shrink-0">
+        <div className="flex items-center gap-4">
+          <span className="text-[10px] font-mono text-text-main font-bold uppercase tracking-widest">{t('output_synthesis', lang)}</span>
+          <button 
+            onClick={onToggleAutoOptimize}
+            className={`px-2 py-0.5 text-[9px] font-mono border rounded transition-colors outline-none cursor-pointer ${autoOptimize ? 'border-text-main text-text-main' : 'border-text-dim text-text-dim hover:border-text-main hover:text-text-main'}`}
+          >
+            {t(autoOptimize ? 'auto_optimize_on' : 'auto_optimize_off', lang)}
+          </button>
+        </div>
         <span className="text-[9px] text-text-dim font-mono">CHAR: {editorText.length} / 4096</span>
       </div>
       
@@ -666,7 +710,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <div className="w-px h-6 bg-border-main mx-1"></div>
         <button 
           onClick={handleMergeDupes}
-          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          className={`px-3 py-1.5 text-[10px] font-mono border rounded transition-colors ${
+            theme === 'light' 
+              ? 'bg-[#3b5323]/10 hover:bg-[#3b5323]/20 border-[#3b5323]/60 text-[#3b5323]' 
+              : 'bg-[#7a9a5a]/10 hover:bg-[#7a9a5a]/20 border-[#7a9a5a]/50 text-[#9bb87d]'
+          }`}
           title="Merge duplicate phrases and normalize ratios"
         >
           {t('merge_dupes', lang)}
@@ -675,14 +723,14 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <span className="text-[10px] font-mono text-text-dim pr-1">{t('global_weight', lang)}</span>
           <button 
             onClick={() => handleAdjustWeights(-0.1)}
-            className="px-2 py-0.5 bg-bg-surface hover:bg-border-main text-[12px] font-mono border border-border-hover rounded text-text-main transition-colors"
+            className="px-2 py-0.5 bg-bg-surface hover:bg-blue-500/10 text-[12px] font-mono border border-blue-500/50 rounded text-blue-500 transition-colors"
             title="Decrease weight by 0.1 (applies to selection or all)"
           >
             -0.1
           </button>
           <button 
             onClick={() => handleAdjustWeights(0.1)}
-            className="px-2 py-0.5 bg-bg-surface hover:bg-border-main text-[12px] font-mono border border-border-hover rounded text-text-main transition-colors"
+            className="px-2 py-0.5 bg-bg-surface hover:bg-red-500/10 text-[12px] font-mono border border-red-500/50 rounded text-red-500 transition-colors"
             title="Increase weight by 0.1 (applies to selection or all)"
           >
             +0.1
@@ -705,17 +753,21 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <div className="w-px h-6 bg-border-main mx-1"></div>
         <button 
           onClick={handleFormatComma}
-          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          className="px-3 py-1 bg-bg-input hover:bg-border-main font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5"
           title="Replace periods with commas"
         >
-          {t('format_comma', lang)}
+          <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
+          <span className="text-[10px] text-text-dim leading-none opacity-80">→</span>
+          <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">,</span>
         </button>
         <button 
           onClick={handleFormatHyphen}
-          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          className="px-3 py-1 bg-bg-input hover:bg-border-main font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5"
           title="Replace periods with hyphens"
         >
-          {t('format_hyphen', lang)}
+          <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
+          <span className="text-[10px] text-text-dim leading-none opacity-80">→</span>
+          <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">-</span>
         </button>
         <div className="w-px h-6 bg-border-main mx-1"></div>
         <button
@@ -800,7 +852,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         </select>
         <button 
           onClick={() => {            setEditorText('');            setNegativeEditorText('');          }}
-          className="ml-auto px-3 py-1.5 bg-bg-input hover:bg-border-main text-text-dim hover:text-text-main border border-border-hover rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0"
+          className={`ml-auto px-3 py-1.5 border rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
+            theme === 'light'
+              ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
+              : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
+          }`}
         >
           <Trash2 className="w-3 h-3" /> {t('clear_all', lang)}
         </button>
@@ -854,15 +910,23 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                 }
               }}
               style={{ fontSize: `${editorFontSize}px` }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap selection:bg-blue-900 selection:text-text-main bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap selection:bg-blue-500/30 selection:text-text-main bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
         </div>
         
-        {/* Move/Copy Text Buttons */}
+        {/* Move/Copy Text Buttons & Resizer */}
         <div className="flex justify-center -my-3 relative z-10">
-          <div className="flex gap-2 bg-bg-panel p-1 rounded-full border border-border-main shadow-sm">
+          <div 
+            className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-6 cursor-row-resize flex items-center justify-center group" 
+            onMouseDown={handleResizeStart}
+            title="Drag to resize"
+          >
+            <div className={`w-full h-px ${isResizing ? 'bg-accent-main' : 'bg-transparent group-hover:bg-border-main'} transition-colors`} />
+          </div>
+
+          <div className="flex gap-2 bg-bg-panel p-1 rounded-full border border-border-main shadow-sm relative z-20">
             <button 
               onClick={() => handleCopyTextBetweenEditors('down')}
               className="px-2 py-1 bg-bg-input hover:bg-border-main rounded-full text-text-dim hover:text-text-main transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono"
@@ -895,7 +959,10 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           </div>
         </div>
 
-        <div className={`h-[120px] border border-border-main rounded-lg flex flex-col shrink-0 relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}>
+        <div 
+          className={`border border-border-main rounded-lg flex flex-col shrink-0 relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}
+          style={{ height: `${negativeHeight}px` }}
+        >
           <div className="absolute top-2 left-3 right-2 flex justify-between items-center pointer-events-none">
             <span className={`text-[9px] font-mono font-bold uppercase ${paperMode ? 'text-gray-400' : 'text-text-dim/50'}`}>NEGATIVE PROMPT</span>
             <div className="flex items-center gap-2 pointer-events-auto">
@@ -942,50 +1009,33 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                 }
               }}
               style={{ fontSize: `${editorFontSize}px` }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap selection:bg-red-900 selection:text-text-main bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap selection:bg-red-500/30 selection:text-text-main bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
         </div>
       </div>
         
-      <div className="bg-bg-panel p-4 pb-0 shrink-0 border-t border-border-main">
-        <div className="bg-bg-input border border-border-main rounded-lg p-4">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex flex-col">
-              <span className="text-[8px] text-text-dim uppercase font-mono">{t('complexity', lang)}</span>
-              <span className="text-[11px] font-mono text-text-main">{t('heavy_spec', lang)}</span>
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="text-[8px] text-text-dim uppercase font-mono">{t('variation_key', lang)}</span>
-              <span className="text-[11px] font-mono text-text-main font-bold">#4X99-PRO</span>
-            </div>
-          </div>
+      <div className="bg-bg-panel p-2 shrink-0 border-t border-border-main">
+        <div className="flex gap-2 w-full">
           <button 
-            onClick={handleCopy}
-            disabled={!editorText && !negativeEditorText}
-            className={`w-full py-4 transition-all font-mono font-bold text-sm rounded border ${
-              (editorText || negativeEditorText)
-                ? 'bg-bg-surface hover:bg-bg-input border-border-hover active:scale-[0.98] text-text-main cursor-pointer'
-                : 'bg-bg-panel text-text-dim border-border-main cursor-not-allowed'
-            }`}
+            onClick={() => handleCopy('main')}
+            className="flex-1 py-2.5 transition-all font-mono font-bold text-xs rounded border bg-bg-surface hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 border-border-hover active:scale-[0.98] text-text-main cursor-pointer"
           >
-            {copied ? t('copied', lang) : t('copy_prompt', lang)}
+            {t('copy_main', lang)}
           </button>
-        </div>
-      </div>
-      <div className="p-4 border-t border-border-main flex flex-col space-y-2 bg-bg-panel">
-        <div className="flex justify-between items-center text-[9px] font-mono text-text-main">
           <button 
-            onClick={onToggleAutoOptimize}
-            className={`px-2 py-1 text-xs border rounded transition-colors outline-none cursor-pointer ${autoOptimize ? 'border-text-main text-text-main' : 'border-text-dim text-text-dim hover:border-text-main hover:text-text-main'}`}
+            onClick={() => handleCopy('negative')}
+            className="flex-1 py-2.5 transition-all font-mono font-bold text-xs rounded border bg-bg-surface hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 border-border-hover active:scale-[0.98] text-text-main cursor-pointer"
           >
-            {t(autoOptimize ? 'auto_optimize_on' : 'auto_optimize_off', lang)}
+            {t('copy_negative_only', lang)}
           </button>
-          <span className="opacity-50">VER: 4.1.2</span>
-        </div>
-        <div className="h-1 w-full bg-bg-input rounded-full overflow-hidden">
-           <div className="w-full h-full bg-gradient-to-r from-blue-900 via-blue-500 to-blue-900 animate-pulse"></div>
+          <button 
+            onClick={() => handleCopy('all')}
+            className="flex-1 py-2.5 transition-all font-mono font-bold text-xs rounded border bg-bg-surface hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 border-border-hover active:scale-[0.98] text-text-main cursor-pointer"
+          >
+            {t('copy_all', lang)}
+          </button>
         </div>
       </div>
 

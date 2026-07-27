@@ -3,7 +3,7 @@ import { VariationPart } from '../types';
 import { Accordion } from './Accordion';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ArrowLeftToLine } from 'lucide-react';
+import { Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine } from 'lucide-react';
 import { Language, t } from '../i18n';
 
 interface VariationColumnProps {
@@ -331,15 +331,17 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                 <div className="absolute right-2 flex items-center gap-1">
                                   <div className="opacity-0 group-hover:opacity-100 flex items-center transition-opacity bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden">
                                     <button 
-                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onReorder && index > 0) onReorder(part.id, catParts[index - 1].id); }}
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onReorder && index > 0) onReorder(part.id, catParts[0].id); }}
                                       className="p-1 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                                       disabled={index === 0}
-                                    ><ChevronUp className="w-3 h-3" /></button>
+                                      title="Move to Top"
+                                    ><ChevronsUp className="w-3 h-3" /></button>
                                     <button 
-                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onReorder && index < catParts.length - 1) onReorder(part.id, catParts[index + 1].id); }}
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onReorder && index < catParts.length - 1) onReorder(part.id, catParts[catParts.length - 1].id); }}
                                       className="p-1 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                                       disabled={index === catParts.length - 1}
-                                    ><ChevronDown className="w-3 h-3" /></button>
+                                      title="Move to Bottom"
+                                    ><ChevronsDown className="w-3 h-3" /></button>
                                   </div>
                                   <button 
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onCopyToMaster) onCopyToMaster(part); }}
