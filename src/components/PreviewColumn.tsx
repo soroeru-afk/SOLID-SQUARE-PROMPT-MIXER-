@@ -471,10 +471,31 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     applyTransformToSelectionOrAll(text => text.toLowerCase());
   };
 
-  const [editorFontSize, setEditorFontSize] = useState(14);
-  const [editorFontFamily, setEditorFontFamily] = useState('font-mono');
+  const [editorFontSize, setEditorFontSize] = useState(() => {
+    const saved = localStorage.getItem('ui_editor_font_size');
+    return saved ? Number(saved) : 14;
+  });
+  const [editorFontFamily, setEditorFontFamily] = useState(() => {
+    return localStorage.getItem('ui_editor_font_family') || 'font-mono';
+  });
   
-  const [negativeHeight, setNegativeHeight] = useState(120);
+  const [negativeHeight, setNegativeHeight] = useState(() => {
+    const saved = localStorage.getItem('ui_negative_height');
+    return saved ? Number(saved) : 120;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ui_editor_font_size', String(editorFontSize));
+  }, [editorFontSize]);
+
+  useEffect(() => {
+    localStorage.setItem('ui_editor_font_family', editorFontFamily);
+  }, [editorFontFamily]);
+
+  useEffect(() => {
+    localStorage.setItem('ui_negative_height', String(negativeHeight));
+  }, [negativeHeight]);
+
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(0);
   const [isResizing, setIsResizing] = useState(false);
