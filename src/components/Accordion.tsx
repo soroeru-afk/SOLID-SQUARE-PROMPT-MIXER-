@@ -95,7 +95,7 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
             )}
             {onAdd && (
               <div 
-                onClick={(e) => { e.stopPropagation(); onAdd(e); }}
+                onClick={(e) => { e.stopPropagation(); setIsOpen(true); onAdd(e); }}
                 className="opacity-0 group-hover:opacity-100 px-1.5 py-0.5 flex items-center gap-1 hover:text-blue-400 text-text-dim transition-opacity border border-transparent hover:border-blue-500/30 rounded cursor-pointer"
               >
                 <Plus className="w-3 h-3" />

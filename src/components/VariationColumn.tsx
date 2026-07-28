@@ -19,6 +19,7 @@ interface VariationColumnProps {
   onAddCategory?: (section: number, name: string) => void;
   onRenameCategory?: (section: number, oldName: string, newName: string) => void;
   onDeleteCategory?: (section: number, name: string) => void;
+  onReorderCategory?: (section: number, draggedCat: string, targetCat: string) => void;
   onReorder?: (draggedId: string, targetId: string) => void;
   onCopyToMaster?: (part: VariationPart) => void;
   onCopyBulkToMaster?: (items: VariationPart[]) => void;
@@ -26,7 +27,7 @@ interface VariationColumnProps {
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, customCategories = [], selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang 
+  parts, customCategories = [], selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   const [editContent, setEditContent] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [draggedPart, setDraggedPart] = useState<{ id: string, category: string } | null>(null);
+  const [draggedCategory, setDraggedCategory] = useState<{ name: string, section: number } | null>(null);
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmAddData, setConfirmAddData] = useState<{ category: string, section: number } | null>(null);
@@ -45,8 +47,11 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   const uniqueCategories = useMemo(() => {
     const cats = new Map<string, number>(); // category -> section
     parts.forEach(p => cats.set(p.category, p.section));
+    if (customCategories) {
+      customCategories.forEach(c => cats.set(c.name, c.section));
+    }
     return Array.from(cats.entries());
-  }, [parts]);
+  }, [parts, customCategories]);
 
   const handleBulkMove = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
@@ -93,7 +98,39 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
     });
   };
 
+
+  const handleCatDragStart = (e: React.DragEvent, name: string, section: number) => {
+    setDraggedCategory({ name, section });
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => {
+      if (e.target instanceof HTMLElement) {
+        e.target.style.opacity = '0.5';
+      }
+    }, 0);
+  };
+  const handleCatDragEnd = (e: React.DragEvent) => {
+    setDraggedCategory(null);
+    if (e.target instanceof HTMLElement) {
+      e.target.style.opacity = '1';
+    }
+  };
+  const handleCatDragOver = (e: React.DragEvent, section: number) => {
+    e.preventDefault();
+    if (draggedCategory?.section === section) {
+      e.dataTransfer.dropEffect = 'move';
+    } else {
+      e.dataTransfer.dropEffect = 'none';
+    }
+  };
+  const handleCatDrop = (e: React.DragEvent, targetName: string, section: number) => {
+    e.preventDefault();
+    if (!draggedCategory || draggedCategory.section !== section || draggedCategory.name === targetName) return;
+    if (onReorderCategory) {
+      onReorderCategory(section, draggedCategory.name, targetName);
+    }
+  };
   const handleDragStart = (e: React.DragEvent, id: string, category: string) => {
+    e.stopPropagation();
     setDraggedPart({ id, category });
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => {
@@ -104,6 +141,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
+    e.stopPropagation();
     setDraggedPart(null);
     if (e.target instanceof HTMLElement) {
       e.target.style.opacity = '1';
@@ -111,6 +149,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   };
 
   const handleDragOver = (e: React.DragEvent, category: string) => {
+    e.stopPropagation();
     e.preventDefault();
     if (draggedPart?.category === category) {
       e.dataTransfer.dropEffect = 'move';
@@ -120,6 +159,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   };
 
   const handleDrop = (e: React.DragEvent, id: string, category: string) => {
+    e.stopPropagation();
     e.preventDefault();
     if (!draggedPart || draggedPart.category !== category || draggedPart.id === id) return;
     if (onReorder) {
@@ -268,6 +308,15 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                     {catEntries.map(([category, catParts]) => {
                       const totalCount = catParts.length;
                       return (
+
+                        <div 
+                          key={category}
+                          draggable
+                          onDragStart={(e) => handleCatDragStart(e, category, Number(secId))}
+                          onDragEnd={handleCatDragEnd}
+                          onDragOver={(e) => handleCatDragOver(e, Number(secId))}
+                          onDrop={(e) => handleCatDrop(e, category, Number(secId))}
+                        >
                         <Accordion 
                           key={category} 
                           title={t(category as any, lang) || category} 
@@ -416,6 +465,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                           }))}
                         </div>
                       </Accordion>
+                        </div>
                     );
                   })}
                   </div>

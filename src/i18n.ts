@@ -23,6 +23,7 @@ export const translations = {
   edit: { en: 'EDIT', ja: '編集' },
   save: { en: 'SAVE', ja: '保存' },
   cancel: { en: 'CANCEL', ja: 'キャンセル' },
+  empty: { en: 'Empty', ja: '空' },
   delete: { en: 'DELETE', ja: '削除' },
   delete_all: { en: 'DELETE ALL', ja: '全て削除' },
   delete_all_masters: { en: 'DELETE ALL MASTERS', ja: 'マスター全て削除' },

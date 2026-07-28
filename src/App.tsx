@@ -412,8 +412,11 @@ export default function App() {
   const uniqueCategories = useMemo(() => {
     const cats = new Map<string, number>(); // category -> section
     data.parts.forEach(p => cats.set(p.category, p.section));
+    if (data.customCategories) {
+      data.customCategories.forEach(c => cats.set(c.name, c.section));
+    }
     return Array.from(cats.entries());
-  }, [data.parts]);
+  }, [data.parts, data.customCategories]);
 
   const handleSaveAsMaster = (name: string, content: string, isNegative: boolean) => {
     if (isNegative) {
@@ -492,7 +495,6 @@ export default function App() {
 
   const handleDeleteAllParts = () => {
     setData(prev => ({ ...prev, parts: [] }));
-    setSelectedPartIds(new Set());
   };
 
   const handleAddCategory = (section: number, name: string) => {
@@ -523,6 +525,34 @@ export default function App() {
       const newParts = prev.parts.filter(p => !(p.section === section && p.category === name));
       const newCustomCategories = (prev.customCategories || []).filter(c => !(c.section === section && c.name === name));
       return { ...prev, parts: newParts, customCategories: newCustomCategories };
+    });
+  };
+
+  const handleReorderCategory = (section: number, draggedCat: string, targetCat: string) => {
+    setData(prev => {
+      let currentOrder = prev.customCategories ? prev.customCategories.filter(c => c.section === section).map(c => c.name) : [];
+      
+      // Add any default categories that are not in customCategories
+      const existingCats = Array.from(new Set(prev.parts.filter(p => p.section === section).map(p => p.category)));
+      for (const cat of existingCats) {
+        if (!currentOrder.includes(cat)) currentOrder.push(cat);
+      }
+      
+      const draggedIdx = currentOrder.indexOf(draggedCat);
+      const targetIdx = currentOrder.indexOf(targetCat);
+      
+      if (draggedIdx !== -1 && targetIdx !== -1) {
+        currentOrder.splice(draggedIdx, 1);
+        currentOrder.splice(targetIdx, 0, draggedCat);
+      }
+      
+      const otherSections = (prev.customCategories || []).filter(c => c.section !== section);
+      const newCustomCategories = [
+        ...otherSections,
+        ...currentOrder.map(name => ({ name, section: section as 1 | 2 | 3 | 4 }))
+      ];
+      
+      return { ...prev, customCategories: newCustomCategories };
     });
   };
 
@@ -791,6 +821,7 @@ export default function App() {
               onAddCategory={handleAddCategory}
               onRenameCategory={handleRenameCategory}
               onDeleteCategory={handleDeleteCategory}
+              onReorderCategory={handleReorderCategory}
               selectedIds={selectedPartIds}
               onTogglePart={handleTogglePart}
               onTogglePin={handleTogglePin}
@@ -1008,6 +1039,7 @@ export default function App() {
               onAddCategory={handleAddCategory}
               onRenameCategory={handleRenameCategory}
               onDeleteCategory={handleDeleteCategory}
+              onReorderCategory={handleReorderCategory}
               selectedIds={selectedPartIds}
               onTogglePart={handleTogglePart}
               onTogglePin={handleTogglePin}
