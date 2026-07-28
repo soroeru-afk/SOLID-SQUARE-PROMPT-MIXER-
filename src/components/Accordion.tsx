@@ -9,12 +9,14 @@ interface AccordionProps {
   onAdd?: (e: React.MouseEvent) => void;
   onEdit?: (newName: string) => void;
   onDelete?: () => void;
+  onEditStart?: () => void;
+  onEditEnd?: () => void;
   expandId?: number;
   collapseId?: number;
   children: React.ReactNode;
 }
 
-export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen = false, onAdd, onEdit, onDelete, expandId, collapseId, children }) => {
+export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen = false, onAdd, onEdit, onDelete, onEditStart, onEditEnd, expandId, collapseId, children }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
@@ -42,9 +44,11 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
                   if (editTitle.trim()) {
                     onEdit?.(editTitle.trim());
                     setIsEditing(false);
+                    onEditEnd?.();
                   }
                 } else if (e.key === 'Escape') {
                   setIsEditing(false);
+                    onEditEnd?.();
                   setEditTitle(title);
                 }
               }}
@@ -53,12 +57,14 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
               if (editTitle.trim()) {
                 onEdit?.(editTitle.trim());
                 setIsEditing(false);
+                    onEditEnd?.();
               }
             }} className="text-green-500 hover:text-green-400 p-1">
               <Check className="w-3 h-3" />
             </button>
             <button onClick={() => {
               setIsEditing(false);
+                    onEditEnd?.();
               setEditTitle(title);
             }} className="text-text-dim hover:text-text-main p-1">
               <X className="w-3 h-3" />
@@ -87,7 +93,7 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
             )}
             {onEdit && (
               <button 
-                onClick={(e) => { e.stopPropagation(); setIsEditing(true); setEditTitle(title); }}
+                onClick={(e) => { e.stopPropagation(); setIsEditing(true); setEditTitle(title); onEditStart?.(); }}
                 className="opacity-0 group-hover:opacity-100 p-1 hover:text-blue-400 text-text-dim transition-opacity rounded"
               >
                 <Pencil className="w-3 h-3" />

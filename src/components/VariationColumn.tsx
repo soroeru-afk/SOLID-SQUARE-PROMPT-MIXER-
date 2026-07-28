@@ -31,6 +31,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editCategory, setEditCategory] = useState('');
@@ -311,7 +312,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
                         <div 
                           key={category}
-                          draggable
+                          draggable={editingId === null && editingCategory === null}
                           onDragStart={(e) => handleCatDragStart(e, category, Number(secId))}
                           onDragEnd={handleCatDragEnd}
                           onDragOver={(e) => handleCatDragOver(e, Number(secId))}
@@ -319,7 +320,9 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                         >
                         <Accordion 
                           key={category} 
-                          title={t(category as any, lang) || category} 
+                          title={t(category as any, lang) || category}
+                          onEditStart={() => setEditingCategory(category)}
+                          onEditEnd={() => setEditingCategory(null)} 
                           badge={totalCount} 
                           defaultOpen={false}
                           expandId={expandId}
