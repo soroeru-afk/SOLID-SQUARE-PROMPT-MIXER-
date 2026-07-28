@@ -4,6 +4,7 @@ import { Trash2, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, Rota
 import { Language, t } from '../i18n';
 import { SavePartModal } from './SavePartModal';
 import { SaveMasterModal } from './SaveMasterModal';
+import { SaveMemoModal } from './SaveMemoModal';
 
 interface PreviewColumnProps {
   editorText: string;
@@ -16,6 +17,9 @@ interface PreviewColumnProps {
   setActiveEditor: (editor: 'positive' | 'negative') => void;
   onSaveAsMaster?: (title: string, content: string, isNegative: boolean) => void;
   onSaveAsPart?: (name: string, content: string, category: string, section: number, items?: {name: string, content: string}[]) => void;
+  onSaveAsMemo?: (name: string, content: string, isUpdate: boolean) => void;
+  selectedMemoId?: string | null;
+  selectedMemoName?: string;
   uniqueCategories?: [string, number][];
   activeMasterTab?: 'master' | 'negative';
   lang: Language;
@@ -35,6 +39,9 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   activeEditor, setActiveEditor, setPositiveCursorPos, setNegativeCursorPos,
   onSaveAsMaster,
   onSaveAsPart,
+  onSaveAsMemo,
+  selectedMemoId,
+  selectedMemoName,
   uniqueCategories = [],
   activeMasterTab = 'master',
   lang,
@@ -56,7 +63,10 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const [savePartDefaultName, setSavePartDefaultName] = useState('');
   const [savePartItems, setSavePartItems] = useState<{name: string, content: string}[] | undefined>(undefined);
 
-  const [isSaveMasterModalOpen, setIsSaveMasterModalOpen] = useState(false);
+    const [isSaveMasterModalOpen, setIsSaveMasterModalOpen] = useState(false);
+  const [isSaveMemoModalOpen, setIsSaveMemoModalOpen] = useState(false);
+  const [saveMemoContent, setSaveMemoContent] = useState('');
+  const [saveMemoDefaultTitle, setSaveMemoDefaultTitle] = useState('');
   const [saveMasterContent, setSaveMasterContent] = useState('');
   const [saveMasterDefaultTitle, setSaveMasterDefaultTitle] = useState('');
   const [saveMasterIsNegative, setSaveMasterIsNegative] = useState(false);
@@ -619,15 +629,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     localStorage.setItem('editorFontFamily', editorFontFamily);
   }, [editorFontFamily]);
   
-  const [negativeHeight, setNegativeHeight] = useState(() => {
-    const saved = localStorage.getItem('ui_negative_height');
-    return saved ? parseInt(saved, 10) : 120;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('ui_negative_height', negativeHeight.toString());
-  }, [negativeHeight]);
-
+  const [negativeHeight, setNegativeHeight] = useState(120);
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(0);
   const [isResizing, setIsResizing] = useState(false);
@@ -658,6 +660,32 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const negativeHighlightRef = useRef<HTMLDivElement>(null);
   const positiveTextRef = useRef<HTMLTextAreaElement>(null);
   const negativeTextRef = useRef<HTMLTextAreaElement>(null);
+
+  
+  const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDropFile = (e: React.DragEvent<HTMLTextAreaElement>, isNegative: boolean) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.includes('text') || file.name.endsWith('.txt')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const content = event.target?.result as string;
+          if (content) {
+            if (isNegative) {
+              setNegativeEditorText(prev => prev ? prev + '\n' + content : content);
+            } else {
+              setEditorText(prev => prev ? prev + '\n' + content : content);
+            }
+          }
+        };
+        reader.readAsText(file);
+      }
+    }
+  };
 
   const handleMoveSelection = (position: 'start' | 'end') => {
     const isPositive = activeEditor === 'positive';
@@ -1133,9 +1161,10 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
       <div className="flex-1 p-4 overflow-y-auto bg-bg-panel flex flex-col gap-4">
         <div className={`flex-1 border border-border-main rounded-lg flex flex-col relative min-h-[100px] transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}>
-          <div className="absolute top-2 left-3 right-2 flex justify-between items-center pointer-events-none">
-            <span className={`text-[9px] font-mono font-bold uppercase ${paperMode ? 'text-gray-400' : 'text-text-dim/50'}`}>PROMPT</span>
-            <div className="flex items-center gap-2 pointer-events-auto">
+          <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-wrap border-b border-border-main/30">
+            <span className={`text-[9px] font-mono font-bold uppercase mt-1 ${paperMode ? 'text-gray-400' : 'text-text-dim/50'}`}>PROMPT</span>
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+              
               <span className="text-[8px] text-text-dim/50 font-mono hidden sm:inline-block">{t('save_master_hint', lang)}</span>
               <button 
                 onClick={() => handleSaveMasterClick(false, activeMasterTab === 'negative')}
@@ -1149,9 +1178,30 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_part', lang)}
               </button>
+              <button 
+                onClick={() => {
+                  const text = editorText.trim();
+                  if (!text) return;
+                  const firstLine = text.split('\n')[0];
+                  const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+                  setSaveMemoContent(text);
+                  setSaveMemoDefaultTitle(title);
+                  setIsSaveMemoModalOpen(true);
+                }}
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+              >
+                <PlusSquare className="w-3 h-3" /> {t('save_as_memo', lang)}
+              </button>
+              <button
+                onClick={() => setEditorText('')}
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-red-500/10 hover:text-red-400 border border-border-hover hover:border-red-500/30 rounded text-[9px] font-mono text-text-dim transition-colors ml-1"
+                title={t('clear', lang)}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
           </div>
-          <div className="flex-1 relative flex flex-col mt-6">
+          <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={positiveHighlightRef}
               className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-auto pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
@@ -1163,6 +1213,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
             <textarea
               ref={positiveTextRef}
               value={editorText}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDropFile(e, false)}
               onChange={(e) => {
                 setEditorText(e.target.value);
                 setActiveEditor('positive');
@@ -1232,9 +1284,10 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           className={`border border-border-main rounded-lg flex flex-col shrink-0 relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}
           style={{ height: `${negativeHeight}px` }}
         >
-          <div className="absolute top-2 left-3 right-2 flex justify-between items-center pointer-events-none">
-            <span className={`text-[9px] font-mono font-bold uppercase ${paperMode ? 'text-gray-400' : 'text-text-dim/50'}`}>NEGATIVE PROMPT</span>
-            <div className="flex items-center gap-2 pointer-events-auto">
+          <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-wrap border-b border-border-main/30">
+            <span className={`text-[9px] font-mono font-bold uppercase mt-1 ${paperMode ? 'text-gray-400' : 'text-text-dim/50'}`}>NEGATIVE PROMPT</span>
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+              
               <span className="text-[8px] text-text-dim/50 font-mono hidden sm:inline-block">{t('save_master_hint', lang)}</span>
               <button 
                 onClick={() => handleSaveMasterClick(true)}
@@ -1248,9 +1301,30 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_part', lang)}
               </button>
+              <button 
+                onClick={() => {
+                  const text = negativeEditorText.trim();
+                  if (!text) return;
+                  const firstLine = text.split('\n')[0];
+                  const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+                  setSaveMemoContent(text);
+                  setSaveMemoDefaultTitle(title);
+                  setIsSaveMemoModalOpen(true);
+                }}
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+              >
+                <PlusSquare className="w-3 h-3" /> {t('save_as_memo', lang)}
+              </button>
+              <button
+                onClick={() => setNegativeEditorText('')}
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-red-500/10 hover:text-red-400 border border-border-hover hover:border-red-500/30 rounded text-[9px] font-mono text-text-dim transition-colors ml-1"
+                title={t('clear', lang)}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
           </div>
-          <div className="flex-1 relative flex flex-col mt-6">
+          <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
               className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-auto pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
@@ -1262,6 +1336,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
             <textarea
               ref={negativeTextRef}
               value={negativeEditorText}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDropFile(e, true)}
               onChange={(e) => {
                 setNegativeEditorText(e.target.value);
                 setActiveEditor('negative');
@@ -1335,6 +1411,21 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           setIsSavePartModalOpen(false);
         }}
         onCancel={() => setIsSavePartModalOpen(false)}
+        lang={lang}
+      />
+            <SaveMemoModal
+        isOpen={isSaveMemoModalOpen}
+        content={saveMemoContent}
+        defaultTitle={saveMemoDefaultTitle}
+        selectedMemoId={selectedMemoId || null}
+        selectedMemoName={selectedMemoName || ''}
+        onConfirm={(title, content, isUpdate) => {
+          if (onSaveAsMemo) {
+            onSaveAsMemo(title, content, isUpdate);
+          }
+          setIsSaveMemoModalOpen(false);
+        }}
+        onCancel={() => setIsSaveMemoModalOpen(false)}
         lang={lang}
       />
       <SaveMasterModal

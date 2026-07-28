@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { MasterColumn } from './components/MasterColumn';
 import { VariationColumn } from './components/VariationColumn';
 import { PreviewColumn } from './components/PreviewColumn';
+import { MemoColumn } from './components/MemoColumn';
 import { SavePartModal } from './components/SavePartModal';
 import { SaveMasterModal } from './components/SaveMasterModal';
 import { initialData } from './data';
@@ -25,6 +26,10 @@ export default function App() {
   const [activeMasterTab, setActiveMasterTab] = useState<'master' | 'negative'>(() => {
     return (localStorage.getItem('ui_active_master_tab') as any) || 'master';
   });
+  const [activeVariationTab, setActiveVariationTab] = useState<'parts' | 'memo'>(() => {
+    return (localStorage.getItem('ui_active_variation_tab') as any) || 'parts';
+  });
+  const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
   const [data, setData] = useState<AppData>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -67,25 +72,15 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('ui_active_master_tab', activeMasterTab);
   }, [activeMasterTab]);
+  useEffect(() => {
+    localStorage.setItem('ui_active_variation_tab', activeVariationTab);
+  }, [activeVariationTab]);
 
   const [savePartFromMasterData, setSavePartFromMasterData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
   const [saveMasterFromPartData, setSaveMasterFromPartData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
-    
-    // Update PWA theme-color to match bg-panel of each theme
-    const themeColors: Record<string, string> = {
-      'dark': '#111215',
-      'black': '#050505',
-      'red': '#1c0a0a',
-      'light': '#e5e7eb',
-      'navy': '#0d1222'
-    };
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', themeColors[theme] || '#111215');
-    }
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
@@ -223,6 +218,17 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+  const showSaveToast = useCallback((msg: string) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    setSaveSuccessMessage(msg);
+    saveTimerRef.current = window.setTimeout(() => {
+      setSaveSuccessMessage(null);
+      saveTimerRef.current = null;
+    }, 2000);
+  }, []);
 
   useEffect(() => {
     getFileHandle('export_directory').then(handle => {
@@ -378,6 +384,7 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content') => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -407,6 +414,7 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = 'new negative content') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
+    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -569,6 +577,7 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = 'new content') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -695,6 +704,7 @@ export default function App() {
         if (parsed.masters && parsed.parts) {
           setData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
+          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }
@@ -778,6 +788,71 @@ export default function App() {
     setSelectedNegativeId(id);
   };
 
+  const handleSelectMemoId = (id: string | null, insert: boolean = true) => {
+    setSelectedMemoId(id);
+    if (insert && id) {
+      const memo = data.memos?.find(m => m.id === id);
+      if (memo) {
+        if (activeEditor === 'negative') {
+          setNegativeEditorText(prev => {
+            if (prev && prev.trim().length > 0) return prev;
+            return memo.content;
+          });
+        } else {
+          setEditorText(prev => {
+            if (prev && prev.trim().length > 0) return prev;
+            return memo.content;
+          });
+        }
+      }
+    }
+  };
+  const handleAddMemo = (name: string) => {
+    const newMemo = { id: `memo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content: '' };
+    setData(prev => ({ ...prev, memos: [newMemo, ...(prev.memos || [])] }));
+  };
+  const handleUpdateMemo = (id: string, updates: Partial<MasterPrompt>) => {
+    setData(prev => ({
+      ...prev,
+      memos: (prev.memos || []).map(m => m.id === id ? { ...m, ...updates } : m)
+    }));
+  };
+  const handleDeleteMemo = (id: string) => {
+    setData(prev => ({ ...prev, memos: (prev.memos || []).filter(m => m.id !== id) }));
+    if (selectedMemoId === id) setSelectedMemoId(null);
+  };
+  const handleDeleteBulkMemo = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setData(prev => ({ ...prev, memos: (prev.memos || []).filter(m => !idSet.has(m.id)) }));
+    if (selectedMemoId && idSet.has(selectedMemoId)) setSelectedMemoId(null);
+  };
+  const handleDeleteAllMemo = () => {
+    setData(prev => ({ ...prev, memos: [] }));
+    setSelectedMemoId(null);
+  };
+  const handleMoveBulkMemos = (ids: string[], direction: 'top' | 'up' | 'down' | 'bottom') => {
+    setData(prev => {
+      const items = prev.memos || [];
+      const idSet = new Set(ids);
+      const selected = items.filter(m => idSet.has(m.id));
+      const unselected = items.filter(m => !idSet.has(m.id));
+      if (direction === 'top') {
+        return { ...prev, memos: [...selected, ...unselected] };
+      } else if (direction === 'bottom') {
+        return { ...prev, memos: [...unselected, ...selected] };
+      }
+      return prev;
+    });
+  };
+  const handleReorderMemos = (startIndex: number, endIndex: number) => {
+    setData(prev => {
+      const result = Array.from(prev.memos || []);
+      const [removed] = result.splice(startIndex, 1);
+      result.splice(endIndex, 0, removed);
+      return { ...prev, memos: result };
+    });
+  };
+
   return (
     <div className={`h-screen w-full flex flex-col overflow-hidden bg-bg-base transition-colors duration-300`} style={{ zoom: 1 }}>
       {/* Header */}
@@ -846,7 +921,23 @@ export default function App() {
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               lang={lang}
               theme={theme}
-            />
+              activeTab={activeVariationTab}
+              setActiveTab={setActiveVariationTab}
+            >
+              <MemoColumn
+                masters={data.memos || []}
+                selectedId={selectedMemoId}
+                onSelect={handleSelectMemoId}
+                onAdd={handleAddMemo}
+                onUpdate={handleUpdateMemo}
+                onDelete={handleDeleteMemo}
+                onDeleteBulk={handleDeleteBulkMemo}
+                onDeleteAll={handleDeleteAllMemo}
+                onMoveBulk={handleMoveBulkMemos}
+                onReorder={handleReorderMemos}
+                lang={lang}
+              />
+            </VariationColumn>
           ) : (
             <MasterColumn
               masters={data.masters}
@@ -869,8 +960,6 @@ export default function App() {
               onMoveBulkNegative={handleMoveBulkNegatives}
               onReorder={handleReorderMasters}
               onReorderNegative={handleReorderNegatives}
-              onCopyToPart={(item) => setSavePartFromMasterData({ name: item.name, content: item.content })}
-              onCopyBulkToPart={(items) => setSavePartFromMasterData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               activeTab={activeMasterTab}
               setActiveTab={setActiveMasterTab}
               lang={lang}
@@ -949,6 +1038,17 @@ export default function App() {
                 handleAddPart(category, section, name, content);
               }
             }}
+            onSaveAsMemo={(name, content, isUpdate) => {
+              if (isUpdate && selectedMemoId) {
+                handleUpdateMemo(selectedMemoId, { name, content });
+              } else {
+                const newMemo = { id: `memo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
+                setData(prev => ({ ...prev, memos: [newMemo, ...(prev.memos || [])] }));
+                setSelectedMemoId(newMemo.id);
+              }
+            }}
+            selectedMemoId={selectedMemoId}
+            selectedMemoName={data.memos?.find(m => m.id === selectedMemoId)?.name || ''}
             uniqueCategories={uniqueCategories}
             activeMasterTab={activeMasterTab}
             lang={lang}
@@ -1039,8 +1139,6 @@ export default function App() {
               onMoveBulkNegative={handleMoveBulkNegatives}
               onReorder={handleReorderMasters}
               onReorderNegative={handleReorderNegatives}
-              onCopyToPart={(item) => setSavePartFromMasterData({ name: item.name, content: item.content })}
-              onCopyBulkToPart={(items) => setSavePartFromMasterData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               activeTab={activeMasterTab}
               setActiveTab={setActiveMasterTab}
               lang={lang}
@@ -1067,7 +1165,23 @@ export default function App() {
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               lang={lang}
               theme={theme}
-            />
+              activeTab={activeVariationTab}
+              setActiveTab={setActiveVariationTab}
+            >
+              <MemoColumn
+                masters={data.memos || []}
+                selectedId={selectedMemoId}
+                onSelect={handleSelectMemoId}
+                onAdd={handleAddMemo}
+                onUpdate={handleUpdateMemo}
+                onDelete={handleDeleteMemo}
+                onDeleteBulk={handleDeleteBulkMemo}
+                onDeleteAll={handleDeleteAllMemo}
+                onMoveBulk={handleMoveBulkMemos}
+                onReorder={handleReorderMemos}
+                lang={lang}
+              />
+            </VariationColumn>
           )}
           </aside>
         )}

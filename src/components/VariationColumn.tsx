@@ -27,10 +27,13 @@ interface VariationColumnProps {
   onCopyBulkToMaster?: (items: VariationPart[]) => void;
   lang: Language;
   theme: string;
+  activeTab?: 'parts' | 'memo';
+  setActiveTab?: (tab: 'parts' | 'memo') => void;
+  children?: React.ReactNode;
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang, theme
+  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang, theme, activeTab = 'parts', setActiveTab, children
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -285,9 +288,25 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
   return (
     <>
-      <div className="flex bg-bg-panel border-b border-border-main text-[9px] font-mono uppercase tracking-widest shrink-0 overflow-x-auto justify-between items-center pr-2">
-        <div className="px-4 py-3 border-r border-border-main bg-bg-surface text-text-main border-b-2 border-b-blue-500 whitespace-nowrap">{t('variation_parts', lang)}</div>
-        <div className="flex gap-2">
+      <div className="flex bg-bg-panel border-b border-border-main text-[10px] font-mono uppercase tracking-widest shrink-0 overflow-x-auto justify-between items-center pr-2 h-[41px]">
+        <div className="flex items-center h-full">
+          <button 
+            onClick={() => setActiveTab?.('parts')}
+            className={`px-4 py-3 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'parts' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
+          >
+            {t('variation_parts', lang)}
+          </button>
+          {setActiveTab && (
+            <button 
+              onClick={() => setActiveTab('memo')}
+              className={`px-4 py-3 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'memo' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
+            >
+              {t('prompt_memo', lang)}
+            </button>
+          )}
+        </div>
+        {activeTab === 'parts' && (
+          <div className="flex gap-2">
           <button 
             onClick={() => {
               if (isAllExpanded) {
@@ -297,7 +316,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
               }
               setIsAllExpanded(!isAllExpanded);
             }} 
-            className={`px-3 py-1 border rounded transition-colors whitespace-nowrap flex items-center justify-center gap-1 w-[120px] shrink-0 ${
+            className={`px-3 py-1 border rounded transition-colors whitespace-nowrap flex items-center justify-center gap-1 w-[140px] shrink-0 ${
               theme === 'light' || theme === 'paper'
                 ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
                 : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
@@ -306,9 +325,12 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
             {isAllExpanded ? <ChevronsUp size={12} /> : <ChevronsDown size={12} />}
             {isAllExpanded ? t('collapse_all', lang) : t('expand_all', lang)}
           </button>
-        </div>
+          </div>
+        )}
       </div>
 
+      {activeTab === 'parts' ? (
+      <>
       <div className="p-4 flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
         <div className={`flex flex-wrap items-center gap-2 bg-bg-surface p-2 border ${bulkSelectedIds.size > 0 ? 'border-blue-500/30' : 'border-border-main'} rounded shadow-sm shrink-0 min-h-[42px]`}>
           <span className="text-[10px] font-mono text-text-dim flex-shrink-0 flex items-center justify-center w-6 h-6 bg-bg-input rounded-full font-bold">{bulkSelectedIds.size}</span>
@@ -611,6 +633,10 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
             {t('delete_all', lang)}
           </button>
         </div>
+      )}
+      </>
+      ) : (
+        children
       )}
 
       <ConfirmModal

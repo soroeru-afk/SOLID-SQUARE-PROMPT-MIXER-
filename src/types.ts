@@ -17,6 +17,7 @@ export interface VariationPart {
 }
 
 export interface AppData {
+  memos?: MasterPrompt[];
   masters: MasterPrompt[];
   negatives?: MasterPrompt[];
   parts: VariationPart[];
