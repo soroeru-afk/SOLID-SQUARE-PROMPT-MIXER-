@@ -244,11 +244,11 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
             return (
               <div key={secId} className="space-y-4">
-                <div className={`flex items-center justify-between p-2 border-l-4 shadow-sm bg-transparent group ${
-                  secId === '1' ? 'border-blue-500 text-blue-400' : 
-                  secId === '2' ? 'border-orange-500 text-orange-400' : 
-                  secId === '3' ? 'border-green-500 text-green-400' : 
-                  'border-purple-500 text-purple-400'
+                <div className={`flex items-center justify-between p-2 border-l-4 shadow-sm bg-transparent group text-text-main ${
+                  secId === '1' ? 'border-blue-500' : 
+                  secId === '2' ? 'border-orange-500' : 
+                  secId === '3' ? 'border-green-500' : 
+                  'border-purple-500'
                 }`}>
                   <h3 className="text-xs font-mono font-bold uppercase">
                     {secData.name}
