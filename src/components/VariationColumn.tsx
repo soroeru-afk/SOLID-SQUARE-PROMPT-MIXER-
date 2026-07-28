@@ -9,6 +9,8 @@ import { Language, t } from '../i18n';
 interface VariationColumnProps {
   parts: VariationPart[];
   customCategories?: { name: string, section: number }[];
+  customSectionNames?: Record<number, string>;
+  onRenameSection?: (section: number, newName: string) => void;
   selectedIds: Set<string>;
   onTogglePart: (id: string) => void;
   onTogglePin: (id: string) => void;
@@ -24,19 +26,23 @@ interface VariationColumnProps {
   onCopyToMaster?: (part: VariationPart) => void;
   onCopyBulkToMaster?: (items: VariationPart[]) => void;
   lang: Language;
+  theme: string;
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, customCategories = [], selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang 
+  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang, theme
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editingSectionId, setEditingSectionId] = useState<number | null>(null);
+  const [editSectionName, setEditSectionName] = useState('');
   const [editName, setEditName] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [draggedPart, setDraggedPart] = useState<{ id: string, category: string } | null>(null);
   const [draggedCategory, setDraggedCategory] = useState<{ name: string, section: number } | null>(null);
+  const [draggedSection, setDraggedSection] = useState<number | null>(null);
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmAddData, setConfirmAddData] = useState<{ category: string, section: number } | null>(null);
@@ -100,7 +106,39 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   };
 
 
+  const handleSectionDragStart = (e: React.DragEvent, sectionId: number) => {
+    setDraggedSection(sectionId);
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => {
+      if (e.target instanceof HTMLElement) {
+        e.target.style.opacity = '0.5';
+      }
+    }, 0);
+  };
+  const handleSectionDragEnd = (e: React.DragEvent) => {
+    setDraggedSection(null);
+    if (e.target instanceof HTMLElement) {
+      e.target.style.opacity = '1';
+    }
+  };
+  const handleSectionDragOver = (e: React.DragEvent, targetSectionId: number) => {
+    e.preventDefault();
+    if (draggedSection !== null && draggedSection !== targetSectionId) {
+      setSectionOrder(prev => {
+        const fromIdx = prev.indexOf(draggedSection);
+        const toIdx = prev.indexOf(targetSectionId);
+        if (fromIdx < 0 || toIdx < 0) return prev;
+        const next = [...prev];
+        const [moved] = next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, moved);
+        localStorage.setItem('variation_section_order', JSON.stringify(next));
+        return next;
+      });
+    }
+  };
+
   const handleCatDragStart = (e: React.DragEvent, name: string, section: number) => {
+    e.stopPropagation();
     setDraggedCategory({ name, section });
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => {
@@ -110,12 +148,14 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
     }, 0);
   };
   const handleCatDragEnd = (e: React.DragEvent) => {
+    e.stopPropagation();
     setDraggedCategory(null);
     if (e.target instanceof HTMLElement) {
       e.target.style.opacity = '1';
     }
   };
   const handleCatDragOver = (e: React.DragEvent, section: number) => {
+    e.stopPropagation();
     e.preventDefault();
     if (draggedCategory?.section === section) {
       e.dataTransfer.dropEffect = 'move';
@@ -178,14 +218,35 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
   const [expandId, setExpandId] = useState(0);
   const [collapseId, setCollapseId] = useState(0);
+  const [isAllExpanded, setIsAllExpanded] = useState(false);
+  const [sectionOrder, setSectionOrder] = useState<number[]>(() => {
+    const saved = localStorage.getItem('variation_section_order');
+    return saved ? JSON.parse(saved) : [1, 2, 3, 4];
+  });
+  
+  const moveSection = (secId: number, direction: 'up' | 'down') => {
+    setSectionOrder(prev => {
+      const idx = prev.indexOf(secId);
+      if (idx < 0) return prev;
+      const next = [...prev];
+      if (direction === 'up' && idx > 0) {
+        [next[idx-1], next[idx]] = [next[idx], next[idx-1]];
+      } else if (direction === 'down' && idx < prev.length - 1) {
+        [next[idx+1], next[idx]] = [next[idx], next[idx+1]];
+      }
+      localStorage.setItem('variation_section_order', JSON.stringify(next));
+      return next;
+    });
+  };
+
 
   // Group by Section, then Category
   const groupedParts = useMemo(() => {
     const sections = {
-      1: { name: t('sec_composition' as any, lang), categories: {} as Record<string, VariationPart[]> },
-      2: { name: t('sec_pose' as any, lang), categories: {} as Record<string, VariationPart[]> },
-      3: { name: t('sec_details' as any, lang), categories: {} as Record<string, VariationPart[]> },
-      4: { name: t('sec_context' as any, lang), categories: {} as Record<string, VariationPart[]> },
+      1: { name: customSectionNames[1] || t('sec_composition' as any, lang), categories: {} as Record<string, VariationPart[]> },
+      2: { name: customSectionNames[2] || t('sec_pose' as any, lang), categories: {} as Record<string, VariationPart[]> },
+      3: { name: customSectionNames[3] || t('sec_details' as any, lang), categories: {} as Record<string, VariationPart[]> },
+      4: { name: customSectionNames[4] || t('sec_context' as any, lang), categories: {} as Record<string, VariationPart[]> },
     };
 
     customCategories.forEach(cat => {
@@ -206,7 +267,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
     // Sorting removed so users can fully freely reorder items including pinned ones
     return sections;
-  }, [filteredParts, customCategories, lang]);
+  }, [filteredParts, customCategories, customSectionNames, lang]);
 
   const startEdit = (part: VariationPart, e: React.MouseEvent) => {
     e.preventDefault();
@@ -227,8 +288,24 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       <div className="flex bg-bg-panel border-b border-border-main text-[9px] font-mono uppercase tracking-widest shrink-0 overflow-x-auto justify-between items-center pr-2">
         <div className="px-4 py-3 border-r border-border-main bg-bg-surface text-text-main border-b-2 border-b-blue-500 whitespace-nowrap">{t('variation_parts', lang)}</div>
         <div className="flex gap-2">
-          <button onClick={() => setExpandId(prev => prev + 1)} className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-main text-text-dim rounded transition-colors whitespace-nowrap">{t('expand_all', lang)}</button>
-          <button onClick={() => setCollapseId(prev => prev + 1)} className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-main text-text-dim rounded transition-colors whitespace-nowrap">{t('collapse_all', lang)}</button>
+          <button 
+            onClick={() => {
+              if (isAllExpanded) {
+                setCollapseId(prev => prev + 1);
+              } else {
+                setExpandId(prev => prev + 1);
+              }
+              setIsAllExpanded(!isAllExpanded);
+            }} 
+            className={`px-3 py-1 border rounded transition-colors whitespace-nowrap flex items-center justify-center gap-1 w-[120px] shrink-0 ${
+              theme === 'light' || theme === 'paper'
+                ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
+                : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
+            }`}
+          >
+            {isAllExpanded ? <ChevronsUp size={12} /> : <ChevronsDown size={12} />}
+            {isAllExpanded ? t('collapse_all', lang) : t('expand_all', lang)}
+          </button>
         </div>
       </div>
 
@@ -280,20 +357,64 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto pr-2 space-y-4 content-start min-h-0 pb-12">
-          {(Object.entries(groupedParts) as [string, any][]).map(([secId, secData]) => {
+          {sectionOrder.map((secIdNum) => {
+            const secId = String(secIdNum);
+            const secData = groupedParts[secIdNum as keyof typeof groupedParts];
+            if (!secData) return null;
             const catEntries = Object.entries(secData.categories) as [string, VariationPart[]][];
 
             return (
-              <div key={secId} className="space-y-4">
-                <div className={`flex items-center justify-between p-2 border-l-4 shadow-sm bg-transparent group text-text-main ${
+              <div 
+                key={secId} 
+                className="space-y-4"
+                onDragOver={(e) => handleSectionDragOver(e, Number(secId))}
+              >
+                <div draggable={editingId === null && editingCategory === null && editingSectionId === null} onDragStart={(e) => handleSectionDragStart(e, Number(secId))} onDragEnd={handleSectionDragEnd} style={{ cursor: "grab" }} className={`flex items-center justify-between p-2 border-l-4 shadow-sm bg-transparent group text-text-main ${
                   secId === '1' ? 'border-blue-500' : 
                   secId === '2' ? 'border-orange-500' : 
                   secId === '3' ? 'border-green-500' : 
                   'border-purple-500'
                 }`}>
-                  <h3 className="text-xs font-mono font-bold uppercase">
-                    {secData.name}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <div className="flex flex-col">
+                      <button onClick={() => moveSection(Number(secId), 'up')} className="hover:text-text-main text-text-dim opacity-0 group-hover:opacity-100 transition-opacity"><ChevronUp size={12} /></button>
+                      <button onClick={() => moveSection(Number(secId), 'down')} className="hover:text-text-main text-text-dim opacity-0 group-hover:opacity-100 transition-opacity"><ChevronDown size={12} /></button>
+                    </div>
+                    {editingSectionId === Number(secId) ? (
+                      <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          value={editSectionName}
+                          onChange={(e) => setEditSectionName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              onRenameSection?.(Number(secId), editSectionName);
+                              setEditingSectionId(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingSectionId(null);
+                            }
+                          }}
+                          className="text-xs font-mono font-bold uppercase bg-bg-input border border-border-main px-1 py-0.5 rounded outline-none w-32 text-text-main"
+                          autoFocus
+                          onBlur={() => {
+                            onRenameSection?.(Number(secId), editSectionName);
+                            setEditingSectionId(null);
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <h3 className="text-xs font-mono font-bold uppercase flex items-center group/title cursor-text" onClick={(e) => {
+                        if (onRenameSection) {
+                          e.stopPropagation();
+                          setEditingSectionId(Number(secId));
+                          setEditSectionName(secData.name);
+                        }
+                      }}>
+                        {secData.name}
+                        {onRenameSection && <Pencil className="w-3 h-3 ml-2 opacity-0 group-hover/title:opacity-100 transition-opacity text-text-dim" />}
+                      </h3>
+                    )}
+                  </div>
                   {onAddCategory && (
                     <button 
                       onClick={() => setConfirmAddCategoryData(Number(secId))}
@@ -312,7 +433,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
                         <div 
                           key={category}
-                          draggable={editingId === null && editingCategory === null}
+                          draggable={editingId === null && editingCategory === null && editingSectionId === null}
                           onDragStart={(e) => handleCatDragStart(e, category, Number(secId))}
                           onDragEnd={handleCatDragEnd}
                           onDragOver={(e) => handleCatDragOver(e, Number(secId))}

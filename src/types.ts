@@ -21,4 +21,5 @@ export interface AppData {
   negatives?: MasterPrompt[];
   parts: VariationPart[];
   customCategories?: { name: string, section: SectionType }[];
+  customSectionNames?: Record<number, string>;
 }

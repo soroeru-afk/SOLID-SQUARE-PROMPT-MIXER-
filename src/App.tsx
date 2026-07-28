@@ -528,6 +528,16 @@ export default function App() {
     });
   };
 
+  const handleRenameSection = (section: number, newName: string) => {
+    setData(prev => ({
+      ...prev,
+      customSectionNames: {
+        ...(prev.customSectionNames || {}),
+        [section]: newName
+      }
+    }));
+  };
+
   const handleReorderCategory = (section: number, draggedCat: string, targetCat: string) => {
     setData(prev => {
       let currentOrder = prev.customCategories ? prev.customCategories.filter(c => c.section === section).map(c => c.name) : [];
@@ -818,6 +828,8 @@ export default function App() {
             <VariationColumn
               parts={data.parts}
               customCategories={data.customCategories}
+              customSectionNames={data.customSectionNames}
+              onRenameSection={handleRenameSection}
               onAddCategory={handleAddCategory}
               onRenameCategory={handleRenameCategory}
               onDeleteCategory={handleDeleteCategory}
@@ -833,6 +845,7 @@ export default function App() {
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               lang={lang}
+              theme={theme}
             />
           ) : (
             <MasterColumn
@@ -1036,6 +1049,8 @@ export default function App() {
             <VariationColumn
               parts={data.parts}
               customCategories={data.customCategories}
+              customSectionNames={data.customSectionNames}
+              onRenameSection={handleRenameSection}
               onAddCategory={handleAddCategory}
               onRenameCategory={handleRenameCategory}
               onDeleteCategory={handleDeleteCategory}
@@ -1051,6 +1066,7 @@ export default function App() {
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               lang={lang}
+              theme={theme}
             />
           )}
           </aside>

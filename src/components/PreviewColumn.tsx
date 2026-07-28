@@ -208,6 +208,9 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         line
           .replace(/[\u3000]/g, ' ')
           .replace(/[ \t]+/g, ' ')
+          .replace(/\.\s*,/g, ',')
+          .replace(/\.\s*$/g, '')
+          .replace(/(^|,\s*)\.(?=$|\s*,)/g, '$1')
           .replace(/[ \t]+,/g, ',')
           .replace(/,+/g, ',')
           .replace(/,[ \t]*,/g, ',')
@@ -226,7 +229,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   };
 
   const applyTransformToSelectionOrAll = (transformFn: (text: string) => string) => {
-    const isPositive = activeMasterTab === 'master';
+    const isPositive = activeEditor === 'positive';
     const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
     
     if (textarea) {
@@ -261,6 +264,152 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     } else {
       setNegativeEditorText(prev => cleanString(transformFn(prev)));
     }
+  };
+
+  
+  const applyTransformToSelectionOrWord = (transformFn: (text: string) => string) => {
+    const isPositive = activeEditor === 'positive';
+    const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
+    
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = isPositive ? editorText : negativeEditorText;
+      
+      let selStart = start;
+      let selEnd = end;
+      
+      // Tokenize text by commas, respecting parentheses
+      const tokens: { text: string; start: number; end: number }[] = [];
+      let currentStart = 0;
+      let inParen = 0;
+      for (let i = 0; i < text.length; i++) {
+        if (text[i] === '(') inParen++;
+        else if (text[i] === ')') inParen--;
+        
+        if (text[i] === ',' && inParen <= 0) {
+          tokens.push({ text: text.substring(currentStart, i), start: currentStart, end: i });
+          currentStart = i + 1;
+        }
+      }
+      tokens.push({ text: text.substring(currentStart), start: currentStart, end: text.length });
+      
+      const activeToken = tokens.find(t => t.start <= start && t.end >= start) || tokens[tokens.length - 1];
+      let tStart = activeToken.start;
+      let tEnd = activeToken.end;
+
+      if (start === end) {
+        selStart = tStart;
+        selEnd = tEnd;
+      } else {
+        const startToken = tokens.find(t => t.start <= start && t.end >= start) || tokens[0];
+        const endToken = tokens.find(t => t.start <= (end > 0 ? end - 1 : 0) && t.end >= (end > 0 ? end - 1 : 0)) || tokens[tokens.length - 1];
+        selStart = startToken.start;
+        selEnd = endToken.end;
+      }
+      
+      while(selStart < selEnd && text[selStart].match(/\s/)) selStart++;
+      while(selEnd > selStart && text[selEnd-1].match(/\s/)) selEnd--;
+      if (selStart >= selEnd) return;
+      
+      const selectedText = text.substring(selStart, selEnd);
+      const transformedText = transformFn(selectedText);
+      
+      const newText = text.substring(0, selStart) + transformedText + text.substring(selEnd);
+      
+      if (isPositive) {
+        setEditorText(cleanString(newText));
+      } else {
+        setNegativeEditorText(cleanString(newText));
+      }
+      
+      setTimeout(() => {
+        if (textarea) {
+          textarea.setSelectionRange(selStart, selStart + transformedText.length);
+          textarea.focus();
+        }
+      }, 0);
+    }
+  };
+
+
+
+  const handleEmphasizeAdd = () => {
+    applyTransformToSelectionOrWord((text) => {
+      return text.split(',').map(part => {
+        let trimmed = part.trim();
+        if (!trimmed) return part;
+        let weight = 1.0;
+        let m = trimmed.match(/:([0-9.]+)[)\]]*$/);
+        if (m) {
+          weight = parseFloat(m[1]);
+        } else if (/^[\(\[]/.test(trimmed)) {
+          weight = 1.1;
+        }
+        
+        let clean = trimmed.replace(/[\(\)\[\]]/g, '').replace(/:\s*[0-9.]+/g, '');
+        if (!clean) return part;
+        
+        let newWeight = weight + 0.1;
+        newWeight = Math.round(newWeight * 100) / 100;
+        return part.replace(trimmed, `(${clean}:${newWeight})`);
+      }).join(',');
+    });
+  };
+
+  const handleEmphasizeRemove = () => {
+    applyTransformToSelectionOrWord((text) => {
+      return text.split(',').map(part => {
+        let trimmed = part.trim();
+        if (!trimmed) return part;
+        let weight = 1.0;
+        let m = trimmed.match(/:([0-9.]+)[)\]]*$/);
+        if (m) {
+          weight = parseFloat(m[1]);
+        } else if (/^[\(\[]/.test(trimmed)) {
+          weight = 1.1;
+        }
+        
+        let clean = trimmed.replace(/[\(\)\[\]]/g, '').replace(/:\s*[0-9.]+/g, '');
+        if (!clean) return part;
+        
+        let newWeight = weight - 0.1;
+        newWeight = Math.max(0.1, Math.round(newWeight * 100) / 100);
+        return part.replace(trimmed, `(${clean}:${newWeight})`);
+      }).join(',');
+    });
+  };
+
+  const handleEmphasizeClear = () => {
+    applyTransformToSelectionOrWord((text) => {
+      return text.split(',').map(part => {
+        let trimmed = part.trim();
+        if (!trimmed) return part;
+        let clean = trimmed.replace(/[\(\)\[\]]/g, '').replace(/:\s*[0-9.]+/g, '');
+        if (!clean) return part;
+        return part.replace(trimmed, clean);
+      }).join(',');
+    });
+  };
+
+  const handleEmphasizeChange = (delta: number) => {
+    applyTransformToSelectionOrWord((text) => {
+      let match = text.match(/^\((.+?):([0-9.]+)\)$/);
+      if (match) {
+        let newWeight = parseFloat(match[2]) + delta;
+        newWeight = Math.max(0.1, Math.round(newWeight * 100) / 100);
+        return `(${match[1]}:${newWeight})`;
+      }
+      match = text.match(/^\((.+?)\)$/);
+      if (match) {
+        let newWeight = 1.1 + delta;
+        newWeight = Math.max(0.1, Math.round(newWeight * 100) / 100);
+        return `(${match[1]}:${newWeight})`;
+      }
+      let newWeight = 1.0 + delta;
+      newWeight = Math.max(0.1, Math.round(newWeight * 100) / 100);
+      return `(${text}:${newWeight})`;
+    });
   };
 
   const handleFormatComma = () => {
@@ -333,9 +482,9 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       
       const result = [];
       for (const [part, count] of counts.entries()) {
-        if (count > 1) {
-          const numStr = Number.isInteger(count) ? count.toString() : count.toFixed(1);
-          result.push(`(${part}:${numStr})`);
+        if (count !== 1) {
+          const finalCount = Math.round(count * 100) / 100;
+          result.push(`(${part}:${finalCount})`);
         } else {
           result.push(part);
         }
@@ -343,46 +492,29 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       return cleanString(result.join(', '));
     };
 
-    const processScale = (text: string) => {
-      const regex = /\(([^)]+?)[: ]([0-9.]+)\)/g;
-      let match;
-      let minWeight = Infinity;
-      let maxWeight = -Infinity;
-      
-      // 1. 最小値と最大値を見つける
-      while ((match = regex.exec(text)) !== null) {
-        const weight = parseFloat(match[2]);
-        if (!isNaN(weight)) {
-          if (weight < minWeight) minWeight = weight;
-          if (weight > maxWeight) maxWeight = weight;
-        }
-      }
-
-      // 差がない、または見つからない場合はそのまま返す
-      if (minWeight === Infinity || minWeight === maxWeight) {
-        return text;
-      }
-
-      // 2. 対象の文字列だけを置換する
-      return text.replace(/\(([^)]+?)[: ]([0-9.]+)\)/g, (fullMatch, content, weightStr) => {
-        const weight = parseFloat(weightStr);
-        if (isNaN(weight)) return fullMatch;
-        
-        const scaledWeight = 0.1 + ((weight - minWeight) / (maxWeight - minWeight)) * (1.4 - 0.1);
-        const finalWeightStr = parseFloat(scaledWeight.toFixed(2)).toString();
-        
-        return `(${content}:${finalWeightStr})`;
-      });
-    };
-
-    const processBoth = (text: string) => processScale(processMerge(text));
-
     if (activeMasterTab === 'master') {
-      setEditorText(prev => processBoth(prev));
+      setEditorText(prev => processMerge(prev));
     } else if (activeMasterTab === 'negative') {
-      setNegativeEditorText(prev => processBoth(prev));
+      setNegativeEditorText(prev => processMerge(prev));
     }
   };
+
+  const handleClearAllWeights = () => {
+    const processClear = (text: string) => {
+      return text.split(',').map(part => {
+        const trimmed = part.trim();
+        const clean = trimmed.replace(/[\(\)\[\]]/g, '').replace(/:\s*[0-9.]+/g, '');
+        return clean;
+      }).filter(Boolean).join(', ');
+    };
+
+    if (activeMasterTab === 'master') {
+      setEditorText(prev => processClear(prev));
+    } else if (activeMasterTab === 'negative') {
+      setNegativeEditorText(prev => processClear(prev));
+    }
+  };
+
 
   const handleAdjustWeights = (delta: number) => {
     const isPositive = activeMasterTab === 'master';
@@ -398,7 +530,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       return targetText.replace(/\(([^)]+?)[: ]([0-9.]+)\)/g, (fullMatch, content, weightStr) => {
         const weight = parseFloat(weightStr);
         if (isNaN(weight)) return fullMatch;
-        const newWeight = Math.max(0.01, weight + delta);
+        const newWeight = Math.max(0.1, weight + delta);
         const finalWeightStr = parseFloat(newWeight.toFixed(2)).toString();
         return `(${content}:${finalWeightStr})`;
       });
@@ -534,12 +666,37 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    if (start === end) return;
-    
     const currentText = isPositive ? editorText : negativeEditorText;
-    const before = currentText.substring(0, start);
-    const selected = currentText.substring(start, end);
-    const after = currentText.substring(end);
+
+    // Tokenize text by commas, respecting parentheses
+    const tokens: { text: string; start: number; end: number }[] = [];
+    let currentStart = 0;
+    let inParen = 0;
+    for (let i = 0; i < currentText.length; i++) {
+      if (currentText[i] === '(') inParen++;
+      else if (currentText[i] === ')') inParen--;
+      
+      if (currentText[i] === ',' && inParen <= 0) {
+        tokens.push({ text: currentText.substring(currentStart, i), start: currentStart, end: i });
+        currentStart = i + 1;
+      }
+    }
+    tokens.push({ text: currentText.substring(currentStart), start: currentStart, end: currentText.length });
+
+    let selStart = start;
+    let selEnd = end;
+    if (start === end) {
+      const activeToken = tokens.find(t => t.start <= start && t.end >= start) || tokens[tokens.length - 1];
+      selStart = activeToken.start;
+      selEnd = activeToken.end;
+      while (selStart < selEnd && currentText[selStart].match(/\s/)) selStart++;
+      while (selEnd > selStart && currentText[selEnd - 1].match(/\s/)) selEnd--;
+      if (selStart >= selEnd) return;
+    }
+    
+    const before = currentText.substring(0, selStart);
+    const selected = currentText.substring(selStart, selEnd);
+    const after = currentText.substring(selEnd);
     
     let remaining = before + after;
     remaining = remaining.replace(/\s*,\s*,/g, ',').replace(/^[\s,]+|[\s,]+$/g, '').trim();
@@ -581,10 +738,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    if (start === end) return;
-    
     const currentText = isPositive ? editorText : negativeEditorText;
-    
+
     // Tokenize text by commas, respecting parentheses
     const tokens: { text: string; start: number; end: number }[] = [];
     let currentStart = 0;
@@ -599,10 +754,21 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       }
     }
     tokens.push({ text: currentText.substring(currentStart), start: currentStart, end: currentText.length });
-    
+
+    let selStart = start;
+    let selEnd = end;
+    if (start === end) {
+      const activeToken = tokens.find(t => t.start <= start && t.end >= start) || tokens[tokens.length - 1];
+      selStart = activeToken.start;
+      selEnd = activeToken.end;
+      while (selStart < selEnd && currentText[selStart].match(/\s/)) selStart++;
+      while (selEnd > selStart && currentText[selEnd - 1].match(/\s/)) selEnd--;
+      if (selStart >= selEnd) return;
+    }
+
     // Find selected tokens
-    let startIndex = tokens.findIndex(t => t.end >= start && t.start <= start);
-    let endIndex = tokens.findIndex(t => t.end >= (end > start ? end - 1 : end) && t.start <= (end > start ? end - 1 : end));
+    let startIndex = tokens.findIndex(t => t.end >= selStart && t.start <= selStart);
+    let endIndex = tokens.findIndex(t => t.end >= (selEnd > selStart ? selEnd - 1 : selEnd) && t.start <= (selEnd > selStart ? selEnd - 1 : selEnd));
     
     if (startIndex === -1) startIndex = 0;
     if (endIndex === -1) endIndex = tokens.length - 1;
@@ -777,9 +943,20 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               ? 'bg-[#3b5323]/10 hover:bg-[#3b5323]/20 border-[#3b5323]/60 text-[#3b5323]' 
               : 'bg-[#7a9a5a]/10 hover:bg-[#7a9a5a]/20 border-[#7a9a5a]/50 text-[#9bb87d]'
           }`}
-          title="Merge duplicate phrases and normalize ratios"
+          title="Merge duplicate phrases"
         >
           {t('merge_dupes', lang)}
+        </button>
+        <button 
+          onClick={handleClearAllWeights}
+          className={`px-3 py-1.5 text-[10px] font-mono border rounded transition-colors ${
+            theme === 'light' 
+              ? 'bg-[#991b1b]/10 hover:bg-[#991b1b]/20 border-[#991b1b]/60 text-[#991b1b]' 
+              : 'bg-[#fca5a5]/10 hover:bg-[#fca5a5]/20 border-[#fca5a5]/50 text-[#fca5a5]'
+          }`}
+          title="Clear all emphasis weights from text"
+        >
+          {t('clear_all_weights', lang)}
         </button>
         <div className="flex items-center space-x-1 px-2 py-1 bg-bg-input border border-border-main rounded shrink-0">
           <span className="text-[10px] font-mono text-text-dim pr-1">{t('global_weight', lang)}</span>
@@ -878,6 +1055,36 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           {t('move_to_back', lang)}
         </button>
         <div className="w-px h-6 bg-border-main mx-1"></div>
+        <div className="flex items-center space-x-1">
+          <button 
+            onClick={handleEmphasizeAdd}
+            className={`px-2 py-1 text-[10px] font-mono border rounded transition-colors ${
+              theme === 'light' || theme === 'paper'
+                ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
+                : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
+            }`}
+            title="Add Emphasis ()"
+          >+( )</button>
+          <button 
+            onClick={handleEmphasizeRemove}
+            className={`px-2 py-1 text-[10px] font-mono border rounded transition-colors ${
+              theme === 'light' || theme === 'paper'
+                ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
+                : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
+            }`}
+            title="Remove 1 Layer of Emphasis"
+          >-( )</button>
+          <button 
+            onClick={handleEmphasizeClear}
+            className={`px-2 py-1 text-[10px] font-mono border rounded transition-colors ${
+              theme === 'light' || theme === 'paper'
+                ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
+                : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
+            }`}
+            title="Clear All Emphasis"
+          >{t('emphasize_clear', lang)}</button>
+        </div>
+
         <button 
           onClick={handleUppercase}
           className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
