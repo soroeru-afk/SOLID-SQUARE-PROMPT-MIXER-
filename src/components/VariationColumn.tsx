@@ -8,12 +8,17 @@ import { Language, t } from '../i18n';
 
 interface VariationColumnProps {
   parts: VariationPart[];
+  customCategories?: { name: string, section: number }[];
   selectedIds: Set<string>;
   onTogglePart: (id: string) => void;
   onTogglePin: (id: string) => void;
   onAdd: (category: string, section: number, name: string) => void;
   onUpdate: (id: string, updates: Partial<VariationPart>) => void;
   onDelete: (id: string) => void;
+  onDeleteAll?: () => void;
+  onAddCategory?: (section: number, name: string) => void;
+  onRenameCategory?: (section: number, oldName: string, newName: string) => void;
+  onDeleteCategory?: (section: number, name: string) => void;
   onReorder?: (draggedId: string, targetId: string) => void;
   onCopyToMaster?: (part: VariationPart) => void;
   onCopyBulkToMaster?: (items: VariationPart[]) => void;
@@ -21,7 +26,7 @@ interface VariationColumnProps {
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onReorder, onCopyToMaster, onCopyBulkToMaster, lang 
+  parts, customCategories = [], selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -32,7 +37,10 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmAddData, setConfirmAddData] = useState<{ category: string, section: number } | null>(null);
+  const [confirmAddCategoryData, setConfirmAddCategoryData] = useState<number | null>(null);
+  const [confirmDeleteCategoryData, setConfirmDeleteCategoryData] = useState<{ section: number, name: string } | null>(null);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [confirmDeleteAllState, setConfirmDeleteAllState] = useState(false);
 
   const uniqueCategories = useMemo(() => {
     const cats = new Map<string, number>(); // category -> section
@@ -139,6 +147,13 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       4: { name: t('sec_context' as any, lang), categories: {} as Record<string, VariationPart[]> },
     };
 
+    customCategories.forEach(cat => {
+      const sec = sections[cat.section as 1 | 2 | 3 | 4];
+      if (sec && !sec.categories[cat.name]) {
+        sec.categories[cat.name] = [];
+      }
+    });
+
     filteredParts.forEach((part) => {
       const sec = sections[part.section as 1 | 2 | 3 | 4] || sections[3]; // Fallback to 3 if somehow invalid
       if (!sec) return;
@@ -150,7 +165,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
     // Sorting removed so users can fully freely reorder items including pinned ones
     return sections;
-  }, [filteredParts]);
+  }, [filteredParts, customCategories, lang]);
 
   const startEdit = (part: VariationPart, e: React.MouseEvent) => {
     e.preventDefault();
@@ -226,38 +241,56 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
         <div className="flex-1 overflow-y-auto pr-2 space-y-4 content-start min-h-0 pb-12">
           {(Object.entries(groupedParts) as [string, any][]).map(([secId, secData]) => {
             const catEntries = Object.entries(secData.categories) as [string, VariationPart[]][];
-            if (catEntries.length === 0) return null;
 
             return (
               <div key={secId} className="space-y-4">
-                <h3 className={`text-xs font-mono font-bold uppercase p-2 border-l-4 shadow-sm bg-transparent ${
+                <div className={`flex items-center justify-between p-2 border-l-4 shadow-sm bg-transparent group ${
                   secId === '1' ? 'border-blue-500 text-blue-400' : 
                   secId === '2' ? 'border-orange-500 text-orange-400' : 
                   secId === '3' ? 'border-green-500 text-green-400' : 
                   'border-purple-500 text-purple-400'
                 }`}>
-                  {secData.name}
-                </h3>
-                <div className="space-y-2">
-                  {catEntries.map(([category, catParts]) => {
-                    const totalCount = catParts.length;
-                    return (
-                      <Accordion 
-                        key={category} 
-                        title={t(category as any, lang)} 
-                        badge={totalCount} 
-                        defaultOpen={false}
-                        expandId={expandId}
-                        collapseId={collapseId}
-                        onAdd={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setConfirmAddData({ category, section: Number(secId) });
-                        }}
-                      >
-                        <div className="flex flex-col gap-2">
-                          {catParts.map((part, index) => {
-                            const isSelected = selectedIds.has(part.id);
+                  <h3 className="text-xs font-mono font-bold uppercase">
+                    {secData.name}
+                  </h3>
+                  {onAddCategory && (
+                    <button 
+                      onClick={() => setConfirmAddCategoryData(Number(secId))}
+                      className="px-1.5 py-0.5 bg-transparent border border-transparent hover:border-current rounded opacity-0 group-hover:opacity-100 flex items-center transition-all"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span className="text-[9px] ml-1 font-mono">CAT</span>
+                    </button>
+                  )}
+                </div>
+                {catEntries.length > 0 && (
+                  <div className="space-y-2">
+                    {catEntries.map(([category, catParts]) => {
+                      const totalCount = catParts.length;
+                      return (
+                        <Accordion 
+                          key={category} 
+                          title={t(category as any, lang) || category} 
+                          badge={totalCount} 
+                          defaultOpen={false}
+                          expandId={expandId}
+                          collapseId={collapseId}
+                          onEdit={onRenameCategory ? (newName) => onRenameCategory(Number(secId), category, newName) : undefined}
+                          onDelete={onDeleteCategory ? () => setConfirmDeleteCategoryData({ section: Number(secId), name: category }) : undefined}
+                          onAdd={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setConfirmAddData({ category, section: Number(secId) });
+                          }}
+                        >
+                          <div className="flex flex-col gap-2">
+                            {catParts.length === 0 ? (
+                              <div className="text-center py-4 text-text-dim text-[10px] font-mono italic">
+                                {t('empty', lang) || 'Empty'}
+                              </div>
+                            ) : (
+                              catParts.map((part, index) => {
+                                const isSelected = selectedIds.has(part.id);
                             
                             if (editingId === part.id) {
                               return (
@@ -380,22 +413,31 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                 </div>
                               </div>
                             );
-                          })}
+                          }))}
                         </div>
                       </Accordion>
                     );
                   })}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}
           {filteredParts.length === 0 && (
             <div className="text-center py-8 text-text-dim text-[10px] font-mono">
               {t('no_parts', lang)}
-            </div>
+              </div>
           )}
         </div>
       </div>
+
+      {onDeleteAll && (
+        <div className="p-3 bg-bg-panel border-t border-border-main shrink-0">
+          <button onClick={() => setConfirmDeleteAllState(true)} className="w-full py-2 bg-bg-input border border-dashed border-red-500/30 rounded text-[11px] font-mono text-red-500/70 hover:text-red-500 hover:bg-red-500/10 transition-colors">
+            {t('delete_all', lang)}
+          </button>
+        </div>
+      )}
 
       <ConfirmModal
         isOpen={confirmBulkDelete}
@@ -422,6 +464,36 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
           setConfirmAddData(null);
         }}
         onCancel={() => setConfirmAddData(null)}
+        lang={lang}
+      />
+      <AddModal
+        isOpen={confirmAddCategoryData !== null}
+        title="New Category"
+        onConfirm={(name) => {
+          if (confirmAddCategoryData && onAddCategory) onAddCategory(confirmAddCategoryData, name);
+          setConfirmAddCategoryData(null);
+        }}
+        onCancel={() => setConfirmAddCategoryData(null)}
+        lang={lang}
+      />
+      <ConfirmModal
+        isOpen={confirmDeleteCategoryData !== null}
+        message={`Delete category "${confirmDeleteCategoryData?.name}" and all its parts?`}
+        onConfirm={() => {
+          if (confirmDeleteCategoryData && onDeleteCategory) onDeleteCategory(confirmDeleteCategoryData.section, confirmDeleteCategoryData.name);
+          setConfirmDeleteCategoryData(null);
+        }}
+        onCancel={() => setConfirmDeleteCategoryData(null)}
+        lang={lang}
+      />
+      <ConfirmModal
+        isOpen={confirmDeleteAllState}
+        message={t('confirm_delete_all', lang)}
+        onConfirm={() => {
+          if (onDeleteAll) onDeleteAll();
+          setConfirmDeleteAllState(false);
+        }}
+        onCancel={() => setConfirmDeleteAllState(false)}
         lang={lang}
       />
     </>

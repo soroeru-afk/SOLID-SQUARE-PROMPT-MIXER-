@@ -394,6 +394,16 @@ export default function App() {
     if (selectedNegativeId && ids.includes(selectedNegativeId)) setSelectedNegativeId(null);
   };
 
+  const handleDeleteAllMaster = () => {
+    setData(prev => ({ ...prev, masters: [] }));
+    setSelectedMasterId(null);
+  };
+
+  const handleDeleteAllNegative = () => {
+    setData(prev => ({ ...prev, negatives: [] }));
+    setSelectedNegativeId(null);
+  };
+
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = 'new negative content') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
@@ -478,6 +488,42 @@ export default function App() {
   const handleDeletePart = (id: string) => {
     setData(prev => ({ ...prev, parts: prev.parts.filter(p => p.id !== id) }));
     if (selectedPartIds.has(id)) handleTogglePart(id);
+  };
+
+  const handleDeleteAllParts = () => {
+    setData(prev => ({ ...prev, parts: [] }));
+    setSelectedPartIds(new Set());
+  };
+
+  const handleAddCategory = (section: number, name: string) => {
+    setData(prev => ({
+      ...prev,
+      customCategories: [...(prev.customCategories || []), { name, section: section as 1 | 2 | 3 | 4 }]
+    }));
+  };
+
+  const handleRenameCategory = (section: number, oldName: string, newName: string) => {
+    setData(prev => {
+      const newParts = prev.parts.map(p => 
+        (p.section === section && p.category === oldName) ? { ...p, category: newName } : p
+      );
+      let newCustomCategories = prev.customCategories ? [...prev.customCategories] : [];
+      const existingIdx = newCustomCategories.findIndex(c => c.section === section && c.name === oldName);
+      if (existingIdx !== -1) {
+        newCustomCategories[existingIdx] = { ...newCustomCategories[existingIdx], name: newName };
+      } else {
+        newCustomCategories.push({ name: newName, section: section as 1 | 2 | 3 | 4 });
+      }
+      return { ...prev, parts: newParts, customCategories: newCustomCategories };
+    });
+  };
+
+  const handleDeleteCategory = (section: number, name: string) => {
+    setData(prev => {
+      const newParts = prev.parts.filter(p => !(p.section === section && p.category === name));
+      const newCustomCategories = (prev.customCategories || []).filter(c => !(c.section === section && c.name === name));
+      return { ...prev, parts: newParts, customCategories: newCustomCategories };
+    });
   };
 
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = 'new content') => {
@@ -741,12 +787,17 @@ export default function App() {
             {sidebarSwapped ? (
             <VariationColumn
               parts={data.parts}
+              customCategories={data.customCategories}
+              onAddCategory={handleAddCategory}
+              onRenameCategory={handleRenameCategory}
+              onDeleteCategory={handleDeleteCategory}
               selectedIds={selectedPartIds}
               onTogglePart={handleTogglePart}
               onTogglePin={handleTogglePin}
               onAdd={handleAddPart}
               onUpdate={handleUpdatePart}
               onDelete={handleDeletePart}
+              onDeleteAll={handleDeleteAllParts}
               onReorder={handleReorderParts}
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
@@ -768,6 +819,8 @@ export default function App() {
               onDeleteNegative={handleDeleteNegative}
               onDeleteBulk={handleDeleteBulkMaster}
               onDeleteBulkNegative={handleDeleteBulkNegative}
+              onDeleteAll={handleDeleteAllMaster}
+              onDeleteAllNegative={handleDeleteAllNegative}
               onMoveBulk={handleMoveBulkMasters}
               onMoveBulkNegative={handleMoveBulkNegatives}
               onReorder={handleReorderMasters}
@@ -936,6 +989,8 @@ export default function App() {
               onDeleteNegative={handleDeleteNegative}
               onDeleteBulk={handleDeleteBulkMaster}
               onDeleteBulkNegative={handleDeleteBulkNegative}
+              onDeleteAll={handleDeleteAllMaster}
+              onDeleteAllNegative={handleDeleteAllNegative}
               onMoveBulk={handleMoveBulkMasters}
               onMoveBulkNegative={handleMoveBulkNegatives}
               onReorder={handleReorderMasters}
@@ -949,12 +1004,17 @@ export default function App() {
           ) : (
             <VariationColumn
               parts={data.parts}
+              customCategories={data.customCategories}
+              onAddCategory={handleAddCategory}
+              onRenameCategory={handleRenameCategory}
+              onDeleteCategory={handleDeleteCategory}
               selectedIds={selectedPartIds}
               onTogglePart={handleTogglePart}
               onTogglePin={handleTogglePin}
               onAdd={handleAddPart}
               onUpdate={handleUpdatePart}
               onDelete={handleDeletePart}
+              onDeleteAll={handleDeleteAllParts}
               onReorder={handleReorderParts}
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}

@@ -20,6 +20,8 @@ interface MasterColumnProps {
   onDeleteNegative: (id: string) => void;
   onDeleteBulk?: (ids: string[]) => void;
   onDeleteBulkNegative?: (ids: string[]) => void;
+  onDeleteAll?: () => void;
+  onDeleteAllNegative?: () => void;
   onMoveBulk?: (ids: string[], direction: 'top' | 'up' | 'down' | 'bottom') => void;
   onMoveBulkNegative?: (ids: string[], direction: 'top' | 'up' | 'down' | 'bottom') => void;
   onReorder?: (startIndex: number, endIndex: number) => void;
@@ -32,7 +34,7 @@ interface MasterColumnProps {
 }
 
 export const MasterColumn: React.FC<MasterColumnProps> = ({ 
-  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, onCopyToPart, onCopyBulkToPart, activeTab, setActiveTab, lang 
+  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onDeleteAll, onDeleteAllNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, onCopyToPart, onCopyBulkToPart, activeTab, setActiveTab, lang 
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'dropdown'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
   const [confirmAdd, setConfirmAdd] = useState(false);
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteBulk, setConfirmDeleteBulk] = useState(false);
+  const [confirmDeleteAllState, setConfirmDeleteAllState] = useState(false);
 
   const currentList = activeTab === 'master' ? masters : negatives;
   const currentSelectedId = activeTab === 'master' ? selectedId : selectedNegativeId;
@@ -52,6 +55,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
   const currentOnUpdate = activeTab === 'master' ? onUpdate : onUpdateNegative;
   const currentOnDelete = activeTab === 'master' ? onDelete : onDeleteNegative;
   const currentOnDeleteBulk = activeTab === 'master' ? onDeleteBulk : onDeleteBulkNegative;
+  const currentOnDeleteAll = activeTab === 'master' ? onDeleteAll : onDeleteAllNegative;
   const currentOnMoveBulk = activeTab === 'master' ? onMoveBulk : onMoveBulkNegative;
   const currentOnReorder = activeTab === 'master' ? onReorder : onReorderNegative;
 
@@ -368,10 +372,15 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
           );
         })}
       </div>
-      <div className="p-3 bg-bg-panel border-t border-border-main">
-        <button onClick={() => setConfirmAdd(true)} className="w-full py-2 bg-bg-input border border-dashed border-border-hover rounded text-[11px] font-mono text-text-dim hover:text-text-dim transition-colors">
+      <div className="p-3 bg-bg-panel border-t border-border-main flex gap-2">
+        <button onClick={() => setConfirmAdd(true)} className="flex-1 py-2 bg-bg-input border border-dashed border-border-hover rounded text-[11px] font-mono text-text-dim hover:text-text-main transition-colors">
           {t('add_master', lang)}
         </button>
+        {currentOnDeleteAll && (
+          <button onClick={() => setConfirmDeleteAllState(true)} className="py-2 px-3 bg-bg-input border border-dashed border-red-500/30 rounded text-[11px] font-mono text-red-500/70 hover:text-red-500 hover:bg-red-500/10 transition-colors">
+            {t('delete_all', lang)}
+          </button>
+        )}
       </div>
 
       <ConfirmModal
@@ -405,6 +414,16 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
           setConfirmDeleteBulk(false);
         }}
         onCancel={() => setConfirmDeleteBulk(false)}
+        lang={lang}
+      />
+      <ConfirmModal
+        isOpen={confirmDeleteAllState}
+        message={t('confirm_delete_all', lang)}
+        onConfirm={() => {
+          if (currentOnDeleteAll) currentOnDeleteAll();
+          setConfirmDeleteAllState(false);
+        }}
+        onCancel={() => setConfirmDeleteAllState(false)}
         lang={lang}
       />
     </>

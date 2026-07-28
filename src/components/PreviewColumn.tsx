@@ -472,28 +472,28 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   };
 
   const [editorFontSize, setEditorFontSize] = useState(() => {
-    const saved = localStorage.getItem('ui_editor_font_size');
-    return saved ? Number(saved) : 14;
+    const saved = localStorage.getItem('editorFontSize');
+    return saved ? parseInt(saved, 10) : 14;
   });
   const [editorFontFamily, setEditorFontFamily] = useState(() => {
-    return localStorage.getItem('ui_editor_font_family') || 'font-mono';
-  });
-  
-  const [negativeHeight, setNegativeHeight] = useState(() => {
-    const saved = localStorage.getItem('ui_negative_height');
-    return saved ? Number(saved) : 120;
+    return localStorage.getItem('editorFontFamily') || 'font-mono';
   });
 
   useEffect(() => {
-    localStorage.setItem('ui_editor_font_size', String(editorFontSize));
+    localStorage.setItem('editorFontSize', editorFontSize.toString());
   }, [editorFontSize]);
 
   useEffect(() => {
-    localStorage.setItem('ui_editor_font_family', editorFontFamily);
+    localStorage.setItem('editorFontFamily', editorFontFamily);
   }, [editorFontFamily]);
+  
+  const [negativeHeight, setNegativeHeight] = useState(() => {
+    const saved = localStorage.getItem('ui_negative_height');
+    return saved ? parseInt(saved, 10) : 120;
+  });
 
   useEffect(() => {
-    localStorage.setItem('ui_negative_height', String(negativeHeight));
+    localStorage.setItem('ui_negative_height', negativeHeight.toString());
   }, [negativeHeight]);
 
   const dragStartY = useRef(0);

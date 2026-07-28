@@ -20,4 +20,5 @@ export interface AppData {
   masters: MasterPrompt[];
   negatives?: MasterPrompt[];
   parts: VariationPart[];
+  customCategories?: { name: string, section: SectionType }[];
 }
