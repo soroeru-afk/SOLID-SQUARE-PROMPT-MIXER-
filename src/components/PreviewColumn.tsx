@@ -21,11 +21,17 @@ interface PreviewColumnProps {
   setNegativeCursorPos: (pos: number) => void;
   activeEditor: 'positive' | 'negative';
   setActiveEditor: (editor: 'positive' | 'negative') => void;
-  onSaveAsMaster?: (title: string, content: string, isNegative: boolean) => void;
-  onSaveAsPart?: (name: string, content: string, category: string, section: number, items?: {name: string, content: string}[]) => void;
+  onSaveAsMaster?: (title: string, content: string, isNegative: boolean, negativeContent?: string, isUpdate?: boolean) => void;
+  onSaveAsPart?: (name: string, content: string, category: string, section: number, items?: {name: string, content: string}[], isUpdate?: boolean) => void;
   onSaveAsMemo?: (name: string, content: string, isUpdate: boolean) => void;
   selectedMemoId?: string | null;
   selectedMemoName?: string;
+  selectedMasterId?: string | null;
+  selectedMasterName?: string;
+  selectedNegativeId?: string | null;
+  selectedNegativeName?: string;
+  selectedPartId?: string | null;
+  selectedPartName?: string;
   uniqueCategories?: [string, number][];
   activeMasterTab?: 'master' | 'negative';
   lang: Language;
@@ -54,6 +60,12 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   onSaveAsMemo,
   selectedMemoId,
   selectedMemoName,
+  selectedMasterId,
+  selectedMasterName,
+  selectedNegativeId,
+  selectedNegativeName,
+  selectedPartId,
+  selectedPartName,
   uniqueCategories = [],
   activeMasterTab = 'master',
   lang,
@@ -173,10 +185,10 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       setIsSavePartModalOpen(true);
     } else {
       const firstLine = text.trim().split('\n')[0];
-      const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+      const name = selectedPartId && selectedPartName ? selectedPartName : (firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine);
       setSavePartItems(undefined);
       setSavePartContent(text.trim());
-      setSavePartDefaultName(title);
+      setSavePartDefaultName(name);
       setIsSavePartModalOpen(true);
     }
   };
@@ -472,7 +484,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     if (!posText && !negText) return;
     
     const firstLine = posText ? posText.split('\n')[0] : negText.split('\n')[0];
-    const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+    const title = selectedMasterId && selectedMasterName ? selectedMasterName : (firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine);
     
     setSaveMasterItems(undefined);
     setSaveMasterContent(posText);
@@ -498,7 +510,9 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       setIsSaveMasterModalOpen(true);
     } else {
       const firstLine = text.trim().split('\n')[0];
-      const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+      const title = targetIsNegative 
+        ? (selectedNegativeId && selectedNegativeName ? selectedNegativeName : (firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine))
+        : (selectedMasterId && selectedMasterName ? selectedMasterName : (firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine));
       setSaveMasterItems(undefined);
       setSaveMasterContent(text.trim());
       setSaveMasterDefaultTitle(title);
@@ -1211,10 +1225,10 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           {tabs.map(tab => (
             <div 
               key={tab.id}
-              className={`group flex items-center gap-1.5 px-3 py-0.5 text-[10px] font-mono border rounded-sm cursor-pointer whitespace-nowrap transition-all ${
+              className={`group flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono border rounded cursor-pointer whitespace-nowrap transition-all ${
                 activeTabId === tab.id 
-                  ? (theme === 'light' ? 'bg-white border-border-hover text-text-main font-bold shadow-sm' : 'bg-bg-input border-border-hover text-text-main font-bold') 
-                  : 'bg-transparent border-transparent text-text-dim hover:bg-bg-input hover:text-text-main'
+                  ? (theme === 'light' ? 'bg-gray-700 border-gray-700 text-white font-bold shadow-sm' : 'bg-white border-white text-gray-900 font-bold shadow-sm') 
+                  : 'bg-bg-base border-border-main text-text-dim hover:bg-bg-input hover:text-text-main hover:border-border-hover'
               }`}
               onClick={() => onTabChange(tab.id)}
             >
@@ -1541,9 +1555,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         defaultName={savePartDefaultName}
         items={savePartItems}
         categories={uniqueCategories}
-        onConfirm={(name, category, section, items) => {
+        selectedId={selectedPartId}
+        selectedName={selectedPartName}
+        onConfirm={(name, category, section, items, isUpdate) => {
           if (onSaveAsPart) {
-            onSaveAsPart(name, savePartContent, category, section, items);
+            onSaveAsPart(name, savePartContent, category, section, items, isUpdate);
           }
           setIsSavePartModalOpen(false);
         }}
@@ -1572,14 +1588,16 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         defaultTitle={saveMasterDefaultTitle}
         items={saveMasterItems}
         isNegative={saveMasterIsNegative}
-        onConfirm={(title, content, isNegative, items, negativeContent) => {
+        selectedId={saveMasterIsNegative ? selectedNegativeId : selectedMasterId}
+        selectedName={saveMasterIsNegative ? selectedNegativeName : selectedMasterName}
+        onConfirm={(title, content, isNegative, items, negativeContent, isUpdate) => {
           if (onSaveAsMaster) {
             if (items && items.length > 0) {
               items.forEach(item => {
-                onSaveAsMaster(item.name, item.content, isNegative);
+                onSaveAsMaster(item.name, item.content, isNegative, undefined, isUpdate);
               });
             } else {
-              onSaveAsMaster(title, content, isNegative, negativeContent);
+              onSaveAsMaster(title, content, isNegative, negativeContent, isUpdate);
             }
           }
           setIsSaveMasterModalOpen(false);

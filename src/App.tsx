@@ -102,6 +102,7 @@ export default function App() {
   const [selectedNegativeId, setSelectedNegativeId] = useState<string | null>(() => {
     return localStorage.getItem('ui_selected_negative_id');
   });
+  const [activePartId, setActivePartId] = useState<string | null>(null);
   const [tabs, setTabs] = useState<{id: string, name: string, pos: string, neg: string}[]>(() => {
     const saved = localStorage.getItem('ui_editor_tabs');
     if (saved) {
@@ -283,6 +284,7 @@ export default function App() {
   }, [activeTabId]);
 
   const handleTabsClear = useCallback(() => {
+    setActivePartId(null);
     const newId = `tab-${Date.now()}`;
     setTabs([{ id: newId, name: 'TAB 01', pos: '', neg: '' }]);
     setActiveTabId(newId);
@@ -506,6 +508,7 @@ export default function App() {
   };
 
   const handleTogglePart = (id: string) => {
+    setActivePartId(id);
     const part = data.parts.find(p => p.id === id);
     if (!part) return;
 
@@ -562,6 +565,7 @@ export default function App() {
   const handleDeleteNegative = (id: string) => {
     setData(prev => ({ ...prev, negatives: (prev.negatives || []).filter(m => m.id !== id) }));
     if (selectedNegativeId === id) setSelectedNegativeId(null);
+    setActivePartId(null);
   };
 
   const handleDeleteBulkNegative = (ids: string[]) => {
@@ -593,11 +597,22 @@ export default function App() {
     return Array.from(cats.entries());
   }, [data.parts, data.customCategories]);
 
-  const handleSaveAsMaster = (name: string, content: string, isNegative: boolean, negativeContent?: string) => {
-    if (isNegative) {
-      handleAddNegative(name, content);
+  const handleSaveAsMaster = (name: string, content: string, isNegative: boolean, negativeContent?: string, isUpdate?: boolean) => {
+    if (isUpdate) {
+      if (isNegative && selectedNegativeId) {
+        handleUpdateNegative(selectedNegativeId, { name, content });
+      } else if (!isNegative && selectedMasterId) {
+        handleUpdateMaster(selectedMasterId, { name, content, negativeContent });
+      } else {
+        if (isNegative) handleAddNegative(name, content);
+        else handleAddMaster(name, content, negativeContent);
+      }
     } else {
-      handleAddMaster(name, content, negativeContent);
+      if (isNegative) {
+        handleAddNegative(name, content);
+      } else {
+        handleAddMaster(name, content, negativeContent);
+      }
     }
   };
 
@@ -665,11 +680,13 @@ export default function App() {
 
   const handleDeletePart = (id: string) => {
     setData(prev => ({ ...prev, parts: prev.parts.filter(p => p.id !== id) }));
+    if (activePartId === id) setActivePartId(null);
     if (selectedPartIds.has(id)) handleTogglePart(id);
   };
 
   const handleDeleteAllParts = () => {
     setData(prev => ({ ...prev, parts: [] }));
+    setActivePartId(null);
   };
 
   const handleAddCategory = (section: number, name: string) => {
@@ -936,42 +953,29 @@ export default function App() {
       }
     }
     setSelectedMasterId(id);
+    setActivePartId(null);
   };
 
   const handleSelectNegativeId = (id: string | null, insert: boolean = true) => {
     if (id && insert) {
       const newNeg = data.negatives?.find(m => m.id === id);
       if (newNeg) {
-        if (activeEditor === 'positive') {
-          let newPos = 0;
-          setEditorText(prev => {
-            const actualPos = positiveCursorPos === null ? prev.length : positiveCursorPos;
-            const before = prev.slice(0, actualPos);
-            const after = prev.slice(actualPos);
-            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
-            const insertedStr = prefix + newNeg.content + suffix;
-            newPos = actualPos + insertedStr.length;
-            return cleanString(before + insertedStr + after);
-          });
-          setTimeout(() => setPositiveCursorPos(newPos), 0);
-        } else {
-          let newPos = 0;
-          setNegativeEditorText(prev => {
-            const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
-            const before = prev.slice(0, actualPos);
-            const after = prev.slice(actualPos);
-            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
-            const insertedStr = prefix + newNeg.content + suffix;
-            newPos = actualPos + insertedStr.length;
-            return cleanString(before + insertedStr + after);
-          });
-          setTimeout(() => setNegativeCursorPos(newPos), 0);
-        }
+        let newPos = 0;
+        setNegativeEditorText(prev => {
+          const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
+          const before = prev.slice(0, actualPos);
+          const after = prev.slice(actualPos);
+          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+          const insertedStr = prefix + newNeg.content + suffix;
+          newPos = actualPos + insertedStr.length;
+          return cleanString(before + insertedStr + after);
+        });
+        setTimeout(() => setNegativeCursorPos(newPos), 0);
       }
     }
     setSelectedNegativeId(id);
+    setActivePartId(null);
   };
 
   const handleSelectMemoId = (id: string | null, insert: boolean = true) => {
@@ -1204,6 +1208,12 @@ export default function App() {
         {/* Center: Text Editor & Output */}
         <section className="flex-1 flex flex-col bg-bg-base relative min-w-0">
           <PreviewColumn
+          selectedMasterId={selectedMasterId}
+          selectedMasterName={selectedMasterId ? data.masters.find(m => m.id === selectedMasterId)?.name : undefined}
+          selectedNegativeId={selectedNegativeId}
+          selectedNegativeName={selectedNegativeId ? data.negatives?.find(m => m.id === selectedNegativeId)?.name : undefined}
+          selectedPartId={activePartId || undefined}
+          selectedPartName={activePartId ? data.parts.find(p => p.id === activePartId)?.name : undefined}
           tabs={tabs}
           activeTabId={activeTabId}
           onTabChange={handleTabChange}
@@ -1219,7 +1229,7 @@ export default function App() {
             setPositiveCursorPos={setPositiveCursorPos}
             setNegativeCursorPos={setNegativeCursorPos}
             onSaveAsMaster={handleSaveAsMaster}
-            onSaveAsPart={(name, content, category, section, items) => {
+            onSaveAsPart={(name, content, category, section, items, isUpdate) => {
               if (items && items.length > 0) {
                 setData(prev => {
                   const newParts: VariationPart[] = items.map((item, i) => ({
@@ -1233,7 +1243,12 @@ export default function App() {
                   return { ...prev, parts: [...newParts, ...prev.parts] };
                 });
               } else {
-                handleAddPart(category, section, name, content);
+                const selectedPartId = selectedPartIds.size === 1 ? Array.from<string>(selectedPartIds)[0] : null;
+                if (isUpdate && selectedPartId) {
+                  handleUpdatePart(selectedPartId, { name, content, category, section: section as 1|2|3|4 });
+                } else {
+                  handleAddPart(category, section, name, content);
+                }
               }
             }}
             onSaveAsMemo={(name, content, isUpdate) => {

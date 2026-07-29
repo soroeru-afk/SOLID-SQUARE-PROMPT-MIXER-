@@ -9,12 +9,14 @@ interface SaveMasterModalProps {
   defaultTitle?: string;
   items?: {name: string, content: string}[];
   isNegative: boolean;
-  onConfirm: (title: string, content: string, isNegative: boolean, items?: {name: string, content: string}[], negativeContent?: string) => void;
+  selectedId?: string | null;
+  selectedName?: string;
+  onConfirm: (title: string, content: string, isNegative: boolean, items?: {name: string, content: string}[], negativeContent?: string, isUpdate?: boolean) => void;
   onCancel: () => void;
   lang: Language;
 }
 
-export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, content, negativeContent, defaultTitle, items, isNegative, onConfirm, onCancel, lang }) => {
+export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, content, negativeContent, defaultTitle, items, isNegative, selectedId, selectedName, onConfirm, onCancel, lang }) => {
   const [title, setTitle] = useState('');
   const isBulk = items && items.length > 0;
 
@@ -24,11 +26,7 @@ export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, conten
     }
   }, [isOpen, defaultTitle]);
 
-  const handleConfirm = () => {
-    if (!isBulk && !title.trim()) return;
-    onConfirm(title.trim(), content || '', isNegative, items, negativeContent);
-  };
-
+  
   return (
     <AnimatePresence>
       {isOpen && (
@@ -80,12 +78,21 @@ export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, conten
               >
                 {t('cancel', lang)}
               </button>
+              {selectedId && !isBulk && (
+                <button
+                  onClick={() => onConfirm(title.trim() || selectedName || '', content || '', isNegative, items, negativeContent, true)}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-mono font-bold rounded transition-colors"
+                  title={`Update: ${selectedName}`}
+                >
+                  {t('update_current', lang)}
+                </button>
+              )}
               <button
-                onClick={handleConfirm}
+                onClick={() => onConfirm(title.trim(), content || '', isNegative, items, negativeContent, false)}
                 disabled={!isBulk && !title.trim()}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold rounded transition-colors disabled:opacity-50"
               >
-                {t('confirm', lang)}
+                {t('save_as_new', lang)}
               </button>
             </div>
           </motion.div>

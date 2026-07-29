@@ -8,12 +8,14 @@ interface SavePartModalProps {
   defaultName?: string;
   items?: {name: string, content: string}[];
   categories: [string, number][]; // [category, section]
-  onConfirm: (name: string, category: string, section: number, items?: {name: string, content: string}[]) => void;
+  selectedId?: string | null;
+  selectedName?: string;
+  onConfirm: (name: string, category: string, section: number, items?: {name: string, content: string}[], isUpdate?: boolean) => void;
   onCancel: () => void;
   lang: Language;
 }
 
-export const SavePartModal: React.FC<SavePartModalProps> = ({ isOpen, content, defaultName, items, categories, onConfirm, onCancel, lang }) => {
+export const SavePartModal: React.FC<SavePartModalProps> = ({ isOpen, content, defaultName, items, categories, selectedId, selectedName, onConfirm, onCancel, lang }) => {
   const [name, setName] = useState('');
   const [selectedCat, setSelectedCat] = useState<string>('');
 
@@ -28,13 +30,7 @@ export const SavePartModal: React.FC<SavePartModalProps> = ({ isOpen, content, d
     }
   }, [isOpen, defaultName, categories]);
 
-  const handleConfirm = () => {
-    if ((!isBulk && !name.trim()) || !selectedCat) return;
-    const [sectionStr, ...catParts] = selectedCat.split(':');
-    const categoryName = catParts.join(':');
-    onConfirm(name, categoryName, Number(sectionStr), items);
-  };
-
+  
   return (
     <AnimatePresence>
       {isOpen && (
@@ -93,12 +89,30 @@ export const SavePartModal: React.FC<SavePartModalProps> = ({ isOpen, content, d
               >
                 {t('cancel', lang)}
               </button>
+              {selectedId && !isBulk && (
+                <button
+                  onClick={() => {
+                    const [sectionStr, ...catParts] = selectedCat.split(':');
+                    const categoryName = catParts.join(':');
+                    onConfirm(name.trim() || selectedName || '', categoryName, Number(sectionStr), items, true);
+                  }}
+                  disabled={!selectedCat}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-mono font-bold rounded transition-colors disabled:opacity-50"
+                  title={`Update: ${selectedName}`}
+                >
+                  {t('update_current', lang)}
+                </button>
+              )}
               <button
-                onClick={handleConfirm}
+                onClick={() => {
+                  const [sectionStr, ...catParts] = selectedCat.split(':');
+                  const categoryName = catParts.join(':');
+                  onConfirm(name.trim(), categoryName, Number(sectionStr), items, false);
+                }}
                 disabled={(!isBulk && !name.trim()) || !selectedCat}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold rounded transition-colors disabled:opacity-50"
               >
-                {t('confirm', lang)}
+                {t('save_as_new', lang)}
               </button>
             </div>
           </motion.div>
