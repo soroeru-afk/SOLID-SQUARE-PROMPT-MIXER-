@@ -8,7 +8,7 @@ import { SaveMasterModal } from './components/SaveMasterModal';
 import { initialData } from './data';
 import { AppData, MasterPrompt, VariationPart } from './types';
 import { Language, t, translations } from './i18n';
-import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight, Check, Maximize, Minimize } from 'lucide-react';
 import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 
 const STORAGE_KEY = 'prompt_console_data';
@@ -47,6 +47,28 @@ export default function App() {
     }
     return initialData;
   });
+
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error('Error attempting to enable fullscreen:', err);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
 
   const [autoOptimize, setAutoOptimize] = useState<boolean>(() => {
     const saved = localStorage.getItem('auto_optimize');
@@ -553,6 +575,33 @@ export default function App() {
     if (selectedMasterId && ids.includes(selectedMasterId)) setSelectedMasterId(null);
   };
 
+    const handleDuplicateMaster = (id: string) => {
+    setData(prev => {
+      const original = prev.masters.find(m => m.id === id);
+      if (!original) return prev;
+      const copy = { ...original, id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name: `${original.name} コピー` };
+      return { ...prev, masters: [copy, ...prev.masters] };
+    });
+  };
+
+  const handleDuplicateNegative = (id: string) => {
+    setData(prev => {
+      const original = (prev.negatives || []).find(m => m.id === id);
+      if (!original) return prev;
+      const copy = { ...original, id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name: `${original.name} コピー` };
+      return { ...prev, negatives: [copy, ...(prev.negatives || [])] };
+    });
+  };
+
+  const handleDuplicatePart = (id: string) => {
+    setData(prev => {
+      const original = prev.parts.find(p => p.id === id);
+      if (!original) return prev;
+      const copy = { ...original, id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name: `${original.name} コピー` };
+      return { ...prev, parts: [copy, ...prev.parts] };
+    });
+  };
+
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
@@ -1001,6 +1050,16 @@ export default function App() {
     const newMemo = { id: `memo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content: '' };
     setData(prev => ({ ...prev, memos: [newMemo, ...(prev.memos || [])] }));
   };
+  
+  const handleDuplicateMemo = (id: string) => {
+    setData(prev => {
+      const original = (prev.memos || []).find(m => m.id === id);
+      if (!original) return prev;
+      const copy = { ...original, id: `memo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name: `${original.name} コピー` };
+      return { ...prev, memos: [copy, ...(prev.memos || [])] };
+    });
+  };
+
   const handleUpdateMemo = (id: string, updates: Partial<MasterPrompt>) => {
     setData(prev => ({
       ...prev,
@@ -1057,27 +1116,34 @@ export default function App() {
         </div>
         <div className="flex items-center space-x-2">
           <button 
+            onClick={toggleFullscreen}
+            className="w-7 h-7 bg-bg-input hover:bg-border-main border border-border-main text-text-main rounded transition-colors flex items-center justify-center shrink-0"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          </button>
+          <button 
             onClick={() => setSidebarSwapped(s => !s)}
-            className="bg-bg-input hover:bg-border-main border border-border-main text-text-dim rounded px-2 py-1 outline-none mr-2 transition-colors flex items-center justify-center"
+            className="w-7 h-7 bg-bg-input hover:bg-border-main border border-border-main text-text-main rounded transition-colors flex items-center justify-center shrink-0"
             title="Swap Sidebars"
           >
-            <ArrowLeftRight className="w-3.5 h-3.5" />
+            <ArrowLeftRight className="w-4 h-4" />
           </button>
           <button 
             onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'red' : t === 'red' ? 'light' : t === 'light' ? 'navy' : 'dark')}
-            className="bg-bg-input hover:bg-border-main border border-border-main text-[10px] font-mono text-text-main rounded px-3 py-1 outline-none mr-2 transition-colors flex items-center h-[26px]"
+            className="h-7 bg-bg-input hover:bg-border-main border border-border-main text-[10px] font-mono text-text-main rounded px-2.5 transition-colors flex items-center justify-center shrink-0"
           >
             {t('theme', lang)}: {t(`theme_${theme}` as keyof typeof translations, lang)}
           </button>
           <button 
             onClick={() => setPaperMode(!paperMode)}
-            className={`text-[10px] font-mono border rounded px-3 py-1 outline-none mr-4 transition-colors flex items-center h-[26px] ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-bg-input hover:bg-border-main border-border-main text-text-dim'}`}
+            className={`h-7 text-[10px] font-mono border rounded px-2.5 transition-colors flex items-center justify-center shrink-0 ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-bold' : 'bg-bg-input hover:bg-border-main border-border-main text-text-main'}`}
           >
             {t('paper_mode', lang)}: {paperMode ? 'ON' : 'OFF'}
           </button>
           <button 
             onClick={() => setLang(l => l === 'en' ? 'ja' : 'en')}
-            className="flex items-center px-3 h-[26px] bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-main rounded text-text-dim transition-colors"
+            className="h-7 px-2.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-main rounded text-text-main transition-colors flex items-center justify-center shrink-0"
           >
             {lang === 'en' ? 'JP' : 'EN'}
           </button>
@@ -1104,6 +1170,7 @@ export default function App() {
               onTogglePin={handleTogglePin}
               onAdd={handleAddPart}
               onUpdate={handleUpdatePart}
+              onDuplicate={handleDuplicatePart}
               onDelete={handleDeletePart}
               onDeleteAll={handleDeleteAllParts}
               onReorder={handleReorderParts}
@@ -1120,6 +1187,7 @@ export default function App() {
                 onSelect={handleSelectMemoId}
                 onAdd={handleAddMemo}
                 onUpdate={handleUpdateMemo}
+                onDuplicate={handleDuplicateMemo}
                 onDelete={handleDeleteMemo}
                 onDeleteBulk={handleDeleteBulkMemo}
                 onDeleteAll={handleDeleteAllMemo}
@@ -1140,6 +1208,8 @@ export default function App() {
               onAddNegative={handleAddNegative}
               onUpdate={handleUpdateMaster}
               onUpdateNegative={handleUpdateNegative}
+              onDuplicate={handleDuplicateMaster}
+              onDuplicateNegative={handleDuplicateNegative}
               onDelete={handleDeleteMaster}
               onDeleteNegative={handleDeleteNegative}
               onDeleteBulk={handleDeleteBulkMaster}
@@ -1342,6 +1412,8 @@ export default function App() {
               onAddNegative={handleAddNegative}
               onUpdate={handleUpdateMaster}
               onUpdateNegative={handleUpdateNegative}
+              onDuplicate={handleDuplicateMaster}
+              onDuplicateNegative={handleDuplicateNegative}
               onDelete={handleDeleteMaster}
               onDeleteNegative={handleDeleteNegative}
               onDeleteBulk={handleDeleteBulkMaster}
@@ -1373,6 +1445,7 @@ export default function App() {
               onTogglePin={handleTogglePin}
               onAdd={handleAddPart}
               onUpdate={handleUpdatePart}
+              onDuplicate={handleDuplicatePart}
               onDelete={handleDeletePart}
               onDeleteAll={handleDeleteAllParts}
               onReorder={handleReorderParts}
@@ -1389,6 +1462,7 @@ export default function App() {
                 onSelect={handleSelectMemoId}
                 onAdd={handleAddMemo}
                 onUpdate={handleUpdateMemo}
+                onDuplicate={handleDuplicateMemo}
                 onDelete={handleDeleteMemo}
                 onDeleteBulk={handleDeleteBulkMemo}
                 onDeleteAll={handleDeleteAllMemo}

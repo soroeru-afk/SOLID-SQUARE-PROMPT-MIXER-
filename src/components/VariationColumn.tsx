@@ -3,7 +3,7 @@ import { VariationPart } from '../types';
 import { Accordion } from './Accordion';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine } from 'lucide-react';
+import { Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine, Copy } from 'lucide-react';
 import { Language, t } from '../i18n';
 
 interface VariationColumnProps {
@@ -16,6 +16,7 @@ interface VariationColumnProps {
   onTogglePin: (id: string) => void;
   onAdd: (category: string, section: number, name: string) => void;
   onUpdate: (id: string, updates: Partial<VariationPart>) => void;
+  onDuplicate?: (id: string) => void;
   onDelete: (id: string) => void;
   onDeleteAll?: () => void;
   onAddCategory?: (section: number, name: string) => void;
@@ -33,7 +34,7 @@ interface VariationColumnProps {
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang, theme, activeTab = 'parts', setActiveTab, children
+  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDuplicate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang, theme, activeTab = 'parts', setActiveTab, children
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   const [draggedSection, setDraggedSection] = useState<number | null>(null);
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmQuickDeleteId, setConfirmQuickDeleteId] = useState<string | null>(null);
   const [confirmAddData, setConfirmAddData] = useState<{ category: string, section: number } | null>(null);
   const [confirmAddCategoryData, setConfirmAddCategoryData] = useState<number | null>(null);
   const [confirmDeleteCategoryData, setConfirmDeleteCategoryData] = useState<{ section: number, name: string } | null>(null);
@@ -572,11 +574,39 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                     ><ChevronsDown className="w-3 h-3" /></button>
                                   </div>
                                   <button 
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onDuplicate) onDuplicate(part.id); }}
+                                    className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-blue-400 transition-opacity p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                                    title="Duplicate"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </button>
+                                  <button 
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onCopyToMaster) onCopyToMaster(part); }}
                                     className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-green-400 transition-opacity p-1 bg-bg-panel rounded shadow-sm border border-border-main"
                                     title="Copy to Master Prompts"
                                   >
                                     <ArrowLeftToLine className="w-3 h-3" />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => { 
+                                      e.preventDefault(); 
+                                      e.stopPropagation(); 
+                                      if (confirmQuickDeleteId === part.id) {
+                                        onDelete(part.id);
+                                        setConfirmQuickDeleteId(null);
+                                      } else {
+                                        setConfirmQuickDeleteId(part.id);
+                                        setTimeout(() => setConfirmQuickDeleteId(null), 3000);
+                                      }
+                                    }}
+                                    className={`transition-opacity p-1 bg-bg-panel rounded shadow-sm border border-border-main ${
+                                      confirmQuickDeleteId === part.id 
+                                        ? 'opacity-100 text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20' 
+                                        : 'opacity-0 group-hover:opacity-100 text-text-dim hover:text-red-400 hover:bg-bg-input'
+                                    }`}
+                                    title={confirmQuickDeleteId === part.id ? "Confirm delete" : "Delete"}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
                                   </button>
                                   <button 
                                     onClick={(e) => startEdit(part, e)}

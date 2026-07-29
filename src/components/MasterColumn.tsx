@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MasterPrompt } from '../types';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { Pencil, Trash2, Check, X, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Plus, List, ArrowRightToLine, ArrowLeftToLine } from 'lucide-react';
+import { Pencil, Trash2, Check, X, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Plus, List, ArrowRightToLine, ArrowLeftToLine, Copy } from 'lucide-react';
 import { Language, t } from '../i18n';
 
 interface MasterColumnProps {
@@ -16,6 +16,8 @@ interface MasterColumnProps {
   onAddNegative: (name: string) => void;
   onUpdate: (id: string, updates: Partial<MasterPrompt>) => void;
   onUpdateNegative: (id: string, updates: Partial<MasterPrompt>) => void;
+  onDuplicate?: (id: string) => void;
+  onDuplicateNegative?: (id: string) => void;
   onDelete: (id: string) => void;
   onDeleteNegative: (id: string) => void;
   onDeleteBulk?: (ids: string[]) => void;
@@ -34,7 +36,7 @@ interface MasterColumnProps {
 }
 
 export const MasterColumn: React.FC<MasterColumnProps> = ({ 
-  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onDeleteAll, onDeleteAllNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, onCopyToPart, onCopyBulkToPart, activeTab, setActiveTab, lang 
+  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDuplicate, onDuplicateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onDeleteAll, onDeleteAllNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, onCopyToPart, onCopyBulkToPart, activeTab, setActiveTab, lang 
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'dropdown'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
   const [editMark, setEditMark] = useState<string | undefined>(undefined);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmQuickDeleteId, setConfirmQuickDeleteId] = useState<string | null>(null);
   const [confirmAdd, setConfirmAdd] = useState(false);
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteBulk, setConfirmDeleteBulk] = useState(false);
@@ -59,6 +62,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
   const currentOnDeleteAll = activeTab === 'master' ? onDeleteAll : onDeleteAllNegative;
   const currentOnMoveBulk = activeTab === 'master' ? onMoveBulk : onMoveBulkNegative;
   const currentOnReorder = activeTab === 'master' ? onReorder : onReorderNegative;
+  const currentOnDuplicate = activeTab === 'master' ? onDuplicate : onDuplicateNegative;
 
   const handleToggleBulk = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -356,7 +360,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
               <div className={`mt-1 text-[10px] font-mono truncate ${isSelected ? 'text-text-dim' : 'text-text-dim'}`}>
                 {item.content}
               </div>
-              <div className="absolute top-2 right-6 opacity-0 group-hover:opacity-100 flex items-center transition-opacity bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden">
+              <div className={`absolute top-2 right-6 ${confirmQuickDeleteId === item.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} flex items-center transition-opacity bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden`}>
                 <button 
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnReorder && index > 0) currentOnReorder(index, 0); }}
                   className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
@@ -370,10 +374,34 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                   title="Move to Bottom"
                 ><ChevronsDown className="w-3 h-3" /></button>
                 <button 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnDuplicate) currentOnDuplicate(item.id); }}
+                  className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors"
+                  title="Duplicate"
+                ><Copy className="w-3 h-3" /></button>
+                <button 
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onCopyToPart) onCopyToPart(item); }}
                   className="p-1.5 text-text-dim hover:text-green-400 hover:bg-bg-input transition-colors"
                   title="Copy to Variation Parts"
                 ><ArrowRightToLine className="w-3 h-3" /></button>
+                <button 
+                  onClick={(e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    if (confirmQuickDeleteId === item.id) {
+                      currentOnDelete(item.id);
+                      setConfirmQuickDeleteId(null);
+                    } else {
+                      setConfirmQuickDeleteId(item.id);
+                      setTimeout(() => setConfirmQuickDeleteId(null), 3000);
+                    }
+                  }}
+                  className={`p-1.5 transition-colors ${
+                    confirmQuickDeleteId === item.id 
+                      ? 'text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 opacity-100' 
+                      : 'text-text-dim hover:text-red-400 hover:bg-bg-input'
+                  }`}
+                  title={confirmQuickDeleteId === item.id ? "Confirm delete" : "Delete"}
+                ><Trash2 className="w-3 h-3" /></button>
                 <button 
                   onClick={(e) => startEdit(item, e)}
                   className={`p-1.5 text-text-dim ${isNegative ? 'hover:text-red-400' : 'hover:text-blue-400'} hover:bg-bg-input transition-colors`}
