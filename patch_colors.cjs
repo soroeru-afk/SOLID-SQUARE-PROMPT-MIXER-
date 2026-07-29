@@ -1,7 +1,8 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/components/PreviewColumn.tsx', 'utf8');
 
-const regexColors = /\? 'bg-\\[#b45309\\]\/5 hover:bg-\\[#b45309\\]\/10 border-\\[#b45309\\]\/40 text-\\[#b45309\\]'/g;
-code = code.replace(regexColors, "? 'bg-[#7c2d12]/10 hover:bg-[#7c2d12]/20 border-[#7c2d12]/60 text-[#7c2d12] font-bold'");
+code = code.replace(/text-black dark:text-white/g, 'text-text-main');
+code = code.replace(/<span className="text-\[8px\] text-text-dim\/50 font-mono hidden sm:inline-block">\{t\('save_master_hint', lang\)\}<\/span>/g, '');
 
 fs.writeFileSync('src/components/PreviewColumn.tsx', code);
+console.log("Patched text-text-main and removed hints");
