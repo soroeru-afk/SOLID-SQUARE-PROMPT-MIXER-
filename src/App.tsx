@@ -1146,6 +1146,8 @@ export default function App() {
               onMoveBulkNegative={handleMoveBulkNegatives}
               onReorder={handleReorderMasters}
               onReorderNegative={handleReorderNegatives}
+              onCopyToPart={(master) => setSavePartFromMasterData({ name: master.name, content: master.content })}
+              onCopyBulkToPart={(masters) => setSavePartFromMasterData({ items: masters.map(m => ({ name: m.name, content: m.content })) })}
               activeTab={activeMasterTab}
               setActiveTab={setActiveMasterTab}
               lang={lang}
@@ -1335,6 +1337,8 @@ export default function App() {
               onMoveBulkNegative={handleMoveBulkNegatives}
               onReorder={handleReorderMasters}
               onReorderNegative={handleReorderNegatives}
+              onCopyToPart={(master) => setSavePartFromMasterData({ name: master.name, content: master.content })}
+              onCopyBulkToPart={(masters) => setSavePartFromMasterData({ items: masters.map(m => ({ name: m.name, content: m.content })) })}
               activeTab={activeMasterTab}
               setActiveTab={setActiveMasterTab}
               lang={lang}
