@@ -1,8 +1,6 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/types.ts', 'utf8');
 
-if (!code.includes('memos?: MasterPrompt[];')) {
-  const appDataRegex = /export interface AppData \{/;
-  code = code.replace(appDataRegex, "export interface AppData {\n  memos?: MasterPrompt[];");
-  fs.writeFileSync('src/types.ts', code);
-}
+code = code.replace(/content: string;\n\s*mark\?: string;/, 'content: string;\n  negativeContent?: string;\n  mark?: string;');
+
+fs.writeFileSync('src/types.ts', code);

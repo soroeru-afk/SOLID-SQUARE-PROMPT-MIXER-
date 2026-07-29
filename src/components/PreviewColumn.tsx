@@ -676,14 +676,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     localStorage.setItem('editorFontFamily', editorFontFamily);
   }, [editorFontFamily]);
   
-  const [negativeHeight, setNegativeHeight] = useState(() => {
-    const saved = localStorage.getItem('ui_negative_height');
-    return saved ? parseInt(saved, 10) : 120;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('ui_negative_height', negativeHeight.toString());
-  }, [negativeHeight]);
+  const [negativeHeight, setNegativeHeight] = useState(120);
   const [isNegativeOpen, setIsNegativeOpen] = useState(true);
   const [isPositiveOpen, setIsPositiveOpen] = useState(true);
   const dragStartY = useRef(0);
@@ -1348,11 +1341,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={positiveHighlightRef}
-              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-auto pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px` }}
               aria-hidden="true"
             >
-              {editorText ? renderHighlightedText(editorText) : <span className="opacity-50">{t('placeholder', lang)}</span>}
+              {editorText ? <>{renderHighlightedText(editorText)}{editorText.endsWith('\n') ? ' ' : ''}</> : <span className="opacity-50">{t('placeholder', lang)}</span>}
             </div>
             <textarea
               ref={positiveTextRef}
@@ -1375,7 +1368,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                 }
               }}
               style={{ fontSize: `${editorFontSize}px` }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap selection:bg-blue-500/30 selection:text-text-main bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap break-words selection:bg-blue-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
@@ -1478,11 +1471,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
-              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-auto pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px` }}
               aria-hidden="true"
             >
-              {negativeEditorText ? renderHighlightedText(negativeEditorText) : <span className="opacity-50">Negative prompt...</span>}
+              {negativeEditorText ? <>{renderHighlightedText(negativeEditorText)}{negativeEditorText.endsWith('\n') ? ' ' : ''}</> : <span className="opacity-50">Negative prompt...</span>}
             </div>
             <textarea
               ref={negativeTextRef}
@@ -1505,7 +1498,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                 }
               }}
               style={{ fontSize: `${editorFontSize}px` }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap selection:bg-red-500/30 selection:text-text-main bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap break-words selection:bg-red-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>

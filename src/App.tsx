@@ -8,7 +8,7 @@ import { SaveMasterModal } from './components/SaveMasterModal';
 import { initialData } from './data';
 import { AppData, MasterPrompt, VariationPart } from './types';
 import { Language, t, translations } from './i18n';
-import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight, Check, Maximize, Minimize } from 'lucide-react';
 import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 
 const STORAGE_KEY = 'prompt_console_data';
@@ -48,6 +48,28 @@ export default function App() {
     return initialData;
   });
 
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error('Error attempting to enable fullscreen:', err);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
   const [autoOptimize, setAutoOptimize] = useState<boolean>(() => {
     const saved = localStorage.getItem('auto_optimize');
     return saved !== null ? saved === 'true' : true;
@@ -81,19 +103,6 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
-    
-    // Update PWA theme-color to match bg-panel of each theme
-    const themeColors: Record<string, string> = {
-      'dark': '#111215',
-      'black': '#050505',
-      'red': '#1c0a0a',
-      'light': '#e5e7eb',
-      'navy': '#0d1222'
-    };
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', themeColors[theme] || '#111215');
-    }
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
@@ -338,6 +347,17 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+  const showSaveToast = useCallback((msg: string) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    setSaveSuccessMessage(msg);
+    saveTimerRef.current = window.setTimeout(() => {
+      setSaveSuccessMessage(null);
+      saveTimerRef.current = null;
+    }, 2000);
+  }, []);
   const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -556,6 +576,7 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -586,6 +607,7 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = 'new negative content') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
+    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -761,6 +783,7 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = 'new content') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -887,6 +910,7 @@ export default function App() {
         if (parsed.masters && parsed.parts) {
           setData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
+          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }
@@ -1057,27 +1081,34 @@ export default function App() {
         </div>
         <div className="flex items-center space-x-2">
           <button 
+            onClick={toggleFullscreen}
+            className="w-7 h-7 bg-bg-input hover:bg-border-main border border-border-main text-text-main rounded transition-colors flex items-center justify-center shrink-0"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          </button>
+          <button 
             onClick={() => setSidebarSwapped(s => !s)}
-            className="bg-bg-input hover:bg-border-main border border-border-main text-text-dim rounded px-2 py-1 outline-none mr-2 transition-colors flex items-center justify-center"
+            className="w-7 h-7 bg-bg-input hover:bg-border-main border border-border-main text-text-main rounded transition-colors flex items-center justify-center shrink-0"
             title="Swap Sidebars"
           >
-            <ArrowLeftRight className="w-3.5 h-3.5" />
+            <ArrowLeftRight className="w-4 h-4" />
           </button>
           <button 
             onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'red' : t === 'red' ? 'light' : t === 'light' ? 'navy' : 'dark')}
-            className="bg-bg-input hover:bg-border-main border border-border-main text-[10px] font-mono text-text-main rounded px-3 py-1 outline-none mr-2 transition-colors flex items-center h-[26px]"
+            className="h-7 bg-bg-input hover:bg-border-main border border-border-main text-[10px] font-mono text-text-main rounded px-2.5 transition-colors flex items-center justify-center shrink-0"
           >
             {t('theme', lang)}: {t(`theme_${theme}` as keyof typeof translations, lang)}
           </button>
           <button 
             onClick={() => setPaperMode(!paperMode)}
-            className={`text-[10px] font-mono border rounded px-3 py-1 outline-none mr-4 transition-colors flex items-center h-[26px] ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-bg-input hover:bg-border-main border-border-main text-text-dim'}`}
+            className={`h-7 text-[10px] font-mono border rounded px-2.5 transition-colors flex items-center justify-center shrink-0 ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-bold' : 'bg-bg-input hover:bg-border-main border-border-main text-text-main'}`}
           >
             {t('paper_mode', lang)}: {paperMode ? 'ON' : 'OFF'}
           </button>
           <button 
             onClick={() => setLang(l => l === 'en' ? 'ja' : 'en')}
-            className="flex items-center px-3 h-[26px] bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-main rounded text-text-dim transition-colors"
+            className="h-7 px-2.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-main rounded text-text-main transition-colors flex items-center justify-center shrink-0"
           >
             {lang === 'en' ? 'JP' : 'EN'}
           </button>
