@@ -111,7 +111,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
   };
 
   const handleSave = (id: string) => {
-    currentOnUpdate(id, { name: editName, content: editContent, mark: editMark, negativeContent: editNegativeContent });
+    currentOnUpdate(id, { name: editName, content: editContent, mark: editMark, negativeContent: editNegativeContent && editNegativeContent.trim() !== '' ? editNegativeContent : undefined });
     setEditingId(null);
   };
 
@@ -295,12 +295,12 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                   className={`bg-bg-base border border-border-main text-[11px] font-mono p-1.5 rounded text-text-dim focus:outline-none ${isNegative ? 'focus:border-red-500' : 'focus:border-blue-500'} resize-y min-h-[64px] h-16`}
                   placeholder={t('content', lang)}
                 />
-                {item.negativeContent !== undefined && (
+                {!isNegative && (
                   <textarea 
                     value={editNegativeContent || ''}
-                    onChange={e => setEditNegativeContent(e.target.value)}
+                    onChange={e => setEditNegativeContent(e.target.value || undefined)}
                     className={`bg-bg-base border border-border-main text-[11px] font-mono p-1.5 rounded text-text-dim focus:outline-none focus:border-red-500 resize-y min-h-[64px] h-16`}
-                    placeholder="Negative Content"
+                    placeholder="NEGATIVE PROMPT"
                   />
                 )}
                 <div className="flex justify-between items-center mt-1">
