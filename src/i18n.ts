@@ -115,7 +115,8 @@ export const translations = {
   placeholder: { en: 'SELECT_MASTER_AND_PARTS_TO_GENERATE_PROMPT...', ja: 'マスターとパーツを選択してプロンプトを生成...' },
   latency: { en: 'LATENCY', ja: 'レイテンシ' },
   cpu: { en: 'CPU', ja: 'CPU' },
-  mem: { en: 'MEM', ja: 'メモリ' }
+  mem: { en: 'MEM', ja: 'メモリ' },
+  confirm_clear: { en: 'SURE?', ja: '本当によろしいですか？' }
 };
 
 export function t(key: keyof typeof translations, lang: Language): string {

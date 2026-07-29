@@ -81,6 +81,19 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
+    
+    // Update PWA theme-color to match bg-panel of each theme
+    const themeColors: Record<string, string> = {
+      'dark': '#111215',
+      'black': '#050505',
+      'red': '#1c0a0a',
+      'light': '#e5e7eb',
+      'navy': '#0d1222'
+    };
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', themeColors[theme] || '#111215');
+    }
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
@@ -89,12 +102,59 @@ export default function App() {
   const [selectedNegativeId, setSelectedNegativeId] = useState<string | null>(() => {
     return localStorage.getItem('ui_selected_negative_id');
   });
-  const [editorText, setEditorText] = useState(() => {
-    return localStorage.getItem('ui_editor_text') || '';
+  const [tabs, setTabs] = useState<{id: string, name: string, pos: string, neg: string}[]>(() => {
+    const saved = localStorage.getItem('ui_editor_tabs');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
+        }
+      } catch (e) {}
+    }
+    return [{
+      id: 'tab-1',
+      name: 'TAB 01',
+      pos: localStorage.getItem('ui_editor_text') || '',
+      neg: localStorage.getItem('ui_negative_editor_text') || ''
+    }];
   });
-  const [negativeEditorText, setNegativeEditorText] = useState(() => {
-    return localStorage.getItem('ui_negative_editor_text') || '';
+
+  const [activeTabId, setActiveTabId] = useState<string>(() => {
+    return localStorage.getItem('ui_active_tab_id') || 'tab-1';
   });
+
+  const activeTab = useMemo(() => tabs.find(t => t.id === activeTabId) || tabs[0], [tabs, activeTabId]);
+  const editorText = activeTab.pos;
+  const negativeEditorText = activeTab.neg;
+
+  useEffect(() => {
+    localStorage.setItem('ui_editor_tabs', JSON.stringify(tabs));
+  }, [tabs]);
+
+  useEffect(() => {
+    localStorage.setItem('ui_active_tab_id', activeTabId);
+  }, [activeTabId]);
+
+  const setEditorText = useCallback((updater: string | ((prev: string) => string)) => {
+    setTabs(prev => prev.map(t => {
+      if (t.id === activeTabId) {
+        const newVal = typeof updater === 'function' ? updater(t.pos) : updater;
+        return { ...t, pos: newVal };
+      }
+      return t;
+    }));
+  }, [activeTabId]);
+
+  const setNegativeEditorText = useCallback((updater: string | ((prev: string) => string)) => {
+    setTabs(prev => prev.map(t => {
+      if (t.id === activeTabId) {
+        const newVal = typeof updater === 'function' ? updater(t.neg) : updater;
+        return { ...t, neg: newVal };
+      }
+      return t;
+    }));
+  }, [activeTabId]);
   const [activeEditor, setActiveEditor] = useState<'positive' | 'negative'>(() => {
     return (localStorage.getItem('ui_active_editor') as any) || 'positive';
   });
@@ -109,13 +169,7 @@ export default function App() {
     else localStorage.removeItem('ui_selected_negative_id');
   }, [selectedNegativeId]);
 
-  useEffect(() => {
-    localStorage.setItem('ui_editor_text', editorText);
-  }, [editorText]);
-
-  useEffect(() => {
-    localStorage.setItem('ui_negative_editor_text', negativeEditorText);
-  }, [negativeEditorText]);
+  
 
   useEffect(() => {
     localStorage.setItem('ui_active_editor', activeEditor);
@@ -124,19 +178,31 @@ export default function App() {
   const [negativeCursorPos, setNegativeCursorPos] = useState<number | null>(null);
 
   // History State for Undo/Redo
-  const historyRef = useRef<{pos: string, neg: string}[]>([{pos: '', neg: ''}]);
-  const indexRef = useRef(0);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const historyRef = useRef<Record<string, {pos: string, neg: string}[]>>({});
+  const indexRef = useRef<Record<string, number>>({});
+
+  const getHistory = useCallback((tabId: string) => {
+    if (!historyRef.current[tabId]) {
+      const tab = tabs.find(t => t.id === tabId) || tabs[0];
+      historyRef.current[tabId] = [{pos: tab?.pos || '', neg: tab?.neg || ''}];
+      indexRef.current[tabId] = 0;
+    }
+    return {
+      history: historyRef.current[tabId],
+      index: indexRef.current[tabId]
+    };
+  }, [tabs]);
 
   const updateUndoState = useCallback(() => {
-    setCanUndo(indexRef.current > 0);
-    setCanRedo(indexRef.current < historyRef.current.length - 1);
-  }, []);
+    const { index, history } = getHistory(activeTabId);
+    setCanUndo(index > 0);
+    setCanRedo(index < history.length - 1);
+  }, [activeTabId, getHistory]);
 
   const saveHistoryState = useCallback((pos: string, neg: string) => {
-    const history = historyRef.current;
-    const index = indexRef.current;
+    const { history, index } = getHistory(activeTabId);
     const current = history[index];
     
     if (current && current.pos === pos && current.neg === neg) {
@@ -148,29 +214,81 @@ export default function App() {
     if (newHistory.length > 50) {
       newHistory.shift();
     }
-    indexRef.current = newHistory.length - 1;
-    historyRef.current = newHistory;
+    indexRef.current[activeTabId] = newHistory.length - 1;
+    historyRef.current[activeTabId] = newHistory;
     updateUndoState();
-  }, [updateUndoState]);
+  }, [activeTabId, getHistory, updateUndoState]);
 
   const undo = useCallback(() => {
-    if (indexRef.current > 0) {
-      indexRef.current -= 1;
-      const state = historyRef.current[indexRef.current];
-      setEditorText(state.pos);
-      setNegativeEditorText(state.neg);
+    const { index, history } = getHistory(activeTabId);
+    if (index > 0) {
+      const newIdx = index - 1;
+      indexRef.current[activeTabId] = newIdx;
+      const state = history[newIdx];
+      
+      setTabs(prev => prev.map(t => {
+        if (t.id === activeTabId) return { ...t, pos: state.pos, neg: state.neg };
+        return t;
+      }));
       updateUndoState();
     }
-  }, [updateUndoState]);
+  }, [activeTabId, getHistory, updateUndoState]);
 
   const redo = useCallback(() => {
-    if (indexRef.current < historyRef.current.length - 1) {
-      indexRef.current += 1;
-      const state = historyRef.current[indexRef.current];
-      setEditorText(state.pos);
-      setNegativeEditorText(state.neg);
+    const { index, history } = getHistory(activeTabId);
+    if (index < history.length - 1) {
+      const newIdx = index + 1;
+      indexRef.current[activeTabId] = newIdx;
+      const state = history[newIdx];
+      
+      setTabs(prev => prev.map(t => {
+        if (t.id === activeTabId) return { ...t, pos: state.pos, neg: state.neg };
+        return t;
+      }));
       updateUndoState();
     }
+  }, [activeTabId, getHistory, updateUndoState]);
+  
+  // Tab Management
+  const handleTabAdd = useCallback(() => {
+    const newId = `tab-${Date.now()}`;
+    setTabs(prev => {
+      const newTabs = [...prev, { id: newId, name: '', pos: '', neg: '' }];
+      return newTabs.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
+    });
+    setActiveTabId(newId);
+  }, []);
+
+  const handleTabChange = useCallback((id: string) => {
+    setActiveTabId(id);
+  }, []);
+
+  const handleTabClose = useCallback((id: string) => {
+    setTabs(prev => {
+      if (prev.length === 1) {
+        const newId = `tab-${Date.now()}`;
+        delete historyRef.current[prev[0].id];
+        delete indexRef.current[prev[0].id];
+        setActiveTabId(newId);
+        return [{ id: newId, name: 'TAB 01', pos: '', neg: '' }];
+      }
+      const newTabs = prev.filter(t => t.id !== id);
+      if (activeTabId === id) {
+        setActiveTabId(newTabs[newTabs.length - 1].id);
+      }
+      delete historyRef.current[id];
+      delete indexRef.current[id];
+      return newTabs.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
+    });
+  }, [activeTabId]);
+
+  const handleTabsClear = useCallback(() => {
+    const newId = `tab-${Date.now()}`;
+    setTabs([{ id: newId, name: 'TAB 01', pos: '', neg: '' }]);
+    setActiveTabId(newId);
+    historyRef.current = {};
+    indexRef.current = {};
+    updateUndoState();
   }, [updateUndoState]);
 
   useEffect(() => {
@@ -218,25 +336,74 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
-  const saveTimerRef = useRef<number | null>(null);
-  const showSaveToast = useCallback((msg: string) => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-    setSaveSuccessMessage(msg);
-    saveTimerRef.current = window.setTimeout(() => {
-      setSaveSuccessMessage(null);
-      saveTimerRef.current = null;
-    }, 2000);
-  }, []);
 
   useEffect(() => {
-    getFileHandle('export_directory').then(handle => {
+    getFileHandle('export_directory').then(async handle => {
       if (handle && handle.name) {
         setExportDirectoryName(handle.name);
+        try {
+          if ('queryPermission' in handle) {
+            const permission = await handle.queryPermission({ mode: 'read' });
+            if (permission === 'granted') {
+              await loadLatestFileFromDir(handle);
+            }
+          }
+        } catch (e) {
+          console.error('Error auto-resuming on load', e);
+        }
       }
     });
   }, []);
+
+  
+  const loadLatestFileFromDir = async (dirHandle: any) => {
+    try {
+      let latestFile = null;
+      let latestTime = 0;
+      for await (const entry of dirHandle.values()) {
+        if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+          const file = await entry.getFile();
+          if (file.lastModified > latestTime) {
+            latestTime = file.lastModified;
+            latestFile = file;
+          }
+        }
+      }
+      if (latestFile) {
+        const text = await latestFile.text();
+        const parsed = JSON.parse(text);
+        if (parsed.masters && parsed.parts) {
+          setData(parsed);
+          setSelectedMasterId(parsed.masters[0]?.id || null);
+          setSaveSuccessMessage(`Resumed from ${latestFile.name}`);
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
+        }
+      } else {
+        setSaveSuccessMessage('No JSON files found in directory');
+        setTimeout(() => setSaveSuccessMessage(null), 3000);
+      }
+    } catch (e) {
+      console.error("Failed to load latest file", e);
+    }
+  };
+
+  const handleResumeFromDir = async () => {
+    if ('showDirectoryPicker' in window && window.self === window.top) {
+      try {
+        let dirHandle = await getFileHandle('export_directory');
+        if (dirHandle) {
+          const permission = await dirHandle.queryPermission({ mode: 'read' });
+          if (permission !== 'granted') {
+            const req = await dirHandle.requestPermission({ mode: 'read' });
+            if (req !== 'granted') return;
+          }
+          await loadLatestFileFromDir(dirHandle);
+        }
+      } catch (err) {
+        console.error('Resume API Error:', err);
+      }
+    }
+  };
 
   const handleChangeExportDir = async () => {
     if ('showDirectoryPicker' in window && window.self === window.top) {
@@ -248,6 +415,7 @@ export default function App() {
         if (handle) {
           await setFileHandle('export_directory', handle);
           setExportDirectoryName(handle.name);
+          await loadLatestFileFromDir(handle);
         }
       } catch (err: any) {
         if (err.name !== 'AbortError') {
@@ -384,7 +552,6 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content') => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -414,7 +581,6 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = 'new negative content') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
-    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -577,7 +743,6 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = 'new content') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -704,7 +869,6 @@ export default function App() {
         if (parsed.masters && parsed.parts) {
           setData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
-          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }
@@ -973,7 +1137,10 @@ export default function App() {
                 <div className="flex space-x-1">
                   <button onClick={handleChangeExportDir} className="text-[10px] font-mono text-text-main font-bold hover:text-accent-main transition-colors">変更</button>
                   {exportDirectoryName && (
-                    <button onClick={handleClearExportDir} className="text-[10px] font-mono text-text-main font-bold hover:text-accent-main transition-colors">(CLEAR)</button>
+                    <>
+                      <button onClick={handleResumeFromDir} className="text-[10px] font-mono text-text-main font-bold hover:text-accent-main transition-colors">(RESUME)</button>
+                      <button onClick={handleClearExportDir} className="text-[10px] font-mono text-text-main font-bold hover:text-accent-main transition-colors">(CLEAR)</button>
+                    </>
                   )}
                 </div>
               </div>
@@ -1012,6 +1179,12 @@ export default function App() {
         {/* Center: Text Editor & Output */}
         <section className="flex-1 flex flex-col bg-bg-base relative min-w-0">
           <PreviewColumn
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onTabChange={handleTabChange}
+          onTabAdd={handleTabAdd}
+          onTabClose={handleTabClose}
+          onTabsClear={handleTabsClear}
             editorText={editorText}
             setEditorText={setEditorText}
             negativeEditorText={negativeEditorText}

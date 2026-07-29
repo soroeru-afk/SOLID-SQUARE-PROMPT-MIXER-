@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trash2, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, RotateCcw, ArrowDown, ArrowUp, Copy } from 'lucide-react';
+import { Trash2, ChevronDown, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, RotateCcw, ArrowDown, ArrowUp, Copy, Plus, X } from 'lucide-react';
 import { Language, t } from '../i18n';
 import { SavePartModal } from './SavePartModal';
 import { SaveMasterModal } from './SaveMasterModal';
 import { SaveMemoModal } from './SaveMemoModal';
 
 interface PreviewColumnProps {
+  tabs?: { id: string, name: string, pos: string, neg: string }[];
+  activeTabId?: string;
+  onTabChange?: (id: string) => void;
+  onTabAdd?: () => void;
+  onTabClose?: (id: string) => void;
+  onTabsClear?: () => void;
   editorText: string;
   setEditorText: React.Dispatch<React.SetStateAction<string>>;
   negativeEditorText: string;
@@ -33,7 +39,13 @@ interface PreviewColumnProps {
   onToggleAutoOptimize?: () => void;
 }
 
-export const PreviewColumn: React.FC<PreviewColumnProps> = ({ 
+export const PreviewColumn: React.FC<PreviewColumnProps> = ({
+  tabs = [],
+  activeTabId = '',
+  onTabChange,
+  onTabAdd,
+  onTabClose,
+  onTabsClear, 
   editorText, setEditorText,
   negativeEditorText, setNegativeEditorText,
   activeEditor, setActiveEditor, setPositiveCursorPos, setNegativeCursorPos,
@@ -64,6 +76,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const [savePartItems, setSavePartItems] = useState<{name: string, content: string}[] | undefined>(undefined);
 
     const [isSaveMasterModalOpen, setIsSaveMasterModalOpen] = useState(false);
+  const [confirmClearTabs, setConfirmClearTabs] = useState(false);
+  const [confirmCloseTabId, setConfirmCloseTabId] = useState<string | null>(null);
   const [isSaveMemoModalOpen, setIsSaveMemoModalOpen] = useState(false);
   const [saveMemoContent, setSaveMemoContent] = useState('');
   const [saveMemoDefaultTitle, setSaveMemoDefaultTitle] = useState('');
@@ -629,7 +643,16 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     localStorage.setItem('editorFontFamily', editorFontFamily);
   }, [editorFontFamily]);
   
-  const [negativeHeight, setNegativeHeight] = useState(120);
+  const [negativeHeight, setNegativeHeight] = useState(() => {
+    const saved = localStorage.getItem('ui_negative_height');
+    return saved ? parseInt(saved, 10) : 120;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ui_negative_height', negativeHeight.toString());
+  }, [negativeHeight]);
+  const [isNegativeOpen, setIsNegativeOpen] = useState(true);
+  const [isPositiveOpen, setIsPositiveOpen] = useState(true);
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(0);
   const [isResizing, setIsResizing] = useState(false);
@@ -922,6 +945,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
   return (
     <>
+      
       <div className="p-3 border-b border-border-main flex items-center justify-between bg-bg-panel shrink-0">
         <div className="flex items-center gap-4">
           <span className="text-[10px] font-mono text-text-main font-bold uppercase tracking-widest">{t('output_synthesis', lang)}</span>
@@ -1158,14 +1182,94 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <Trash2 className="w-3 h-3" /> {t('clear_all', lang)}
         </button>
       </div>
+      
+      
 
-      <div className="flex-1 p-4 overflow-y-auto bg-bg-panel flex flex-col gap-4">
-        <div className={`flex-1 border border-border-main rounded-lg flex flex-col relative min-h-[100px] transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}>
+      <div className="flex-1 p-4 pt-2 overflow-y-auto bg-bg-panel flex flex-col gap-2">
+        {/* Tabs */}
+      {tabs && tabs.length > 0 && onTabChange && (
+        <div className="flex items-center overflow-x-auto px-0 pt-0 pb-1 bg-transparent shrink-0 [&::-webkit-scrollbar]:hidden" style={{ gap: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {tabs.map(tab => (
+            <div 
+              key={tab.id}
+              className={`group flex items-center gap-1.5 px-3 py-0.5 text-[10px] font-mono border rounded-sm cursor-pointer whitespace-nowrap transition-all ${
+                activeTabId === tab.id 
+                  ? (theme === 'light' ? 'bg-white border-border-hover text-text-main font-bold shadow-sm' : 'bg-bg-input border-border-hover text-text-main font-bold') 
+                  : 'bg-transparent border-transparent text-text-dim hover:bg-bg-input hover:text-text-main'
+              }`}
+              onClick={() => onTabChange(tab.id)}
+            >
+              {tab.name}
+              {tabs.length > 1 ? (
+                <button 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if (confirmCloseTabId === tab.id) {
+                      if (onTabClose) onTabClose(tab.id);
+                      setConfirmCloseTabId(null);
+                    } else {
+                      setConfirmCloseTabId(tab.id);
+                      setTimeout(() => setConfirmCloseTabId(null), 3000);
+                    }
+                  }}
+                  className={`ml-1 w-3.5 h-3.5 flex items-center justify-center rounded-sm transition-colors ${
+                    confirmCloseTabId === tab.id 
+                      ? 'opacity-100 bg-red-500 text-white hover:bg-red-600' 
+                      : (activeTabId === tab.id 
+                          ? 'opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400' 
+                          : 'opacity-0 group-hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400')
+                  }`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              ) : (
+                <div className="ml-1 w-3.5 h-3.5 flex items-center justify-center opacity-0 pointer-events-none shrink-0">
+                  <X className="w-3 h-3" />
+                </div>
+              )}
+            </div>
+          ))}
+          <button 
+            onClick={onTabAdd} 
+            className="ml-1 px-2 py-1.5 text-text-dim hover:text-text-main hover:bg-bg-input rounded-sm border border-transparent transition-colors flex items-center justify-center shrink-0"
+            title="Add Tab"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          
+          <button 
+            onClick={() => {
+              if (confirmClearTabs) {
+                if (onTabsClear) onTabsClear();
+                setConfirmClearTabs(false);
+              } else {
+                setConfirmClearTabs(true);
+                setTimeout(() => setConfirmClearTabs(false), 3000);
+              }
+            }} 
+            className={`ml-auto px-3 py-0.5 text-[9px] font-mono font-bold border rounded-sm transition-colors uppercase shrink-0 ${
+              confirmClearTabs 
+                ? 'bg-red-500 text-white border-solid border-red-500 hover:bg-red-600' 
+                : 'text-red-500 hover:text-white bg-transparent hover:bg-red-500/80 border-dashed border-red-500/50 hover:border-red-500/80'
+            }`}
+            title="Clear all tabs"
+          >
+            {confirmClearTabs ? t('confirm_clear', lang) || 'SURE?' : 'ALL CLEAR'}
+          </button>
+        </div>
+      )}
+        <div className={`${isPositiveOpen ? 'flex-1 min-h-[100px]' : 'shrink-0'} border border-border-main rounded-lg flex flex-col relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}>
           <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-wrap border-b border-border-main/30">
-            <span className={`text-[9px] font-mono font-bold uppercase mt-1 ${paperMode ? 'text-gray-400' : 'text-text-dim/50'}`}>PROMPT</span>
+            <button 
+              onClick={() => setIsPositiveOpen(!isPositiveOpen)}
+              className={`flex items-center gap-1 text-[10px] font-mono font-bold uppercase mt-1 transition-colors text-text-main hover:opacity-70`}
+            >
+              {isPositiveOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+              PROMPT
+            </button>
             <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
               
-              <span className="text-[8px] text-text-dim/50 font-mono hidden sm:inline-block">{t('save_master_hint', lang)}</span>
+              
               <button 
                 onClick={() => handleSaveMasterClick(false, activeMasterTab === 'negative')}
                 className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
@@ -1183,7 +1287,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                   const text = editorText.trim();
                   if (!text) return;
                   const firstLine = text.split('\n')[0];
-                  const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+                  const title = selectedMemoId && selectedMemoName ? selectedMemoName : (firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine);
                   setSaveMemoContent(text);
                   setSaveMemoDefaultTitle(title);
                   setIsSaveMemoModalOpen(true);
@@ -1201,6 +1305,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               </button>
             </div>
           </div>
+          {isPositiveOpen && (
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={positiveHighlightRef}
@@ -1235,6 +1340,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               spellCheck={false}
             />
           </div>
+          )}
         </div>
         
         {/* Move/Copy Text Buttons & Resizer */}
@@ -1281,14 +1387,20 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         </div>
 
         <div 
-          className={`border border-border-main rounded-lg flex flex-col shrink-0 relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}
-          style={{ height: `${negativeHeight}px` }}
+          className={`${!isPositiveOpen && isNegativeOpen ? 'flex-1 min-h-[100px]' : 'shrink-0'} border border-border-main rounded-lg flex flex-col relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}
+          style={{ height: (!isPositiveOpen && isNegativeOpen) ? 'auto' : (isNegativeOpen ? `${negativeHeight}px` : 'auto') }}
         >
           <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-wrap border-b border-border-main/30">
-            <span className={`text-[9px] font-mono font-bold uppercase mt-1 ${paperMode ? 'text-gray-400' : 'text-text-dim/50'}`}>NEGATIVE PROMPT</span>
+            <button 
+            onClick={() => setIsNegativeOpen(!isNegativeOpen)}
+            className={`flex items-center gap-1 text-[10px] font-mono font-bold uppercase mt-1 transition-colors text-text-main hover:opacity-70`}
+          >
+            {isNegativeOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            NEGATIVE PROMPT
+          </button>
             <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
               
-              <span className="text-[8px] text-text-dim/50 font-mono hidden sm:inline-block">{t('save_master_hint', lang)}</span>
+              
               <button 
                 onClick={() => handleSaveMasterClick(true)}
                 className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
@@ -1306,7 +1418,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                   const text = negativeEditorText.trim();
                   if (!text) return;
                   const firstLine = text.split('\n')[0];
-                  const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+                  const title = selectedMemoId && selectedMemoName ? selectedMemoName : (firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine);
                   setSaveMemoContent(text);
                   setSaveMemoDefaultTitle(title);
                   setIsSaveMemoModalOpen(true);
