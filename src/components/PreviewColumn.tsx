@@ -82,6 +82,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const [saveMemoContent, setSaveMemoContent] = useState('');
   const [saveMemoDefaultTitle, setSaveMemoDefaultTitle] = useState('');
   const [saveMasterContent, setSaveMasterContent] = useState('');
+  const [saveMasterNegativeContent, setSaveMasterNegativeContent] = useState<string | undefined>(undefined);
   const [saveMasterDefaultTitle, setSaveMasterDefaultTitle] = useState('');
   const [saveMasterIsNegative, setSaveMasterIsNegative] = useState(false);
   const [saveMasterItems, setSaveMasterItems] = useState<{name: string, content: string}[] | undefined>(undefined);
@@ -464,7 +465,25 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     applyTransformToSelectionOrAll(toggle);
   };
 
+  const handleSaveSetClick = () => {
+    if (!onSaveAsMaster) return;
+    const posText = editorText.trim();
+    const negText = negativeEditorText.trim();
+    if (!posText && !negText) return;
+    
+    const firstLine = posText ? posText.split('\n')[0] : negText.split('\n')[0];
+    const title = firstLine.length > 20 ? firstLine.slice(0, 20) + '...' : firstLine;
+    
+    setSaveMasterItems(undefined);
+    setSaveMasterContent(posText);
+    setSaveMasterNegativeContent(negText);
+    setSaveMasterDefaultTitle(title);
+    setSaveMasterIsNegative(false);
+    setIsSaveMasterModalOpen(true);
+  };
+
   const handleSaveMasterClick = (isNegativeTextarea: boolean, saveAsNegative?: boolean) => {
+    setSaveMasterNegativeContent(undefined); // Reset for single save
     if (!onSaveAsMaster) return;
     const text = isNegativeTextarea ? negativeEditorText : editorText;
     const targetIsNegative = saveAsNegative !== undefined ? saveAsNegative : isNegativeTextarea;
@@ -1271,6 +1290,12 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               
               
               <button 
+                onClick={() => handleSaveSetClick()}
+                className="flex items-center gap-1 px-2 py-1 bg-accent-main hover:bg-blue-600 border border-accent-dim rounded text-[9px] font-mono text-white transition-colors"
+              >
+                <Save className="w-3 h-3" /> {t('save_as_set', lang)}
+              </button>
+              <button 
                 onClick={() => handleSaveMasterClick(false, activeMasterTab === 'negative')}
                 className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
               >
@@ -1543,17 +1568,18 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       <SaveMasterModal
         isOpen={isSaveMasterModalOpen}
         content={saveMasterContent}
+        negativeContent={saveMasterNegativeContent}
         defaultTitle={saveMasterDefaultTitle}
         items={saveMasterItems}
         isNegative={saveMasterIsNegative}
-        onConfirm={(title, content, isNegative, items) => {
+        onConfirm={(title, content, isNegative, items, negativeContent) => {
           if (onSaveAsMaster) {
             if (items && items.length > 0) {
               items.forEach(item => {
                 onSaveAsMaster(item.name, item.content, isNegative);
               });
             } else {
-              onSaveAsMaster(title, content, isNegative);
+              onSaveAsMaster(title, content, isNegative, negativeContent);
             }
           }
           setIsSaveMasterModalOpen(false);

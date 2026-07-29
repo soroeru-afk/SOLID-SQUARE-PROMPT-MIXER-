@@ -40,6 +40,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editContent, setEditContent] = useState('');
+  const [editNegativeContent, setEditNegativeContent] = useState<string | undefined>(undefined);
   const [editMark, setEditMark] = useState<string | undefined>(undefined);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -105,11 +106,12 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
     setEditingId(master.id);
     setEditName(master.name);
     setEditContent(master.content);
+    setEditNegativeContent(master.negativeContent);
     setEditMark(master.mark);
   };
 
   const handleSave = (id: string) => {
-    currentOnUpdate(id, { name: editName, content: editContent, mark: editMark });
+    currentOnUpdate(id, { name: editName, content: editContent, mark: editMark, negativeContent: editNegativeContent });
     setEditingId(null);
   };
 
@@ -293,6 +295,14 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                   className={`bg-bg-base border border-border-main text-[11px] font-mono p-1.5 rounded text-text-dim focus:outline-none ${isNegative ? 'focus:border-red-500' : 'focus:border-blue-500'} resize-y min-h-[64px] h-16`}
                   placeholder={t('content', lang)}
                 />
+                {item.negativeContent !== undefined && (
+                  <textarea 
+                    value={editNegativeContent || ''}
+                    onChange={e => setEditNegativeContent(e.target.value)}
+                    className={`bg-bg-base border border-border-main text-[11px] font-mono p-1.5 rounded text-text-dim focus:outline-none focus:border-red-500 resize-y min-h-[64px] h-16`}
+                    placeholder="Negative Content"
+                  />
+                )}
                 <div className="flex justify-between items-center mt-1">
                   <button onClick={() => setConfirmDeleteId(item.id)} className="text-text-dim hover:text-text-main p-1">
                     <Trash2 className="w-3 h-3" />
@@ -338,6 +348,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                   <div className={`text-[13px] font-bold font-mono pr-6 ${isSelected ? 'text-text-main' : 'text-text-dim'}`}>
                     {item.mark && <span className={`mr-1 ${item.mark === '✔' ? 'text-blue-500' : ''}`}>{item.mark}</span>}
                     {item.name.toUpperCase()}
+                    {item.negativeContent !== undefined && <span className="ml-2 text-[8px] bg-accent-main text-white px-1 py-0.5 rounded">SET</span>}
                   </div>
                 </div>
                 <div className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? (isNegative ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]' : 'bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,1)]') : 'bg-transparent border border-gray-600'}`}></div>

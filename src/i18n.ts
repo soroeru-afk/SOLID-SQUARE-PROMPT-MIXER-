@@ -62,6 +62,7 @@ export const translations = {
   clear_all: { en: 'CLEAR ALL', ja: 'すべて消去' },
   clear: { en: 'CLEAR', ja: '消去' },
   save_as_master: { en: 'SAVE AS MASTER', ja: 'マスター保存' },
+  save_as_set: { en: 'SAVE SET', ja: 'セット保存' },
   save_as_part: { en: 'SAVE AS PART', ja: 'パーツ保存' },
   save_as_memo: { en: 'SAVE AS MEMO', ja: 'メモ保存' },
   save_as_new: { en: 'SAVE AS NEW', ja: '新規保存' },

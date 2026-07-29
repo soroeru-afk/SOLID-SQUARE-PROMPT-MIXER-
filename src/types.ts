@@ -4,6 +4,7 @@ export interface MasterPrompt {
   id: string;
   name: string;
   content: string;
+  negativeContent?: string;
   mark?: string;
 }
 

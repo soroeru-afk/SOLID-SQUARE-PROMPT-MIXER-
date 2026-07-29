@@ -336,6 +336,7 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     getFileHandle('export_directory').then(async handle => {
@@ -375,12 +376,12 @@ export default function App() {
         if (parsed.masters && parsed.parts) {
           setData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
-          setSaveSuccessMessage(`Resumed from ${latestFile.name}`);
-          setTimeout(() => setSaveSuccessMessage(null), 3000);
+          setLoadSuccessMessage(`Resumed from ${latestFile.name}`);
+          setTimeout(() => setLoadSuccessMessage(null), 3000);
         }
       } else {
-        setSaveSuccessMessage('No JSON files found in directory');
-        setTimeout(() => setSaveSuccessMessage(null), 3000);
+        setLoadSuccessMessage('No JSON files found in directory');
+        setTimeout(() => setLoadSuccessMessage(null), 3000);
       }
     } catch (e) {
       console.error("Failed to load latest file", e);
@@ -549,8 +550,8 @@ export default function App() {
     if (selectedMasterId && ids.includes(selectedMasterId)) setSelectedMasterId(null);
   };
 
-  const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content') => {
-    const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
+  const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content', negativeContent?: string) => {
+    const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
   };
 
@@ -592,11 +593,11 @@ export default function App() {
     return Array.from(cats.entries());
   }, [data.parts, data.customCategories]);
 
-  const handleSaveAsMaster = (name: string, content: string, isNegative: boolean) => {
+  const handleSaveAsMaster = (name: string, content: string, isNegative: boolean, negativeContent?: string) => {
     if (isNegative) {
       handleAddNegative(name, content);
     } else {
-      handleAddMaster(name, content);
+      handleAddMaster(name, content, negativeContent);
     }
   };
 
@@ -884,7 +885,28 @@ export default function App() {
     if (id && insert) {
       const newMaster = data.masters.find(m => m.id === id);
       if (newMaster) {
-        if (activeEditor === 'negative') {
+        if (newMaster.negativeContent !== undefined) {
+          setEditorText(prev => {
+            const actualPos = positiveCursorPos === null ? prev.length : positiveCursorPos;
+            const before = prev.slice(0, actualPos);
+            const after = prev.slice(actualPos);
+            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+            const insertedStr = prefix + newMaster.content + suffix;
+            setTimeout(() => setPositiveCursorPos(actualPos + insertedStr.length), 0);
+            return cleanString(before + insertedStr + after);
+          });
+          setNegativeEditorText(prev => {
+            const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
+            const before = prev.slice(0, actualPos);
+            const after = prev.slice(actualPos);
+            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+            const insertedStr = prefix + newMaster.negativeContent + suffix;
+            setTimeout(() => setNegativeCursorPos(actualPos + insertedStr.length), 0);
+            return cleanString(before + insertedStr + after);
+          });
+        } else if (activeEditor === 'negative') {
           let newPos = 0;
           setNegativeEditorText(prev => {
             const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
@@ -1150,11 +1172,7 @@ export default function App() {
               >
                 {exportDirectoryName || '未設定 (設定するにはクリック)'}
               </button>
-              {saveSuccessMessage && (
-                <div className="mt-1 text-center text-[10px] font-mono text-accent-main animate-pulse font-bold">
-                  {saveSuccessMessage}
-                </div>
-              )}
+              {loadSuccessMessage && (<div className="mt-1 text-center text-[10px] font-mono text-accent-main animate-pulse font-bold">{loadSuccessMessage}</div>)}
             </div>
             <div className="flex gap-2">
               <label className="flex-1 flex items-center justify-center px-2 py-1.5 bg-border-main hover:bg-border-hover text-[10px] font-mono border border-border-hover rounded transition-colors cursor-pointer text-text-main">
@@ -1267,13 +1285,13 @@ export default function App() {
           defaultTitle={saveMasterFromPartData?.name || ''}
           items={saveMasterFromPartData?.items}
           isNegative={activeMasterTab === 'negative'}
-          onConfirm={(title, content, isNegative, items) => {
+          onConfirm={(title, content, isNegative, items, negativeContent) => {
             if (items && items.length > 0) {
               items.forEach(item => {
                 handleSaveAsMaster(item.name, item.content, isNegative);
               });
             } else {
-              handleSaveAsMaster(title, content, isNegative);
+              handleSaveAsMaster(title, content, isNegative, negativeContent);
             }
             setSaveMasterFromPartData(null);
           }}
@@ -1377,6 +1395,12 @@ export default function App() {
           <span className="text-[9px] font-mono text-text-main">{new Date().toISOString().slice(0, 19).replace('T', ' ')}</span>
         </div>
       </footer>
+      {saveSuccessMessage && (
+        <div className="fixed bottom-10 right-10 bg-accent-main text-white px-4 py-2 rounded shadow-lg text-sm font-bold font-mono z-50 flex items-center space-x-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <Check className="w-4 h-4" />
+          <span>{saveSuccessMessage}</span>
+        </div>
+      )}
       
       {iframeWarning && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">

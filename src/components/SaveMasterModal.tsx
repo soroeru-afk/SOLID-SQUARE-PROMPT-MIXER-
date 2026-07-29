@@ -5,15 +5,16 @@ import { Language, t } from '../i18n';
 interface SaveMasterModalProps {
   isOpen: boolean;
   content?: string;
+  negativeContent?: string;
   defaultTitle?: string;
   items?: {name: string, content: string}[];
   isNegative: boolean;
-  onConfirm: (title: string, content: string, isNegative: boolean, items?: {name: string, content: string}[]) => void;
+  onConfirm: (title: string, content: string, isNegative: boolean, items?: {name: string, content: string}[], negativeContent?: string) => void;
   onCancel: () => void;
   lang: Language;
 }
 
-export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, content, defaultTitle, items, isNegative, onConfirm, onCancel, lang }) => {
+export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, content, negativeContent, defaultTitle, items, isNegative, onConfirm, onCancel, lang }) => {
   const [title, setTitle] = useState('');
   const isBulk = items && items.length > 0;
 
@@ -25,7 +26,7 @@ export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, conten
 
   const handleConfirm = () => {
     if (!isBulk && !title.trim()) return;
-    onConfirm(title.trim(), content || '', isNegative, items);
+    onConfirm(title.trim(), content || '', isNegative, items, negativeContent);
   };
 
   return (
@@ -39,7 +40,7 @@ export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, conten
             className="bg-bg-panel border border-border-main rounded-lg shadow-xl p-6 w-full max-w-sm m-4 flex flex-col gap-4"
           >
             <h2 className="text-text-main text-sm font-mono font-bold">
-              {isBulk ? `Save ${items.length} items to ${isNegative ? 'negative prompts' : 'master prompts'}` : (isNegative ? t('save_to_negative', lang) : t('save_as_master', lang))}
+              {isBulk ? `Save ${items.length} items to ${isNegative ? 'negative prompts' : 'master prompts'}` : (negativeContent !== undefined ? t('save_as_set', lang) : (isNegative ? t('save_to_negative', lang) : t('save_as_master', lang)))}
             </h2>
             
             {!isBulk && (
@@ -61,6 +62,14 @@ export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, conten
                 <div className="bg-bg-base border border-border-main text-text-dim text-[10px] font-mono p-2 rounded max-h-32 overflow-y-auto whitespace-pre-wrap">
                   {content}
                 </div>
+                {negativeContent !== undefined && (
+                  <>
+                    <label className="block text-[10px] font-mono text-text-dim mb-1 mt-2">NEGATIVE PROMPT</label>
+                    <div className="bg-bg-base border border-border-main text-text-dim text-[10px] font-mono p-2 rounded max-h-32 overflow-y-auto whitespace-pre-wrap">
+                      {negativeContent}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
