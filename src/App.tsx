@@ -1150,6 +1150,11 @@ export default function App() {
               >
                 {exportDirectoryName || '未設定 (設定するにはクリック)'}
               </button>
+              {saveSuccessMessage && (
+                <div className="mt-1 text-center text-[10px] font-mono text-accent-main animate-pulse font-bold">
+                  {saveSuccessMessage}
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <label className="flex-1 flex items-center justify-center px-2 py-1.5 bg-border-main hover:bg-border-hover text-[10px] font-mono border border-border-hover rounded transition-colors cursor-pointer text-text-main">
@@ -1372,12 +1377,7 @@ export default function App() {
           <span className="text-[9px] font-mono text-text-main">{new Date().toISOString().slice(0, 19).replace('T', ' ')}</span>
         </div>
       </footer>
-      {saveSuccessMessage && (
-        <div className="fixed bottom-10 right-10 bg-accent-main text-white px-4 py-2 rounded shadow-lg text-sm font-bold font-mono z-50 flex items-center space-x-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <Check className="w-4 h-4" />
-          <span>{saveSuccessMessage}</span>
-        </div>
-      )}
+      
       {iframeWarning && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-bg-panel border border-border-main p-6 rounded-lg max-w-md w-full shadow-2xl">
