@@ -958,7 +958,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
   const renderHighlightedText = (text: string) => {
     const isLight = paperMode || theme === 'light' || theme === 'paper';
-    const highlightColorClass = isLight ? 'text-[#059669] font-bold drop-shadow-sm' : 'text-[#34d399] drop-shadow-sm';
+    const highlightColorClass = isLight ? 'text-[#059669] drop-shadow-sm' : 'text-[#34d399] drop-shadow-sm';
     
     const parts = text.split(/(\([^)]+\))/g);
     return parts.map((part, i) => {
