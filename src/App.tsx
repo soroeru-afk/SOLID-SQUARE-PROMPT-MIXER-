@@ -103,19 +103,6 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
-    
-    // Update PWA theme-color to match bg-panel of each theme
-    const themeColors: Record<string, string> = {
-      'dark': '#111215',
-      'black': '#050505',
-      'red': '#1c0a0a',
-      'light': '#e5e7eb',
-      'navy': '#0d1222'
-    };
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', themeColors[theme] || '#111215');
-    }
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
@@ -556,11 +543,21 @@ export default function App() {
       return cleanString(before + insertedStr + after);
     };
     
-    if (activeEditor === 'negative') {
+    if (part.isNegative || activeEditor === 'negative') {
       setNegativeEditorText(prev => insert(prev, negativeCursorPos, setNegativeCursorPos as any));
     } else {
       setEditorText(prev => insert(prev, positiveCursorPos, setPositiveCursorPos as any));
     }
+  };
+
+  
+  const handleTogglePartNegative = (id: string) => {
+    setData((prev) => ({
+      ...prev,
+      parts: prev.parts.map((p) =>
+        p.id === id ? { ...p, isNegative: !p.isNegative } : p
+      ),
+    }));
   };
 
   const handleTogglePin = (id: string) => {
@@ -1183,6 +1180,7 @@ export default function App() {
               selectedIds={selectedPartIds}
               onTogglePart={handleTogglePart}
               onTogglePin={handleTogglePin}
+              onTogglePartNegative={handleTogglePartNegative}
               onAdd={handleAddPart}
               onUpdate={handleUpdatePart}
               onDuplicate={handleDuplicatePart}
@@ -1458,6 +1456,7 @@ export default function App() {
               selectedIds={selectedPartIds}
               onTogglePart={handleTogglePart}
               onTogglePin={handleTogglePin}
+              onTogglePartNegative={handleTogglePartNegative}
               onAdd={handleAddPart}
               onUpdate={handleUpdatePart}
               onDuplicate={handleDuplicatePart}

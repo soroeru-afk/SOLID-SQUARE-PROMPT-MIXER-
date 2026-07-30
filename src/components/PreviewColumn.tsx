@@ -958,7 +958,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
   const renderHighlightedText = (text: string) => {
     const isLight = paperMode || theme === 'light' || theme === 'paper';
-    const highlightColorClass = isLight ? 'text-[#059669] drop-shadow-sm' : 'text-[#34d399] drop-shadow-sm';
+    const highlightColorClass = isLight ? 'text-[#059669] font-bold drop-shadow-sm' : 'text-[#34d399] drop-shadow-sm';
     
     const parts = text.split(/(\([^)]+\))/g);
     return parts.map((part, i) => {
@@ -1341,7 +1341,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={positiveHighlightRef}
-              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none box-border m-0 border-0 border-transparent ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px` }}
               aria-hidden="true"
             >
@@ -1368,7 +1368,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                 }
               }}
               style={{ fontSize: `${editorFontSize}px` }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-y-auto box-border m-0 border-0 border-transparent selection:bg-blue-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none ${editorFontFamily}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap break-words selection:bg-blue-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
@@ -1471,7 +1471,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
-              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none box-border m-0 border-0 border-transparent ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px` }}
               aria-hidden="true"
             >
@@ -1498,7 +1498,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                 }
               }}
               style={{ fontSize: `${editorFontSize}px` }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-y-auto box-border m-0 border-0 border-transparent selection:bg-red-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none ${editorFontFamily}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap break-words selection:bg-red-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>

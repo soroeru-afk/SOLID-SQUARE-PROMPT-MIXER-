@@ -14,6 +14,7 @@ interface VariationColumnProps {
   selectedIds: Set<string>;
   onTogglePart: (id: string) => void;
   onTogglePin: (id: string) => void;
+  onTogglePartNegative?: (id: string) => void;
   onAdd: (category: string, section: number, name: string) => void;
   onUpdate: (id: string, updates: Partial<VariationPart>) => void;
   onDuplicate?: (id: string) => void;
@@ -34,7 +35,7 @@ interface VariationColumnProps {
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onAdd, onUpdate, onDuplicate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang, theme, activeTab = 'parts', setActiveTab, children
+  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang, theme, activeTab = 'parts', setActiveTab, children
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -538,9 +539,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                 onDragEnd={handleDragEnd}
                                 onDragOver={(e) => handleDragOver(e, category)}
                                 onDrop={(e) => handleDrop(e, part.id, category)}
-                                className={`p-2 rounded flex items-center space-x-2 cursor-pointer transition-colors group relative ${
-                                  isSelected ? 'bg-bg-surface border border-blue-500/30' : 'bg-bg-input border border-border-main hover:border-border-hover'
-                                }`}
+                                className={`p-2 rounded flex items-center space-x-2 cursor-pointer transition-colors group relative ${isSelected ? (part.isNegative ? 'bg-red-500/10 border border-red-500/50' : 'bg-bg-surface border border-blue-500/30') : (part.isNegative ? 'bg-red-500/5 border border-red-500/30 hover:border-red-500/50' : 'bg-bg-input border border-border-main hover:border-border-hover')}`}
                                 onClick={() => onTogglePart(part.id)}
                               >
                                 <input 
@@ -614,27 +613,52 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                   >
                                     <Pencil className="w-3 h-3" />
                                   </button>
-                                  {part.isPinned ? (
-                                    <button 
-                                      className="text-[9px] opacity-100 uppercase text-blue-400 font-mono flex-shrink-0 p-1"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onTogglePin(part.id);
-                                      }}
-                                    >
-                                      ⭐
-                                    </button>
-                                  ) : (
-                                    <button 
-                                      className="text-[9px] opacity-0 group-hover:opacity-100 uppercase text-text-dim font-mono flex-shrink-0 p-1 hover:text-blue-400"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onTogglePin(part.id);
-                                      }}
-                                    >
-                                      PIN
-                                    </button>
-                                  )}
+                                  <div className="flex flex-col items-center justify-center -my-1 ml-1">
+                                    {part.isNegative ? (
+                                      <button 
+                                        className="text-[8px] leading-none opacity-100 uppercase text-red-500 font-mono flex-shrink-0 py-1 px-1 font-bold hover:text-red-400"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (onTogglePartNegative) onTogglePartNegative(part.id);
+                                        }}
+                                        title="Remove Negative Tag"
+                                      >
+                                        NEG
+                                      </button>
+                                    ) : (
+                                      <button 
+                                        className="text-[8px] leading-none opacity-0 group-hover:opacity-100 uppercase text-text-dim font-mono flex-shrink-0 py-1 px-1 hover:text-red-400 font-bold"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (onTogglePartNegative) onTogglePartNegative(part.id);
+                                        }}
+                                        title="Mark as Negative Part"
+                                      >
+                                        NEG
+                                      </button>
+                                    )}
+                                    {part.isPinned ? (
+                                      <button 
+                                        className="text-[8px] leading-none opacity-100 uppercase text-blue-400 font-mono flex-shrink-0 py-1 px-1 hover:text-blue-300"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onTogglePin(part.id);
+                                        }}
+                                      >
+                                        ⭐
+                                      </button>
+                                    ) : (
+                                      <button 
+                                        className="text-[8px] leading-none opacity-0 group-hover:opacity-100 uppercase text-text-dim font-mono flex-shrink-0 py-1 px-1 hover:text-blue-400"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onTogglePin(part.id);
+                                        }}
+                                      >
+                                        PIN
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );

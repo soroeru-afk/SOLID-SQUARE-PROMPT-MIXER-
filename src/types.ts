@@ -15,6 +15,7 @@ export interface VariationPart {
   name: string;
   content: string;
   isPinned: boolean;
+  isNegative?: boolean;
 }
 
 export interface AppData {
