@@ -31,12 +31,13 @@ interface MasterColumnProps {
   onCopyToPart?: (item: MasterPrompt) => void;
   onCopyBulkToPart?: (items: MasterPrompt[]) => void;
   activeTab: 'master' | 'negative';
+  theme?: string;
   setActiveTab: (tab: 'master' | 'negative') => void;
   lang: Language;
 }
 
 export const MasterColumn: React.FC<MasterColumnProps> = ({ 
-  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDuplicate, onDuplicateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onDeleteAll, onDeleteAllNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, onCopyToPart, onCopyBulkToPart, activeTab, setActiveTab, lang 
+  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDuplicate, onDuplicateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onDeleteAll, onDeleteAllNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, onCopyToPart, onCopyBulkToPart, activeTab, setActiveTab, lang, theme 
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'dropdown'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -185,14 +186,14 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
           <div className="flex items-center bg-bg-input border border-border-main rounded shrink-0">
             <button 
               onClick={() => setViewMode('list')} 
-              className={`px-2 py-1 rounded-l transition-colors flex items-center justify-center ${viewMode === 'list' ? 'bg-border-hover text-text-main' : 'text-text-dim hover:bg-border-main'}`}
+              className={`px-2 py-1 rounded-l transition-colors flex items-center justify-center ${viewMode === 'list' ? (theme === 'mono' ? 'bg-black text-white' : 'bg-border-hover text-text-main') : (theme === 'mono' ? 'text-text-dim hover:bg-gray-200 hover:text-black' : 'text-text-dim hover:bg-border-main')}`}
               title={t('view_list', lang)}
             >
               <List className="w-3 h-3" />
             </button>
             <button 
               onClick={() => setViewMode('dropdown')} 
-              className={`px-2 py-1 rounded-r border-l border-border-main transition-colors flex items-center justify-center ${viewMode === 'dropdown' ? 'bg-border-hover text-text-main' : 'text-text-dim hover:bg-border-main'}`}
+              className={`px-2 py-1 rounded-r border-l border-border-main transition-colors flex items-center justify-center ${viewMode === 'dropdown' ? (theme === 'mono' ? 'bg-black text-white' : 'bg-border-hover text-text-main') : (theme === 'mono' ? 'text-text-dim hover:bg-gray-200 hover:text-black' : 'text-text-dim hover:bg-border-main')}`}
               title={t('view_dropdown', lang)}
             >
               <ChevronDown className="w-3 h-3" />

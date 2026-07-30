@@ -69,6 +69,21 @@
   --thumb-bg: #4b5563;
 }
 
+
+.theme-mono {
+  --bg-base: #ffffff;
+  --bg-panel: #f3f4f6;
+  --bg-input: #ffffff;
+  --bg-surface: #e5e7eb;
+  --border-main: #000000;
+  --border-hover: #000000;
+  --text-main: #000000;
+  --text-dim: #333333;
+  --accent-main: #000000;
+  --accent-dim: rgba(0, 0, 0, 0.1);
+  --thumb-bg: #000000;
+}
+
 .theme-navy {
   --bg-base: #060913;
   --bg-panel: #0d1222;
@@ -129,4 +144,11 @@ input[type=range].custom-slider::-webkit-slider-runnable-track {
   cursor: pointer;
   background: var(--border-main);
   border-radius: 1px;
+}
+
+.badge-count {
+  background-color: rgba(100, 116, 139, 0.8);
+}
+.theme-mono .badge-count {
+  background-color: #000000;
 }

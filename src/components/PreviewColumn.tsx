@@ -676,7 +676,14 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     localStorage.setItem('editorFontFamily', editorFontFamily);
   }, [editorFontFamily]);
   
-  const [negativeHeight, setNegativeHeight] = useState(120);
+  const [negativeHeight, setNegativeHeight] = useState(() => {
+    const saved = localStorage.getItem('ui_negative_height');
+    return saved ? parseInt(saved, 10) : 120;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ui_negative_height', negativeHeight.toString());
+  }, [negativeHeight]);
   const [isNegativeOpen, setIsNegativeOpen] = useState(true);
   const [isPositiveOpen, setIsPositiveOpen] = useState(true);
   const dragStartY = useRef(0);
@@ -957,7 +964,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   };
 
   const renderHighlightedText = (text: string) => {
-    const isLight = paperMode || theme === 'light' || theme === 'paper';
+    const isLight = paperMode || (theme === 'light' || theme === 'mono') || theme === 'paper' || theme === 'mono';
     const highlightColorClass = isLight ? 'text-[#059669] font-bold drop-shadow-sm' : 'text-[#34d399] drop-shadow-sm';
     
     const parts = text.split(/(\([^)]+\))/g);
@@ -1017,7 +1024,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <button 
           onClick={handleMergeDupes}
           className={`px-3 py-1.5 text-[10px] font-mono border rounded transition-colors ${
-            theme === 'light' 
+            (theme === 'light' || theme === 'mono') 
               ? 'bg-[#3b5323]/10 hover:bg-[#3b5323]/20 border-[#3b5323]/60 text-[#3b5323]' 
               : 'bg-[#7a9a5a]/10 hover:bg-[#7a9a5a]/20 border-[#7a9a5a]/50 text-[#9bb87d]'
           }`}
@@ -1028,7 +1035,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <button 
           onClick={handleClearAllWeights}
           className={`px-3 py-1.5 text-[10px] font-mono border rounded transition-colors ${
-            theme === 'light' 
+            (theme === 'light' || theme === 'mono') 
               ? 'bg-[#991b1b]/10 hover:bg-[#991b1b]/20 border-[#991b1b]/60 text-[#991b1b]' 
               : 'bg-[#fca5a5]/10 hover:bg-[#fca5a5]/20 border-[#fca5a5]/50 text-[#fca5a5]'
           }`}
@@ -1137,7 +1144,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <button 
             onClick={handleEmphasizeAdd}
             className={`px-2 py-1 text-[10px] font-mono border rounded transition-colors ${
-              theme === 'light' || theme === 'paper'
+              (theme === 'light' || theme === 'mono') || theme === 'paper'
                 ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
                 : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
             }`}
@@ -1146,7 +1153,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <button 
             onClick={handleEmphasizeRemove}
             className={`px-2 py-1 text-[10px] font-mono border rounded transition-colors ${
-              theme === 'light' || theme === 'paper'
+              (theme === 'light' || theme === 'mono') || theme === 'paper'
                 ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
                 : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
             }`}
@@ -1155,7 +1162,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <button 
             onClick={handleEmphasizeClear}
             className={`px-2 py-1 text-[10px] font-mono border rounded transition-colors ${
-              theme === 'light' || theme === 'paper'
+              (theme === 'light' || theme === 'mono') || theme === 'paper'
                 ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
                 : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
             }`}
@@ -1200,7 +1207,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <button 
           onClick={() => {            setEditorText('');            setNegativeEditorText('');          }}
           className={`ml-auto px-3 py-1.5 border rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
-            theme === 'light'
+            (theme === 'light' || theme === 'mono')
               ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
               : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
           }`}
@@ -1220,7 +1227,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               key={tab.id}
               className={`group flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono border rounded cursor-pointer whitespace-nowrap transition-all ${
                 activeTabId === tab.id 
-                  ? (theme === 'light' ? 'bg-gray-700 border-gray-700 text-white font-bold shadow-sm' : 'bg-white border-white text-gray-900 font-bold shadow-sm') 
+                  ? ((theme === 'light' || theme === 'mono') ? 'bg-gray-700 border-gray-700 text-white font-bold shadow-sm' : 'bg-white border-white text-gray-900 font-bold shadow-sm') 
                   : 'bg-bg-base border-border-main text-text-dim hover:bg-bg-input hover:text-text-main hover:border-border-hover'
               }`}
               onClick={() => onTabChange(tab.id)}
@@ -1509,19 +1516,19 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <div className="flex gap-2 w-full">
           <button 
             onClick={() => handleCopy('main')}
-            className="flex-1 py-2.5 transition-all font-mono font-bold text-xs rounded border bg-bg-surface hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 border-border-hover active:scale-[0.98] text-text-main cursor-pointer"
+            className={`flex-1 py-2.5 transition-all font-mono font-bold text-xs rounded border active:scale-[0.98] cursor-pointer ${theme === 'mono' ? 'bg-gray-500 hover:bg-gray-400 active:bg-gray-600 border-transparent text-white' : 'bg-bg-surface hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 border-border-hover text-text-main'}`}
           >
             {t('copy_main', lang)}
           </button>
           <button 
             onClick={() => handleCopy('negative')}
-            className="flex-1 py-2.5 transition-all font-mono font-bold text-xs rounded border bg-bg-surface hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 border-border-hover active:scale-[0.98] text-text-main cursor-pointer"
+            className={`flex-1 py-2.5 transition-all font-mono font-bold text-xs rounded border active:scale-[0.98] cursor-pointer ${theme === 'mono' ? 'bg-gray-500 hover:bg-gray-400 active:bg-gray-600 border-transparent text-white' : 'bg-bg-surface hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 border-border-hover text-text-main'}`}
           >
             {t('copy_negative_only', lang)}
           </button>
           <button 
             onClick={() => handleCopy('all')}
-            className="flex-1 py-2.5 transition-all font-mono font-bold text-xs rounded border bg-bg-surface hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 border-border-hover active:scale-[0.98] text-text-main cursor-pointer"
+            className={`flex-1 py-2.5 transition-all font-mono font-bold text-xs rounded border active:scale-[0.98] cursor-pointer ${theme === 'mono' ? 'bg-gray-500 hover:bg-gray-400 active:bg-gray-600 border-transparent text-white' : 'bg-bg-surface hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 border-border-hover text-text-main'}`}
           >
             {t('copy_all', lang)}
           </button>

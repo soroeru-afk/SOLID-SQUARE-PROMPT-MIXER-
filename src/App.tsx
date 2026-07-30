@@ -17,7 +17,7 @@ export default function App() {
   const [lang, setLang] = useState<Language>(() => {
     return (localStorage.getItem('ui_lang') as Language) || 'ja';
   });
-  const [theme, setTheme] = useState<'dark' | 'red' | 'light' | 'navy' | 'black'>(() => {
+  const [theme, setTheme] = useState<'dark' | 'red' | 'light' | 'navy' | 'black' | 'mono'>(() => {
     return (localStorage.getItem('ui_theme') as any) || 'light';
   });
   const [paperMode, setPaperMode] = useState<boolean>(() => {
@@ -103,6 +103,19 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
+    
+    // Update PWA theme-color to match bg-panel of each theme
+    const themeColors: Record<string, string> = {
+      'dark': '#111215',
+      'black': '#050505',
+      'mono': '#f3f4f6',
+      'light': '#e5e7eb',
+      'navy': '#0d1222'
+    };
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', themeColors[theme] || '#111215');
+    }
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
@@ -347,17 +360,6 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
-  const saveTimerRef = useRef<number | null>(null);
-  const showSaveToast = useCallback((msg: string) => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-    setSaveSuccessMessage(msg);
-    saveTimerRef.current = window.setTimeout(() => {
-      setSaveSuccessMessage(null);
-      saveTimerRef.current = null;
-    }, 2000);
-  }, []);
   const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -613,7 +615,6 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -644,7 +645,6 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = 'new negative content') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
-    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -820,7 +820,6 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = 'new content') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -947,7 +946,6 @@ export default function App() {
         if (parsed.masters && parsed.parts) {
           setData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
-          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }
@@ -1129,33 +1127,33 @@ export default function App() {
         <div className="flex items-center space-x-2">
           <button 
             onClick={toggleFullscreen}
-            className="w-7 h-7 bg-bg-input hover:bg-border-main border border-border-main text-text-main rounded transition-colors flex items-center justify-center shrink-0"
+            className={`w-7 h-7 bg-bg-input border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-200 text-black' : 'hover:bg-border-main text-text-main'}`}
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
           <button 
             onClick={() => setSidebarSwapped(s => !s)}
-            className="w-7 h-7 bg-bg-input hover:bg-border-main border border-border-main text-text-main rounded transition-colors flex items-center justify-center shrink-0"
+            className={`w-7 h-7 bg-bg-input border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-200 text-black' : 'hover:bg-border-main text-text-main'}`}
             title="Swap Sidebars"
           >
             <ArrowLeftRight className="w-4 h-4" />
           </button>
           <button 
-            onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'red' : t === 'red' ? 'light' : t === 'light' ? 'navy' : 'dark')}
-            className="h-7 bg-bg-input hover:bg-border-main border border-border-main text-[10px] font-mono text-text-main rounded px-2.5 transition-colors flex items-center justify-center shrink-0"
+            onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'light' : t === 'light' ? 'navy' : t === 'navy' ? 'mono' : t === 'mono' ? 'dark' : 'light')}
+            className={`h-7 bg-bg-input border border-border-main text-[10px] font-mono rounded px-2.5 transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-200 text-black' : 'hover:bg-border-main text-text-main'}`}
           >
             {t('theme', lang)}: {t(`theme_${theme}` as keyof typeof translations, lang)}
           </button>
           <button 
             onClick={() => setPaperMode(!paperMode)}
-            className={`h-7 text-[10px] font-mono border rounded px-2.5 transition-colors flex items-center justify-center shrink-0 ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-bold' : 'bg-bg-input hover:bg-border-main border-border-main text-text-main'}`}
+            className={`h-7 text-[10px] font-mono border rounded px-2.5 transition-colors flex items-center justify-center shrink-0 ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-bold' : theme === 'mono' ? 'bg-bg-input hover:bg-gray-200 border-border-main text-black' : 'bg-bg-input hover:bg-border-main border-border-main text-text-main'}`}
           >
             {t('paper_mode', lang)}: {paperMode ? 'ON' : 'OFF'}
           </button>
           <button 
             onClick={() => setLang(l => l === 'en' ? 'ja' : 'en')}
-            className="h-7 px-2.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-main rounded text-text-main transition-colors flex items-center justify-center shrink-0"
+            className={`h-7 px-2.5 bg-bg-input text-[10px] font-mono border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-200 text-black' : 'hover:bg-border-main text-text-main'}`}
           >
             {lang === 'en' ? 'JP' : 'EN'}
           </button>
@@ -1211,6 +1209,7 @@ export default function App() {
             </VariationColumn>
           ) : (
             <MasterColumn
+              theme={theme}
               masters={data.masters}
               negatives={data.negatives}
               selectedId={selectedMasterId}
@@ -1257,14 +1256,14 @@ export default function App() {
               </div>
               <button 
                 onClick={handleChangeExportDir}
-                className="w-full text-center px-2 py-1.5 bg-bg-panel hover:bg-border-main border border-border-main rounded text-[10px] font-mono text-text-main truncate transition-colors"
+                className={`w-full text-center px-2 py-1.5 bg-bg-panel border border-border-main rounded text-[10px] font-mono truncate transition-colors ${theme === 'mono' ? 'hover:bg-gray-200 text-black' : 'hover:bg-border-main text-text-main'}`}
               >
                 {exportDirectoryName || '未設定 (設定するにはクリック)'}
               </button>
               {loadSuccessMessage && (<div className="mt-1 text-center text-[10px] font-mono text-accent-main animate-pulse font-bold">{loadSuccessMessage}</div>)}
             </div>
             <div className="flex gap-2">
-              <label className="flex-1 flex items-center justify-center px-2 py-1.5 bg-border-main hover:bg-border-hover text-[10px] font-mono border border-border-hover rounded transition-colors cursor-pointer text-text-main">
+              <label className={`flex-1 flex items-center justify-center px-2 py-1.5 bg-border-main hover:bg-border-hover text-[10px] font-mono border border-border-hover rounded transition-colors cursor-pointer ${theme === 'mono' ? 'text-white' : 'text-text-main'}`}>
                 {t('import_json', lang)}
                 <input type="file" accept=".json" className="hidden" onChange={handleImport} />
               </label>
@@ -1415,6 +1414,7 @@ export default function App() {
             />
           {sidebarSwapped ? (
             <MasterColumn
+              theme={theme}
               masters={data.masters}
               negatives={data.negatives}
               selectedId={selectedMasterId}

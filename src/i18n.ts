@@ -45,6 +45,7 @@ export const translations = {
   theme_red: { en: 'RED', ja: 'レッド' },
   theme_light: { en: 'LIGHT', ja: 'ライト' },
   theme_navy: { en: 'NAVY', ja: 'ネイビー' },
+  theme_mono: { en: 'MONO', ja: 'モノトーン' },
   view_list: { en: 'LIST VIEW', ja: 'リスト表示' },
   view_dropdown: { en: 'DROPDOWN VIEW', ja: 'プルダウン表示' },
   paper_mode: { en: 'PAPER MODE', ja: 'ペーパーモード' },

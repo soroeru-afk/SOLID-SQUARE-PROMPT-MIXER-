@@ -320,7 +320,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
               setIsAllExpanded(!isAllExpanded);
             }} 
             className={`px-3 py-1 border rounded transition-colors whitespace-nowrap flex items-center justify-center gap-1 w-[140px] shrink-0 ${
-              theme === 'light' || theme === 'paper'
+              (theme === 'light' || theme === 'mono') || theme === 'paper'
                 ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
                 : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
             }`}

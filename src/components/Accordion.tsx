@@ -31,7 +31,10 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
 
   return (
     <div className="bg-bg-panel border border-border-main rounded-md overflow-hidden">
-      <div className="w-full flex items-center justify-between p-2 hover:bg-bg-input transition-colors border-b border-border-main group">
+      <div 
+        className="w-full flex items-center justify-between p-2 hover:bg-bg-input transition-colors border-b border-border-main group cursor-pointer"
+        onClick={() => !isEditing && setIsOpen(!isOpen)}
+      >
         {isEditing ? (
           <div className="flex items-center gap-2 flex-1 mr-2" onClick={e => e.stopPropagation()}>
             <input
@@ -71,10 +74,10 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 cursor-pointer flex-1" onClick={() => setIsOpen(!isOpen)}>
+          <div className="flex items-center gap-2 flex-1">
             <span className="text-[10px] font-mono text-text-dim uppercase tracking-widest truncate">{title}</span>
             {badge !== undefined && badge > 0 && (
-              <span className="bg-slate-500/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded leading-none min-w-[20px] text-center shadow-sm">
+              <span className="badge-count text-white text-[10px] font-bold px-1.5 py-0.5 rounded leading-none min-w-[20px] text-center shadow-sm">
                 {badge}
               </span>
             )}
@@ -109,8 +112,7 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
               </div>
             )}
             <div 
-              onClick={() => setIsOpen(!isOpen)}
-              className={`w-3 h-3 border border-border-hover rounded-sm flex items-center justify-center transition-transform duration-300 cursor-pointer ${isOpen ? 'rotate-180 bg-bg-surface' : ''}`}
+              className={`w-3 h-3 border border-border-hover rounded-sm flex items-center justify-center transition-transform duration-300 ${isOpen ? 'rotate-180 bg-bg-surface' : ''}`}
             >
                <div className={`w-1 h-1 ${isOpen ? 'bg-blue-500' : 'bg-gray-500'}`} />
             </div>
