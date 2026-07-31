@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { MasterColumn } from './components/MasterColumn';
 import { VariationColumn } from './components/VariationColumn';
+import { ALL_KNOWN_POS_STRINGS, ALL_KNOWN_NEG_STRINGS } from './components/AttributeMixer';
 import { PreviewColumn } from './components/PreviewColumn';
 import { MemoColumn } from './components/MemoColumn';
 import { SavePartModal } from './components/SavePartModal';
@@ -103,19 +104,6 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
-    
-    // Update PWA theme-color to match bg-panel of each theme
-    const themeColors: Record<string, string> = {
-      'dark': '#111215',
-      'black': '#050505',
-      'mono': '#f3f4f6',
-      'light': '#e5e7eb',
-      'navy': '#0d1222'
-    };
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', themeColors[theme] || '#111215');
-    }
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
@@ -360,6 +348,17 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+  const showSaveToast = useCallback((msg: string) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    setSaveSuccessMessage(msg);
+    saveTimerRef.current = window.setTimeout(() => {
+      setSaveSuccessMessage(null);
+      saveTimerRef.current = null;
+    }, 2000);
+  }, []);
   const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -529,6 +528,73 @@ export default function App() {
       .trim();
   };
 
+  const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {
+    const escapeRegExp = (str: string) => {
+      return str.replace(/[.*+?^\$\{\}()|[\]\\]/g, '\\$&');
+    };
+
+    setEditorText(prev => {
+      let result = prev;
+      let replaced = false;
+      
+      if (targetToReplace) {
+        const targetRegex = new RegExp(escapeRegExp(targetToReplace), 'gi');
+        const originalResult = result;
+        result = result.replace(targetRegex, posStr);
+        if (result !== originalResult) {
+          replaced = true;
+        }
+      } 
+      
+      if (!replaced) {
+        for (const known of ALL_KNOWN_POS_STRINGS) {
+          if (!known) continue;
+          result = result.replace(known, '');
+          const coreKnown = known.replace(/,\s*$/, '');
+          result = result.replace(coreKnown, '');
+        }
+        
+        if (posStr) {
+          result = posStr + (posStr.endsWith(' ') || posStr.endsWith(',') ? '' : ', ') + result;
+        }
+      }
+      
+      result = result.replace(/,\s*,/g, ',');
+      result = result.replace(/^,\s*/, '');
+      return result.trim();
+    });
+
+    setNegativeEditorText(prev => {
+      let result = prev;
+      let replaced = false;
+      
+      if (targetToReplace) {
+        const targetRegex = new RegExp(escapeRegExp(targetToReplace), 'gi');
+        const originalResult = result;
+        result = result.replace(targetRegex, negStr);
+        if (result !== originalResult) {
+          replaced = true;
+        }
+      } 
+      
+      if (!replaced) {
+        for (const known of ALL_KNOWN_NEG_STRINGS) {
+          if (!known) continue;
+          result = result.replace(known, '');
+          const coreKnown = known.replace(/,\s*$/, '');
+          result = result.replace(coreKnown, '');
+        }
+        
+        if (negStr) {
+          result = negStr + (negStr.endsWith(' ') || negStr.endsWith(',') ? '' : ', ') + result;
+        }
+      }
+      
+      result = result.replace(/,\s*,/g, ',');
+      result = result.replace(/^,\s*/, '');
+      return result.trim();
+    });
+  }, [setEditorText, setNegativeEditorText]);
   const handleTogglePart = (id: string) => {
     setActivePartId(id);
     const part = data.parts.find(p => p.id === id);
@@ -615,6 +681,7 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = '', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -645,6 +712,7 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = '') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
+    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -820,6 +888,7 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = '') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -946,6 +1015,7 @@ export default function App() {
         if (parsed.masters && parsed.parts) {
           setData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
+          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }
@@ -1187,6 +1257,7 @@ export default function App() {
               onReorder={handleReorderParts}
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
+              onMixAttributes={handleMixAttributes}
               lang={lang}
               theme={theme}
               activeTab={activeVariationTab}
@@ -1473,6 +1544,7 @@ export default function App() {
               onReorder={handleReorderParts}
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
+              onMixAttributes={handleMixAttributes}
               lang={lang}
               theme={theme}
               activeTab={activeVariationTab}

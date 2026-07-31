@@ -3,8 +3,9 @@ import { VariationPart } from '../types';
 import { Accordion } from './Accordion';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine, Copy } from 'lucide-react';
+import { User, Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine, Copy } from 'lucide-react';
 import { Language, t } from '../i18n';
+import { AttributeMixer } from './AttributeMixer';
 
 interface VariationColumnProps {
   parts: VariationPart[];
@@ -27,15 +28,16 @@ interface VariationColumnProps {
   onReorder?: (draggedId: string, targetId: string) => void;
   onCopyToMaster?: (part: VariationPart) => void;
   onCopyBulkToMaster?: (items: VariationPart[]) => void;
+  onMixAttributes?: (pos: string, neg: string) => void;
   lang: Language;
   theme: string;
-  activeTab?: 'parts' | 'memo';
-  setActiveTab?: (tab: 'parts' | 'memo') => void;
+  activeTab?: 'parts' | 'mixer' | 'memo';
+  setActiveTab?: (tab: 'parts' | 'mixer' | 'memo') => void;
   children?: React.ReactNode;
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, lang, theme, activeTab = 'parts', setActiveTab, children
+  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, onMixAttributes, lang, theme, activeTab = 'parts', setActiveTab, children
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -291,45 +293,31 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
   return (
     <>
-      <div className="flex bg-bg-panel border-b border-border-main text-[10px] font-mono uppercase tracking-widest shrink-0 overflow-x-auto justify-between items-center pr-2 h-[41px]">
-        <div className="flex items-center h-full">
+      <div className="flex bg-bg-panel border-b border-border-main text-[10px] font-mono uppercase tracking-widest shrink-0 overflow-x-auto h-[41px]">
+        <div className="flex items-center h-full w-full">
           <button 
             onClick={() => setActiveTab?.('parts')}
-            className={`px-4 py-3 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'parts' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
+            className={`flex-1 flex justify-center items-center gap-1 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'parts' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
           >
             {t('variation_parts', lang)}
           </button>
           {setActiveTab && (
             <button 
+              onClick={() => setActiveTab('mixer')}
+              className={`flex-1 flex justify-center items-center gap-1 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'mixer' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
+            >
+              <User size={12} /> 属性設定ミキサー
+            </button>
+          )}
+          {setActiveTab && (
+            <button 
               onClick={() => setActiveTab('memo')}
-              className={`px-4 py-3 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'memo' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
+              className={`flex-1 flex justify-center items-center gap-1 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'memo' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
             >
               {t('prompt_memo', lang)}
             </button>
           )}
         </div>
-        {activeTab === 'parts' && (
-          <div className="flex gap-2">
-          <button 
-            onClick={() => {
-              if (isAllExpanded) {
-                setCollapseId(prev => prev + 1);
-              } else {
-                setExpandId(prev => prev + 1);
-              }
-              setIsAllExpanded(!isAllExpanded);
-            }} 
-            className={`px-3 py-1 border rounded transition-colors whitespace-nowrap flex items-center justify-center gap-1 w-[140px] shrink-0 ${
-              (theme === 'light' || theme === 'mono') || theme === 'paper'
-                ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
-                : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
-            }`}
-          >
-            {isAllExpanded ? <ChevronsUp size={12} /> : <ChevronsDown size={12} />}
-            {isAllExpanded ? t('collapse_all', lang) : t('expand_all', lang)}
-          </button>
-          </div>
-        )}
       </div>
 
       {activeTab === 'parts' ? (
@@ -368,18 +356,42 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
           </button>
         </div>
 
-        <div className="flex space-x-2 shrink-0">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder={t('search', lang)}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-bg-input border border-border-main text-[11px] font-mono px-8 py-2 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600"
-            />
-            <span className="absolute left-2.5 top-2.5 opacity-30 font-mono text-[10px] text-text-main">/</span>
+        <div className="flex flex-col gap-2 shrink-0">
+          <div className="flex space-x-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder={t('search', lang)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-bg-input border border-border-main text-[11px] font-mono px-8 py-2 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600"
+              />
+              <span className="absolute left-2.5 top-2.5 opacity-30 font-mono text-[10px] text-text-main">/</span>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button 
+              onClick={() => {
+                if (isAllExpanded) {
+                  setCollapseId(prev => prev + 1);
+                } else {
+                  setExpandId(prev => prev + 1);
+                }
+                setIsAllExpanded(!isAllExpanded);
+              }} 
+              className={`px-2 py-1 text-[10px] border rounded transition-colors whitespace-nowrap flex items-center justify-center gap-1 shrink-0 ${
+                (theme === 'light' || theme === 'mono') || theme === 'paper'
+                  ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
+                  : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
+              }`}
+            >
+              {isAllExpanded ? <ChevronsUp size={12} /> : <ChevronsDown size={12} />}
+              {isAllExpanded ? t('collapse_all', lang) : t('expand_all', lang)}
+            </button>
           </div>
         </div>
+        
+        
 
         <div className="flex-1 overflow-y-auto pr-2 space-y-4 content-start min-h-0 pb-12">
           {sectionOrder.map((secIdNum) => {
@@ -689,6 +701,10 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
         </div>
       )}
       </>
+      ) : activeTab === 'mixer' ? (
+        <div className="p-4 flex-1 overflow-y-auto">
+          <AttributeMixer onApply={onMixAttributes || (() => {})} theme={theme} />
+        </div>
       ) : (
         children
       )}

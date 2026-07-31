@@ -227,18 +227,23 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     }
   };
 
+  const escapeRegExp = (str: string) => {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+
   const handleReplace = () => {
     if (!findText) return;
-    setEditorText(prev => prev.replace(findText, replaceText));
-    setNegativeEditorText(prev => prev.replace(findText, replaceText));
+    const regex = new RegExp(escapeRegExp(findText), 'i');
+    setEditorText(prev => prev.replace(regex, replaceText));
+    setNegativeEditorText(prev => prev.replace(regex, replaceText));
   };
 
   const handleReplaceAll = () => {
     if (!findText) return;
-    setEditorText(prev => prev.replaceAll(findText, replaceText));
-    setNegativeEditorText(prev => prev.replaceAll(findText, replaceText));
+    const regex = new RegExp(escapeRegExp(findText), 'gi');
+    setEditorText(prev => prev.replace(regex, replaceText));
+    setNegativeEditorText(prev => prev.replace(regex, replaceText));
   };
-
   const cleanString = (text: string, force: boolean = false) => {
     if (!autoOptimize && !force) return text;
     return text
@@ -535,17 +540,35 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         if (match) {
           cleanPart = match[1].trim();
           weight = parseFloat(match[2]);
+        } else if (part.startsWith('(') && part.endsWith(')')) {
+          // If it's just (word), weight is 1.1 in some standard UI, but let's stick to 1 to match existing or keep 1.1?
+          // Existing code sets weight to 1 if not matched by regex.
         }
         counts.set(cleanPart, (counts.get(cleanPart) || 0) + weight);
       });
       
+      let maxWeight = 0;
+      for (const count of counts.values()) {
+        if (count > maxWeight) maxWeight = count;
+      }
+      
+      const scaleFactor = maxWeight > 1.4 ? maxWeight / 1.4 : 1;
+      
       const result = [];
       for (const [part, count] of counts.entries()) {
-        if (count !== 1) {
-          const finalCount = Math.round(count * 100) / 100;
-          result.push(`(${part}:${finalCount})`);
-        } else {
+        let newWeight = count / scaleFactor;
+        
+        // Lower limit guard
+        if (newWeight < 0.1 && count > 0) {
+          newWeight = 0.1;
+        }
+        
+        const finalCount = Math.round(newWeight * 100) / 100;
+        
+        if (finalCount === 1) {
           result.push(part);
+        } else {
+          result.push(`(${part}:${finalCount})`);
         }
       }
       return cleanString(result.join(', '));
@@ -687,14 +710,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     localStorage.setItem('editorFontFamily', editorFontFamily);
   }, [editorFontFamily]);
   
-  const [negativeHeight, setNegativeHeight] = useState(() => {
-    const saved = localStorage.getItem('ui_negative_height');
-    return saved ? parseInt(saved, 10) : 120;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('ui_negative_height', negativeHeight.toString());
-  }, [negativeHeight]);
+  const [negativeHeight, setNegativeHeight] = useState(120);
   const [isNegativeOpen, setIsNegativeOpen] = useState(true);
   const [isPositiveOpen, setIsPositiveOpen] = useState(true);
   const dragStartY = useRef(0);
