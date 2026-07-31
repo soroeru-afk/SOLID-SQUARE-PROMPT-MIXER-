@@ -38,29 +38,43 @@ const DEFAULT_PRESETS: Presets = {
     { label: 'None', value: '' },
     { label: 'スリム・美しい体型 🌟', value: 'slender body, slim, ' },
     { label: 'ガチ重量級', value: 'heavyweight, colossal female, thick, fat, ' },
-    { label: 'Large', value: 'large body, fat, ' }
+    { label: 'Muscular', value: 'muscular female, abs, ' },
+    { label: 'Curvy', value: 'curvy, wide hips, thick thighs, ' },
+    { label: 'Petite', value: 'petite, small breasts, short, ' },
+    { label: 'Huge Breasts', value: 'huge breasts, ' },
+    { label: 'Flat Chest', value: 'flat chest, ' }
   ],
   angle: [
     { label: 'None', value: '' },
-    { label: '全身ショット 🌟', value: 'full body shot, full length, ' },
-    { label: '腰から上（ミディアム） 🌟', value: 'medium shot, waist up, ' },
-    { label: '斜めアングル', value: 'three-quarter view, ' },
-    { label: '完全真横寝', value: 'lying on side, full body, ' },
-    { label: 'ローアングル', value: 'low angle, from below, ' }
+    { label: 'Front View 🌟', value: 'front view, ' },
+    { label: 'Side View', value: 'side view, profile, ' },
+    { label: 'Back View', value: 'back view, from behind, ' },
+    { label: 'Looking Back', value: 'looking back, ' },
+    { label: 'From Above 🌟', value: 'from above, high angle, ' },
+    { label: 'From Below', value: 'from below, low angle, ' },
+    { label: 'Cowboy Shot', value: 'cowboy shot, ' }
   ],
   location: [
     { label: 'None', value: '' },
-    { label: '学校', value: 'school, classroom, ' },
-    { label: 'オフィス', value: 'office, workplace, ' },
-    { label: '公園・屋外', value: 'park, outdoors, nature, ' },
-    { label: 'ベッドルーム', value: 'bedroom, bed, ' },
-    { label: '路地裏・ストリート', value: 'alley, street, city, ' }
+    { label: 'Bedroom 🌟', value: 'bedroom, bed, ' },
+    { label: 'Living Room', value: 'living room, sofa, ' },
+    { label: 'Bathroom', value: 'bathroom, bathtub, ' },
+    { label: 'Outdoors 🌟', value: 'outdoors, nature, daylight, ' },
+    { label: 'Beach', value: 'beach, ocean, sand, ' },
+    { label: 'Hotel Room', value: 'hotel room, ' },
+    { label: 'Office', value: 'office, desk, ' },
+    { label: 'Classroom', value: 'classroom, school desk, ' },
+    { label: 'Gym', value: 'gym, fitness equipment, ' }
   ],
   partner: [
     { label: 'None', value: '' },
-    { label: '日本のじいさん', value: '1old japanese man, ' },
-    { label: '普通の男子高校生', value: '1japanese high school boy, ' },
-    { label: '178cm筋肉質男性', value: '1muscular man, ' }
+    { label: 'Ugly Bastard 🌟', value: 'ugly bastard, fat ugly man, ' },
+    { label: 'Old Man', value: 'old man, ' },
+    { label: 'Faceless Male', value: 'faceless male, ' },
+    { label: 'Orc/Monster', value: 'orc, monster, ' },
+    { label: 'Handsome', value: 'handsome young man, ' },
+    { label: 'POV 🌟', value: 'pov, pov shot, ' },
+    { label: 'Multiple Men', value: 'multiple boys, gangbang, ' }
   ]
 };
 
@@ -97,7 +111,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     partner: 0
   });
 
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [editModes, setEditModes] = useState<Record<string, boolean>>({});
 
   const handleApply = () => {
     const parts = [
@@ -138,6 +152,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
       ...prev,
       [category]: [...prev[category], { label: 'New Item', value: '' }]
     }));
+    // Ensure edit mode is on when adding a new item
+    setEditModes(prev => ({ ...prev, [category]: true }));
   };
 
   const removePresetItem = (category: keyof Presets, index: number) => {
@@ -159,12 +175,29 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   const renderCategory = (key: keyof Presets, label: string) => {
     const items = presets[key] || DEFAULT_PRESETS[key];
     const currentIdx = selections[key] ?? 0;
+    const isEditing = editModes[key] || false;
 
     return (
       <div className="flex flex-col gap-1.5" key={key}>
-        <label className="text-[13px] text-text-dim font-mono">{label}</label>
+        <div className="flex items-center justify-between">
+          <label className="text-[13px] text-text-dim font-mono">{label}</label>
+          <button
+            onClick={() => setEditModes(prev => ({ ...prev, [key]: !prev[key] }))}
+            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors shrink-0 flex items-center gap-1 ${
+              isEditing 
+                ? 'bg-blue-600 hover:bg-blue-500 text-white' 
+                : 'bg-bg-surface hover:bg-bg-input text-text-dim border border-border-main'
+            }`}
+          >
+            {isEditing ? (
+              <><Check className="w-2.5 h-2.5" /> 適用</>
+            ) : (
+              <><Settings2 className="w-2.5 h-2.5" /> 編集</>
+            )}
+          </button>
+        </div>
         
-        {isEditMode ? (
+        {isEditing ? (
           <div className="flex flex-col gap-2 p-2 border border-blue-500/30 rounded bg-blue-500/5">
             {items.map((item, idx) => (
               <div key={idx} className="flex gap-1 items-start">
@@ -180,7 +213,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                     <textarea 
                       value={item.value}
                       onChange={(e) => updatePresetItem(key, idx, 'value', e.target.value)}
-                      className="w-full bg-bg-surface border border-border-main rounded px-2 py-1 text-[11px] text-text-main font-mono h-[40px] resize-none"
+                      className="w-full bg-bg-surface border border-border-main rounded px-2 py-1 text-[11px] text-text-main font-mono h-[40px] resize-y min-h-[40px]"
                       placeholder="プロンプト (例: 1russian girl, )"
                     />
                   )}
@@ -221,20 +254,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   return (
     <div className="w-full flex flex-col gap-4 p-4">
       
-      <div className="flex justify-end mb-[-10px]">
-        <button
-          onClick={() => setIsEditMode(!isEditMode)}
-          className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-mono transition-colors border ${
-            isEditMode 
-              ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' 
-              : 'bg-bg-surface text-text-dim hover:bg-bg-input border-border-main'
-          }`}
-        >
-          <Settings2 className="w-3 h-3" />
-          {isEditMode ? '編集モード: ON (完了)' : 'プリセット編集'}
-        </button>
-      </div>
-
       <div className="flex flex-col gap-1.5 border-b border-border-main pb-3 mb-1 mt-2">
         <label className="text-[13px] font-bold text-text-main font-mono">🔍 置換対象のキーワード (手動)</label>
         <input 
