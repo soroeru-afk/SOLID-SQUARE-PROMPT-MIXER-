@@ -5,17 +5,20 @@ import { Language, t } from '../i18n';
 interface AddModalProps {
   isOpen: boolean;
   title: string;
-  onConfirm: (name: string) => void;
+  onConfirm: (name: string, content?: string) => void;
+  showContentField?: boolean;
   onCancel: () => void;
   lang: Language;
 }
 
-export const AddModal: React.FC<AddModalProps> = ({ isOpen, title, onConfirm, onCancel, lang }) => {
+export const AddModal: React.FC<AddModalProps> = ({ isOpen, title, onConfirm, onCancel, lang, showContentField = false }) => {
   const [name, setName] = useState('');
+  const [content, setContent] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       setName('');
+      setContent('');
     }
   }, [isOpen]);
 
@@ -30,20 +33,52 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, title, onConfirm, on
             className="bg-bg-panel border border-border-main rounded-lg shadow-xl p-6 w-full max-w-sm m-4"
           >
             <p className="text-text-main text-sm font-mono mb-4">{title}</p>
-            <input
-              value={name}
+            {showContentField ? (
+              <div className="flex flex-col gap-3 mb-6">
+                <input
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="bg-bg-base border border-border-main text-sm font-mono p-2 rounded text-text-main focus:outline-none focus:border-blue-500 w-full"
+                  placeholder={t('name', lang)}
+                  autoFocus
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && name.trim()) {
+                      onConfirm(name.trim(), content);
+                    } else if (e.key === 'Escape') {
+                      onCancel();
+                    }
+                  }}
+                />
+                <textarea
+                  value={content}
+                  onChange={e => setContent(e.target.value)}
+                  className="bg-bg-base border border-border-main text-sm font-mono p-2 rounded text-text-main focus:outline-none focus:border-blue-500 w-full h-24 resize-none"
+                  placeholder={t('placeholder', lang)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && name.trim()) {
+                      onConfirm(name.trim(), content);
+                    } else if (e.key === 'Escape') {
+                      onCancel();
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <input
+                value={name}
               onChange={e => setName(e.target.value)}
               className="bg-bg-base border border-border-main text-sm font-mono p-2 rounded text-text-main focus:outline-none focus:border-blue-500 w-full mb-6"
               placeholder={t('name', lang)}
               autoFocus
               onKeyDown={e => {
                 if (e.key === 'Enter' && name.trim()) {
-                  onConfirm(name.trim());
+                  onConfirm(name.trim(), showContentField ? content : undefined);
                 } else if (e.key === 'Escape') {
                   onCancel();
                 }
               }}
             />
+            )}
             <div className="flex justify-end space-x-3">
               <button
                 onClick={onCancel}
@@ -53,7 +88,7 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, title, onConfirm, on
               </button>
               <button
                 onClick={() => {
-                  if (name.trim()) onConfirm(name.trim());
+                  if (name.trim()) onConfirm(name.trim(), showContentField ? content : undefined);
                 }}
                 disabled={!name.trim()}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold rounded transition-colors disabled:opacity-50"

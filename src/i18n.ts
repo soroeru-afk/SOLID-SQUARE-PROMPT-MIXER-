@@ -114,7 +114,7 @@ export const translations = {
   copy_to_master_prompts: { en: '➡ COPY TO MASTER PROMPTS', ja: '➡ マスタープロンプトへコピー' },
   expand_all: { en: 'EXPAND ALL', ja: '全て開く' },
   collapse_all: { en: 'COLLAPSE ALL', ja: '全て閉じる' },
-  placeholder: { en: 'SELECT_MASTER_AND_PARTS_TO_GENERATE_PROMPT...', ja: 'マスターとパーツを選択してプロンプトを生成...' },
+  placeholder: { en: 'Enter prompt...', ja: 'プロンプトを入力してください' },
   latency: { en: 'LATENCY', ja: 'レイテンシ' },
   cpu: { en: 'CPU', ja: 'CPU' },
   mem: { en: 'MEM', ja: 'メモリ' },

@@ -612,7 +612,7 @@ export default function App() {
     });
   };
 
-  const handleAddMaster = (name: string = 'NEW_MASTER', content: string = 'new content', negativeContent?: string) => {
+  const handleAddMaster = (name: string = 'NEW_MASTER', content: string = '', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
   };
@@ -642,7 +642,7 @@ export default function App() {
     setSelectedNegativeId(null);
   };
 
-  const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = 'new negative content') => {
+  const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = '') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
   };
@@ -817,7 +817,7 @@ export default function App() {
     });
   };
 
-  const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = 'new content') => {
+  const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = '') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
   };

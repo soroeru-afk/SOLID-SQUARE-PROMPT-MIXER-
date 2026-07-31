@@ -15,7 +15,7 @@ interface VariationColumnProps {
   onTogglePart: (id: string) => void;
   onTogglePin: (id: string) => void;
   onTogglePartNegative?: (id: string) => void;
-  onAdd: (category: string, section: number, name: string) => void;
+  onAdd: (category: string, section: number, name: string, content?: string) => void;
   onUpdate: (id: string, updates: Partial<VariationPart>) => void;
   onDuplicate?: (id: string) => void;
   onDelete: (id: string) => void;
@@ -555,7 +555,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                       {part.name}
                                     </span>
                                   </div>
-                                  <span className="text-[11px] font-mono text-text-dim truncate mt-0.5">{part.content}</span>
+                                  <span className="text-[11px] font-mono text-text-dim truncate mt-0.5">{part.content || <span className="opacity-40">----- (No Content) -----</span>}</span>
                                 </div>
                                 <div className="absolute right-2 flex items-center gap-1">
                                   <div className="opacity-0 group-hover:opacity-100 flex items-center transition-opacity bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden">
@@ -713,10 +713,11 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       <AddModal
         isOpen={confirmAddData !== null}
         title={t('add_new_item', lang)}
-        onConfirm={(name) => {
-          if (confirmAddData) onAdd(confirmAddData.category, confirmAddData.section, name);
+        onConfirm={(name, content) => {
+          if (confirmAddData) onAdd(confirmAddData.category, confirmAddData.section, name, content);
           setConfirmAddData(null);
         }}
+        showContentField={true}
         onCancel={() => setConfirmAddData(null)}
         lang={lang}
       />

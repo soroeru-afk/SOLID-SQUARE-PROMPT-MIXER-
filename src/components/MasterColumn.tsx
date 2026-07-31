@@ -12,8 +12,8 @@ interface MasterColumnProps {
   selectedNegativeId: string | null;
   onSelect: (id: string, insert?: boolean) => void;
   onSelectNegative: (id: string, insert?: boolean) => void;
-  onAdd: (name: string) => void;
-  onAddNegative: (name: string) => void;
+  onAdd: (name: string, content?: string) => void;
+  onAddNegative: (name: string, content?: string) => void;
   onUpdate: (id: string, updates: Partial<MasterPrompt>) => void;
   onUpdateNegative: (id: string, updates: Partial<MasterPrompt>) => void;
   onDuplicate?: (id: string) => void;
@@ -359,7 +359,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                 <div className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? (isNegative ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]' : 'bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,1)]') : 'bg-transparent border border-gray-600'}`}></div>
               </div>
               <div className={`mt-1 text-[10px] font-mono truncate ${isSelected ? 'text-text-dim' : 'text-text-dim'}`}>
-                {item.content}
+                {item.content || <span className="opacity-40">----- (No Content) -----</span>}
               </div>
               <div className={`absolute top-2 right-6 ${confirmQuickDeleteId === item.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} flex items-center transition-opacity bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden`}>
                 <button 
@@ -436,10 +436,11 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
       <AddModal
         isOpen={confirmAdd}
         title={t('add_new_item', lang)}
-        onConfirm={(name) => {
-          currentOnAdd(name);
+        onConfirm={(name, content) => {
+          currentOnAdd(name, content);
           setConfirmAdd(false);
         }}
+        showContentField={true}
         onCancel={() => setConfirmAdd(false)}
         lang={lang}
       />
