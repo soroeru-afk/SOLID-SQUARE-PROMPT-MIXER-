@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { MasterColumn } from './components/MasterColumn';
 import { VariationColumn } from './components/VariationColumn';
-import { ALL_KNOWN_POS_STRINGS, ALL_KNOWN_NEG_STRINGS } from './components/AttributeMixer';
+
 import { PreviewColumn } from './components/PreviewColumn';
 import { MemoColumn } from './components/MemoColumn';
 import { SavePartModal } from './components/SavePartModal';
@@ -539,8 +539,8 @@ export default function App() {
   };
 
   const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {
-    const escapeRegExp = (str: string) => {
-      return str.replace(/[.*+?^\$\{\}()|[\]\\]/g, '\\$&');
+    const escapeRegExp = (string: string) => {
+      return string.replace(/[.*+?^\$\{\}()|[\]\\]/g, '\\$&');
     };
 
     setEditorText(prev => {
@@ -556,17 +556,8 @@ export default function App() {
         }
       } 
       
-      if (!replaced) {
-        for (const known of ALL_KNOWN_POS_STRINGS) {
-          if (!known) continue;
-          result = result.replace(known, '');
-          const coreKnown = known.replace(/,\s*$/, '');
-          result = result.replace(coreKnown, '');
-        }
-        
-        if (posStr) {
-          result = posStr + (posStr.endsWith(' ') || posStr.endsWith(',') ? '' : ', ') + result;
-        }
+      if (!replaced && posStr) {
+        result = posStr + (posStr.endsWith(' ') || posStr.endsWith(',') ? '' : ', ') + result;
       }
       
       result = result.replace(/,\s*,/g, ',');
@@ -580,24 +571,14 @@ export default function App() {
       
       if (targetToReplace) {
         const targetRegex = new RegExp(escapeRegExp(targetToReplace), 'gi');
-        const originalResult = result;
-        result = result.replace(targetRegex, negStr);
-        if (result !== originalResult) {
-          replaced = true;
+        if (result.match(targetRegex)) {
+            result = result.replace(targetRegex, negStr);
+            replaced = true;
         }
-      } 
+      }
       
-      if (!replaced) {
-        for (const known of ALL_KNOWN_NEG_STRINGS) {
-          if (!known) continue;
-          result = result.replace(known, '');
-          const coreKnown = known.replace(/,\s*$/, '');
-          result = result.replace(coreKnown, '');
-        }
-        
-        if (negStr) {
-          result = negStr + (negStr.endsWith(' ') || negStr.endsWith(',') ? '' : ', ') + result;
-        }
+      if (!replaced && negStr) {
+        result = negStr + (negStr.endsWith(' ') || negStr.endsWith(',') ? '' : ', ') + result;
       }
       
       result = result.replace(/,\s*,/g, ',');
@@ -605,6 +586,7 @@ export default function App() {
       return result.trim();
     });
   }, [setEditorText, setNegativeEditorText]);
+
   const handleTogglePart = (id: string) => {
     setActivePartId(id);
     const part = data.parts.find(p => p.id === id);

@@ -1,6 +1,58 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/PreviewColumn.tsx', 'utf8');
+let code = fs.readFileSync('src/App.tsx', 'utf8');
+const lines = code.split('\n');
 
-code = code.replace(/ spellCheck=\{false\}\n\s*\/>\n\s*<\/div>\n\s*<\/div>/, ` spellCheck={false}\n            />\n          </div>\n          )}\n        </div>`);
+const startIndex = lines.findIndex(l => l.includes('const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {'));
+const endIndex = lines.findIndex((l, i) => i > startIndex && l.includes('}, [setEditorText, setNegativeEditorText]);'));
 
-fs.writeFileSync('src/components/PreviewColumn.tsx', code);
+if (startIndex !== -1 && endIndex !== -1) {
+  lines.splice(startIndex, endIndex - startIndex + 1, `  const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {
+    const escapeRegExp = (string: string) => {
+      return string.replace(/[.*+?^\\$\\{\\}()|[\\]\\\\]/g, '\\\\$&');
+    };
+
+    setEditorText(prev => {
+      let result = prev;
+      let replaced = false;
+      
+      if (targetToReplace) {
+        const targetRegex = new RegExp(escapeRegExp(targetToReplace), 'gi');
+        const originalResult = result;
+        result = result.replace(targetRegex, posStr);
+        if (result !== originalResult) {
+          replaced = true;
+        }
+      } 
+      
+      if (!replaced && posStr) {
+        result = posStr + (posStr.endsWith(' ') || posStr.endsWith(',') ? '' : ', ') + result;
+      }
+      
+      result = result.replace(/,\\s*,/g, ',');
+      result = result.replace(/^,\\s*/, '');
+      return result.trim();
+    });
+
+    setNegativeEditorText(prev => {
+      let result = prev;
+      let replaced = false;
+      
+      if (targetToReplace) {
+        const targetRegex = new RegExp(escapeRegExp(targetToReplace), 'gi');
+        if (result.match(targetRegex)) {
+            result = result.replace(targetRegex, negStr);
+            replaced = true;
+        }
+      }
+      
+      if (!replaced && negStr) {
+        result = negStr + (negStr.endsWith(' ') || negStr.endsWith(',') ? '' : ', ') + result;
+      }
+      
+      result = result.replace(/,\\s*,/g, ',');
+      result = result.replace(/^,\\s*/, '');
+      return result.trim();
+    });
+  }, [setEditorText, setNegativeEditorText]);`);
+}
+fs.writeFileSync('src/App.tsx', lines.join('\n'));

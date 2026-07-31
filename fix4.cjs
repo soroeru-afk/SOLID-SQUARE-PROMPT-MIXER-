@@ -1,11 +1,14 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/App.tsx', 'utf8');
+const lines = code.split('\n');
 
-const regex = /const handleMixAttributes = useCallback\(\(posStr: string, negStr: string, targetToReplace\?: string\) => \{[\s\S]*?\}, \[setEditorText, setNegativeEditorText\]\);/;
+const startIndex = lines.findIndex(l => l.includes('const handleMixAttributes = '));
+const endIndex = lines.findIndex(l => l.includes('const handleTogglePart = '));
 
-const fixed = `const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {
-    const escapeRegExp = (str: string) => {
-      return str.replace(/[.*+?^\\$\\{\\}()|[\\]\\\\]/g, '\\\\$&');
+if (startIndex !== -1 && endIndex !== -1) {
+  lines.splice(startIndex, endIndex - startIndex, `  const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {
+    const escapeRegExp = (string: string) => {
+      return string.replace(/[.*+?^\\$\\{\\}()|[\\]\\\\]/g, '\\\\$&');
     };
 
     setEditorText(prev => {
@@ -50,12 +53,6 @@ const fixed = `const handleMixAttributes = useCallback((posStr: string, negStr: 
       result = result.replace(/^,\\s*/, '');
       return result.trim();
     });
-  }, [setEditorText, setNegativeEditorText]);`;
-
-code = code.replace(regex, fixed);
-
-// Also we need to fix the syntax error introduced before at line 520
-const badLine = /const handleMixAttributes = useCallback\(\(posStr: string, negStr: string, targetToReplace\?: string\) => \{\n    const escapeRegExp = \(string: string\) => \{\n      return string.replace\(\/\[\.\*\+\?\^\$\{\}\(\)\|\[\\\]\\\\\]\/g, '\\\\const handleMixAttributes = useCallback\(\(posStr: string, negStr: string, targetToReplace\?: string\) => \{/;
-code = code.replace(badLine, "const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {");
-
-fs.writeFileSync('src/App.tsx', code);
+  }, [setEditorText, setNegativeEditorText]);\n`);
+}
+fs.writeFileSync('src/App.tsx', lines.join('\n'));

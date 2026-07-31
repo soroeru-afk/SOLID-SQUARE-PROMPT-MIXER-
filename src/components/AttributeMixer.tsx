@@ -1,121 +1,241 @@
-import React, { useState } from 'react';
-import { User, X, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Check, Settings2, Plus, Trash2 } from 'lucide-react';
+import { Language } from '../i18n';
 
-export const RACE_OPTIONS = [
-  { label: 'None', value: '' },
-  { label: 'Japanese', value: 'japanese girl, (fair pale skin texture:1.3), ' },
-  { label: 'British', value: 'british girl, (creamy white skin, elegant sharp facial features:1.3), ' },
-  { label: 'Russian', value: 'russian girl, (pinkish white skin, soft light pink details:1.3), ' },
-  { label: 'Brazilian', value: 'brazilian girl, (toned tan olive skin texture, dark sharp details:1.3), ' },
-];
+type PresetItem = { label: string; value: string };
+type Presets = {
+  race: PresetItem[];
+  age: PresetItem[];
+  physique: PresetItem[];
+  angle: PresetItem[];
+  location: PresetItem[];
+  partner: PresetItem[];
+};
 
-export const AGE_OPTIONS = [
-  { label: 'None', value: '' },
-  { label: 'Mature', value: '1mature female, young housewife, domestic vibe, maternal look, plain face, ' },
-  { label: 'Middle-aged', value: '1middle-aged female, matronly figure, ordinary face, no makeup, ' },
-  { label: 'High School Girl 🌟', value: '1japanese high school girl, school uniform, sailor fuku, young youth vibe, fresh soft skin texture, ordinary face, no makeup, ' },
-];
-
-export const PHYSIQUE_OPTIONS = [
-  { label: 'None', value: '' },
-  { label: 'スリム・美しい体型 🌟', value: 'slender and beautiful body, slim physique, elegant body line, proportional, ' },
-  { label: 'ガチ重量級', value: 'low chignon hair, athletic olistic heavyweight, colossal female, built like a tank, (fat:1.4), broad shoulders, thick arms, thick waist, wide hips, thick thighs, muffin top, skin indent, flesh indentation, spilling hips, ' },
-  { label: 'Large', value: 'large heavy fat body, thick waist, wide hips, thick thighs, ' },
-];
-
-export const ANGLE_OPTIONS = [
-  { label: 'None', value: '' },
-  { label: '全身ショット 🌟', value: '(full length shot, complete body framing:1.3), deep perspective, ' },
-  { label: '腰から上（ミディアム） 🌟', value: '(medium shot, waist up framing:1.3), upper body portrait, ' },
-  { label: '斜めアングル', value: '(three-quarter view angle from the side:1.3), slightly offset camera, dynamic perspective, ' },
-  { label: '完全真横寝', value: '(absolute full-length side view:1.4), lying on side, perfectly parallel to the ground, camera at floor level height, deep perspective, horizontal framing, ' },
-  { label: 'ローアングル', value: '(camera at ground level height:1.4), (extreme low perspective looking up:1.3), ground filling the bottom of frame, ' },
-];
-
-export const PARTNER_TYPES = [
-  { 
-    label: '日本のじいさん', 
-    pos: '(1old japanese man focus, aged wrinkled face, plain clothes:1.3), ', 
-    neg: '(young man, boy:1.4), ' 
-  },
-  { 
-    label: '普通の男子高校生', 
-    pos: '(1japanese high school boy, school uniform, youthful male, slim build:1.3), ', 
-    neg: '(old man, mature man:1.4), ' 
-  },
-  { 
-    label: '178cm筋肉質男性', 
-    pos: '(1muscular skinny american man focus, 178cm height, zero fat, athletic toned physique:1.3), ', 
-    neg: '(fat man, heavy man, chubby man:1.5), ' 
-  },
-];
-
-export const PARTNER_NEG_OFF = '(2people, couple, pair, extra people, multiple people:1.4), ';
-export const PARTNER_NEG_ON_BASE = '(extra female:1.5), 2women, multiple girls, ';
-
-export const ALL_KNOWN_POS_STRINGS = [
-  ...RACE_OPTIONS.map(o => o.value).filter(Boolean),
-  ...AGE_OPTIONS.map(o => o.value).filter(Boolean),
-  ...PHYSIQUE_OPTIONS.map(o => o.value).filter(Boolean),
-  ...ANGLE_OPTIONS.map(o => o.value).filter(Boolean),
-  ...PARTNER_TYPES.map(o => o.pos).filter(Boolean),
-];
-
-export const ALL_KNOWN_NEG_STRINGS = [
-  PARTNER_NEG_OFF,
-  PARTNER_NEG_ON_BASE,
-  ...PARTNER_TYPES.map(o => o.neg).filter(Boolean),
-];
+const DEFAULT_PRESETS: Presets = {
+  race: [
+    { label: 'None', value: '' },
+    { label: 'Japanese 🌟', value: '1japanese girl, ' },
+    { label: 'Russian 🌟', value: '1russian girl, white skin, ' },
+    { label: 'British', value: '1british girl, ' },
+    { label: 'American', value: '1american girl, ' },
+    { label: 'German', value: '1german girl, ' },
+    { label: 'Caucasian', value: '1caucasian girl, ' },
+    { label: 'Black', value: '1dark skin girl, ' },
+    { label: 'Latina', value: '1latina girl, ' }
+  ],
+  age: [
+    { label: 'None', value: '' },
+    { label: 'Adult 🌟', value: 'adult woman, mature female, ' },
+    { label: 'Mature 🌟', value: 'mature woman, milf, ' },
+    { label: 'MILF', value: 'milf, mature woman, ' },
+    { label: 'Old Woman', value: 'old woman, aged, wrinkles, ' },
+    { label: 'Young Woman 🌟', value: 'young woman, youth, ' },
+    { label: 'Teen', value: 'teenager, teen girl, ' },
+    { label: 'High School Girl 🌟', value: 'high school girl, school uniform, ' }
+  ],
+  physique: [
+    { label: 'None', value: '' },
+    { label: 'スリム・美しい体型 🌟', value: 'slender body, slim, ' },
+    { label: 'ガチ重量級', value: 'heavyweight, colossal female, thick, fat, ' },
+    { label: 'Large', value: 'large body, fat, ' }
+  ],
+  angle: [
+    { label: 'None', value: '' },
+    { label: '全身ショット 🌟', value: 'full body shot, full length, ' },
+    { label: '腰から上（ミディアム） 🌟', value: 'medium shot, waist up, ' },
+    { label: '斜めアングル', value: 'three-quarter view, ' },
+    { label: '完全真横寝', value: 'lying on side, full body, ' },
+    { label: 'ローアングル', value: 'low angle, from below, ' }
+  ],
+  location: [
+    { label: 'None', value: '' },
+    { label: '学校', value: 'school, classroom, ' },
+    { label: 'オフィス', value: 'office, workplace, ' },
+    { label: '公園・屋外', value: 'park, outdoors, nature, ' },
+    { label: 'ベッドルーム', value: 'bedroom, bed, ' },
+    { label: '路地裏・ストリート', value: 'alley, street, city, ' }
+  ],
+  partner: [
+    { label: 'None', value: '' },
+    { label: '日本のじいさん', value: '1old japanese man, ' },
+    { label: '普通の男子高校生', value: '1japanese high school boy, ' },
+    { label: '178cm筋肉質男性', value: '1muscular man, ' }
+  ]
+};
 
 interface AttributeMixerProps {
   onApply: (pos: string, neg: string, target?: string) => void;
   theme?: string;
+  lang?: Language;
 }
 
-export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme = 'default' }) => {
+export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme = 'default', lang = 'ja' }) => {
   const [targetText, setTargetText] = useState('');
-  const [race, setRace] = useState(RACE_OPTIONS[0].value);
-  const [age, setAge] = useState(AGE_OPTIONS[0].value);
-  const [physique, setPhysique] = useState(PHYSIQUE_OPTIONS[0].value);
-  const [angle, setAngle] = useState(ANGLE_OPTIONS[0].value);
-  const [partnerOn, setPartnerOn] = useState(false);
-  const [partnerTypeIdx, setPartnerTypeIdx] = useState(0);
+  
+  const [presets, setPresets] = useState<Presets>(() => {
+    const saved = localStorage.getItem('attribute_mixer_custom_presets_v2');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return { ...DEFAULT_PRESETS, ...parsed, location: parsed.location || DEFAULT_PRESETS.location };
+      } catch (e) {}
+    }
+    return DEFAULT_PRESETS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('attribute_mixer_custom_presets_v2', JSON.stringify(presets));
+  }, [presets]);
+
+  const [selections, setSelections] = useState<Record<string, number>>({
+    race: 0,
+    age: 0,
+    physique: 0,
+    angle: 0,
+    location: 0,
+    partner: 0
+  });
+
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const handleApply = () => {
-    let pos = '';
-    
-    // 男のタイプが選ばれた場合、最先頭にガッチャンコ
-    if (partnerOn) {
-      pos += PARTNER_TYPES[partnerTypeIdx].pos;
-    }
-    
-    if (race) pos += race;
-    if (age) pos += age;
-    if (physique) pos += physique;
-    if (angle) pos += angle;
+    const parts = [
+      presets.partner[selections.partner]?.value || '',
+      presets.race[selections.race]?.value || '',
+      presets.age[selections.age]?.value || '',
+      presets.physique[selections.physique]?.value || '',
+      presets.angle[selections.angle]?.value || '',
+      presets.location[selections.location]?.value || ''
+    ].filter(Boolean);
 
-    let neg = '';
-    if (partnerOn) {
-      neg = PARTNER_NEG_ON_BASE + PARTNER_TYPES[partnerTypeIdx].neg;
-    } else {
-      neg = PARTNER_NEG_OFF;
-    }
-
-    onApply(pos, neg, targetText);
+    const pos = parts.join('');
+    onApply(pos, '', targetText);
   };
 
   const handleReset = () => {
-    setRace('');
-    setAge('');
-    setPhysique('');
-    setAngle('');
-    setPartnerOn(false);
-    onApply('', '', targetText); // If targetText is set, it will replace targetText with empty string, which acts as delete.
+    setSelections({
+      race: 0,
+      age: 0,
+      physique: 0,
+      angle: 0,
+      location: 0,
+      partner: 0
+    });
+    setTargetText('');
+  };
+
+  const updatePresetItem = (category: keyof Presets, index: number, field: 'label' | 'value', newValue: string) => {
+    setPresets(prev => {
+      const newCategory = [...prev[category]];
+      newCategory[index] = { ...newCategory[index], [field]: newValue };
+      return { ...prev, [category]: newCategory };
+    });
+  };
+
+  const addPresetItem = (category: keyof Presets) => {
+    setPresets(prev => ({
+      ...prev,
+      [category]: [...prev[category], { label: 'New Item', value: '' }]
+    }));
+  };
+
+  const removePresetItem = (category: keyof Presets, index: number) => {
+    if (index === 0) return; // 'None' は消せない
+    setPresets(prev => {
+      const newCategory = [...prev[category]];
+      newCategory.splice(index, 1);
+      return { ...prev, [category]: newCategory };
+    });
+    
+    // 選択状態を補正
+    if (selections[category] === index) {
+      setSelections(prev => ({ ...prev, [category]: 0 }));
+    } else if (selections[category] > index) {
+      setSelections(prev => ({ ...prev, [category]: prev[category] - 1 }));
+    }
+  };
+
+  const renderCategory = (key: keyof Presets, label: string) => {
+    const items = presets[key] || DEFAULT_PRESETS[key];
+    const currentIdx = selections[key] ?? 0;
+
+    return (
+      <div className="flex flex-col gap-1.5" key={key}>
+        <label className="text-[13px] text-text-dim font-mono">{label}</label>
+        
+        {isEditMode ? (
+          <div className="flex flex-col gap-2 p-2 border border-blue-500/30 rounded bg-blue-500/5">
+            {items.map((item, idx) => (
+              <div key={idx} className="flex gap-1 items-start">
+                <div className="flex flex-col gap-1 flex-1">
+                  <input 
+                    value={item.label}
+                    onChange={(e) => updatePresetItem(key, idx, 'label', e.target.value)}
+                    className="w-full bg-bg-input border border-border-main rounded px-2 py-1 text-[11px] text-text-main"
+                    placeholder="項目名 (例: Russian)"
+                    disabled={idx === 0}
+                  />
+                  {idx !== 0 && (
+                    <textarea 
+                      value={item.value}
+                      onChange={(e) => updatePresetItem(key, idx, 'value', e.target.value)}
+                      className="w-full bg-bg-surface border border-border-main rounded px-2 py-1 text-[11px] text-text-main font-mono h-[40px] resize-none"
+                      placeholder="プロンプト (例: 1russian girl, )"
+                    />
+                  )}
+                </div>
+                {idx !== 0 && (
+                  <button 
+                    onClick={() => removePresetItem(key, idx)}
+                    className="p-1.5 text-red-500 hover:bg-red-500/10 rounded shrink-0"
+                    title="削除"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button 
+              onClick={() => addPresetItem(key)}
+              className="flex items-center justify-center gap-1 w-full py-1.5 mt-1 border border-dashed border-blue-500/50 text-blue-500 hover:bg-blue-500/10 rounded text-[11px] transition-colors"
+            >
+              <Plus className="w-3 h-3" /> 新規項目を追加
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2 items-start">
+            <select 
+              value={currentIdx} 
+              onChange={e => setSelections(prev => ({ ...prev, [key]: Number(e.target.value) }))} 
+              className="flex-1 bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main"
+            >
+              {items.map((o, idx) => <option key={idx} value={idx}>{o.label}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
     <div className="w-full flex flex-col gap-4 p-4">
-      <div className="flex flex-col gap-1.5 border-b border-border-main pb-3 mb-1">
+      
+      <div className="flex justify-end mb-[-10px]">
+        <button
+          onClick={() => setIsEditMode(!isEditMode)}
+          className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-mono transition-colors border ${
+            isEditMode 
+              ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' 
+              : 'bg-bg-surface text-text-dim hover:bg-bg-input border-border-main'
+          }`}
+        >
+          <Settings2 className="w-3 h-3" />
+          {isEditMode ? '編集モード: ON (完了)' : 'プリセット編集'}
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-1.5 border-b border-border-main pb-3 mb-1 mt-2">
         <label className="text-[13px] font-bold text-text-main font-mono">🔍 置換対象のキーワード (手動)</label>
         <input 
           type="text" 
@@ -129,52 +249,14 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
         </span>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[13px] text-text-dim font-mono">人種 (Race)</label>
-        <select value={race} onChange={e => setRace(e.target.value)} className="bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main">
-          {RACE_OPTIONS.map(o => <option key={o.label} value={o.value}>{o.label}</option>)}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[13px] text-text-dim font-mono">年齢 (Age)</label>
-        <select value={age} onChange={e => setAge(e.target.value)} className="bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main">
-          {AGE_OPTIONS.map(o => <option key={o.label} value={o.value}>{o.label}</option>)}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[13px] text-text-dim font-mono">体型 (Physique)</label>
-        <select value={physique} onChange={e => setPhysique(e.target.value)} className="bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main">
-          {PHYSIQUE_OPTIONS.map(o => <option key={o.label} value={o.value}>{o.label}</option>)}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[13px] text-text-dim font-mono">アングル (Angle)</label>
-        <select value={angle} onChange={e => setAngle(e.target.value)} className="bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main">
-          {ANGLE_OPTIONS.map(o => <option key={o.label} value={o.value}>{o.label}</option>)}
-        </select>
-      </div>
-
+      {renderCategory('race', '人種 (Race)')}
+      {renderCategory('age', '年齢 (Age)')}
+      {renderCategory('physique', '体型 (Physique)')}
+      {renderCategory('angle', 'アングル (Angle)')}
+      {renderCategory('location', '場所・背景 (Location)')}
+      
       <div className="flex flex-col gap-2 pt-2 border-t border-border-main">
-        <label className="text-[13px] text-text-dim font-mono font-bold">男 (Partner)</label>
-        
-        <label className="flex items-center gap-2 cursor-pointer bg-bg-surface p-2 rounded border border-border-main">
-          <input 
-            type="checkbox" 
-            checked={partnerOn}
-            onChange={e => setPartnerOn(e.target.checked)}
-            className="w-4 h-4 cursor-pointer"
-          />
-          <span className="text-[13px] text-text-main font-mono">男を出す (ネガプロを自動付与)</span>
-        </label>
-        
-        {partnerOn && (
-          <select value={partnerTypeIdx} onChange={e => setPartnerTypeIdx(Number(e.target.value))} className="bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main mt-1">
-            {PARTNER_TYPES.map((o, idx) => <option key={o.label} value={idx}>{o.label}</option>)}
-          </select>
-        )}
+        {renderCategory('partner', '男 (Partner)')}
       </div>
 
       <div className="flex gap-2 pt-2 mt-2 border-t border-border-main">
