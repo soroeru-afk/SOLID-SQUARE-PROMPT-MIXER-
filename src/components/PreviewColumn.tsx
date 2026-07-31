@@ -676,14 +676,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     localStorage.setItem('editorFontFamily', editorFontFamily);
   }, [editorFontFamily]);
   
-  const [negativeHeight, setNegativeHeight] = useState(() => {
-    const saved = localStorage.getItem('ui_negative_height');
-    return saved ? parseInt(saved, 10) : 120;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('ui_negative_height', negativeHeight.toString());
-  }, [negativeHeight]);
+  const [negativeHeight, setNegativeHeight] = useState(120);
   const [isNegativeOpen, setIsNegativeOpen] = useState(true);
   const [isPositiveOpen, setIsPositiveOpen] = useState(true);
   const dragStartY = useRef(0);
@@ -1062,14 +1055,14 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         </div>
         <button 
           onClick={handleOptimizeSyntax}
-          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
           title="Optimize prompt weights syntax"
         >
           {t('optimize_syntax', lang)}
         </button>
         <button 
           onClick={handleCleanText}
-          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
           title="Clean spaces and commas"
         >
           {t('clean_text', lang)}
@@ -1077,7 +1070,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <div className="w-px h-6 bg-border-main mx-1"></div>
         <button 
           onClick={handleFormatComma}
-          className="px-3 py-1 bg-bg-input hover:bg-border-main font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5"
+          className={`px-3 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5`}
           title="Toggle periods and commas"
         >
           <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
@@ -1086,7 +1079,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         </button>
         <button 
           onClick={handleFormatHyphen}
-          className="px-3 py-1 bg-bg-input hover:bg-border-main font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5"
+          className={`px-3 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5`}
           title="Toggle periods and hyphens"
         >
           <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
@@ -1097,7 +1090,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <button
           onClick={undo}
           disabled={!canUndo}
-          className="p-1.5 bg-bg-input hover:bg-border-main disabled:opacity-50 disabled:cursor-not-allowed border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center"
+          className={`p-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center`}
           title={t('undo', lang)}
         >
           <Undo2 size={12} />
@@ -1105,7 +1098,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <button
           onClick={redo}
           disabled={!canRedo}
-          className="p-1.5 bg-bg-input hover:bg-border-main disabled:opacity-50 disabled:cursor-not-allowed border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center"
+          className={`p-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center`}
           title={t('redo', lang)}
         >
           <Redo2 size={12} />
@@ -1113,28 +1106,28 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <div className="w-px h-6 bg-border-main mx-1"></div>
         <button 
           onClick={() => handleMoveSelection('start')}
-          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
           title={t('move_to_front_tooltip', lang)}
         >
           {t('move_to_front', lang)}
         </button>
         <button 
           onClick={() => handleMoveSelectionStep('left')}
-          className="p-1.5 bg-bg-input hover:bg-border-main border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center"
+          className={`p-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center`}
           title={t('move_left', lang)}
         >
           <ChevronLeft size={12} />
         </button>
         <button 
           onClick={() => handleMoveSelectionStep('right')}
-          className="p-1.5 bg-bg-input hover:bg-border-main border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center"
+          className={`p-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center`}
           title={t('move_right', lang)}
         >
           <ChevronRight size={12} />
         </button>
         <button 
           onClick={() => handleMoveSelection('end')}
-          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
           title={t('move_to_back_tooltip', lang)}
         >
           {t('move_to_back', lang)}
@@ -1172,13 +1165,13 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
         <button 
           onClick={handleUppercase}
-          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
         >
           {t('uppercase', lang)}
         </button>
         <button 
           onClick={handleLowercase}
-          className="px-3 py-1.5 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+          className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
         >
           {t('lowercase', lang)}
         </button>
@@ -1186,18 +1179,18 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         <div className="flex items-center space-x-1">
           <button 
             onClick={() => setEditorFontSize(s => Math.max(8, s - 1))}
-            className="px-2 py-1 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim"
+            className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
           >A-</button>
           <span className="text-[10px] font-mono text-text-main w-4 text-center">{editorFontSize}</span>
           <button 
             onClick={() => setEditorFontSize(s => Math.min(24, s + 1))}
-            className="px-2 py-1 bg-bg-input hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim"
+            className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
           >A+</button>
         </div>
         <select 
           value={editorFontFamily}
           onChange={e => setEditorFontFamily(e.target.value)}
-          className="bg-bg-input border border-border-main text-[10px] font-mono text-text-main rounded px-2 py-1.5 outline-none cursor-pointer uppercase font-bold tracking-wider hover:bg-border-main transition-colors shrink-0"
+          className={`border border-border-main text-[10px] font-mono rounded px-2 py-1.5 outline-none cursor-pointer uppercase font-bold tracking-wider transition-colors shrink-0 ${theme === 'mono' ? 'bg-bg-input text-text-main hover:bg-gray-500 hover:text-white' : 'bg-bg-input text-text-main hover:bg-border-main'}`}
         >
           <option value="font-mono">Mono</option>
           <option value="font-sans">Sans</option>
@@ -1311,13 +1304,13 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               </button>
               <button 
                 onClick={() => handleSaveMasterClick(false, activeMasterTab === 'negative')}
-                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <Save className="w-3 h-3" /> {activeMasterTab === 'negative' ? t('save_to_negative', lang) : t('save_as_master', lang)}
               </button>
               <button 
                 onClick={() => handleSavePartClick(false)}
-                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_part', lang)}
               </button>
@@ -1331,7 +1324,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                   setSaveMemoDefaultTitle(title);
                   setIsSaveMemoModalOpen(true);
                 }}
-                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_memo', lang)}
               </button>
@@ -1395,14 +1388,14 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <div className="flex gap-2 bg-bg-panel p-1 rounded-full border border-border-main shadow-sm relative z-20">
             <button 
               onClick={() => handleCopyTextBetweenEditors('down')}
-              className="px-2 py-1 bg-bg-input hover:bg-border-main rounded-full text-text-dim hover:text-text-main transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono"
+              className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono`}
               title={t('copy_to_negative', lang)}
             >
               <Copy size={12} /> <ArrowDown size={12} />
             </button>
             <button 
               onClick={() => handleMoveTextBetweenEditors('down')}
-              className="p-1.5 bg-bg-input hover:bg-border-main rounded-full text-text-dim hover:text-text-main transition-colors border border-border-hover flex items-center justify-center"
+              className={`p-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
               title={t('move_to_negative', lang)}
             >
               <ArrowDown size={14} />
@@ -1410,14 +1403,14 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
             <div className="w-px h-6 bg-border-main my-auto mx-1"></div>
             <button 
               onClick={() => handleMoveTextBetweenEditors('up')}
-              className="p-1.5 bg-bg-input hover:bg-border-main rounded-full text-text-dim hover:text-text-main transition-colors border border-border-hover flex items-center justify-center"
+              className={`p-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
               title={t('move_to_positive', lang)}
             >
               <ArrowUp size={14} />
             </button>
             <button 
               onClick={() => handleCopyTextBetweenEditors('up')}
-              className="px-2 py-1 bg-bg-input hover:bg-border-main rounded-full text-text-dim hover:text-text-main transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono"
+              className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono`}
               title={t('copy_to_positive', lang)}
             >
               <Copy size={12} /> <ArrowUp size={12} />
@@ -1442,13 +1435,13 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               
               <button 
                 onClick={() => handleSaveMasterClick(true)}
-                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <Save className="w-3 h-3" /> {t('save_as_master', lang)}
               </button>
               <button 
                 onClick={() => handleSavePartClick(true)}
-                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_part', lang)}
               </button>
@@ -1462,7 +1455,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                   setSaveMemoDefaultTitle(title);
                   setIsSaveMemoModalOpen(true);
                 }}
-                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors"
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_memo', lang)}
               </button>

@@ -1127,33 +1127,33 @@ export default function App() {
         <div className="flex items-center space-x-2">
           <button 
             onClick={toggleFullscreen}
-            className={`w-7 h-7 bg-bg-input border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-200 text-black' : 'hover:bg-border-main text-text-main'}`}
+            className={`w-7 h-7 bg-bg-input border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
           <button 
             onClick={() => setSidebarSwapped(s => !s)}
-            className={`w-7 h-7 bg-bg-input border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-200 text-black' : 'hover:bg-border-main text-text-main'}`}
+            className={`w-7 h-7 bg-bg-input border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
             title="Swap Sidebars"
           >
             <ArrowLeftRight className="w-4 h-4" />
           </button>
           <button 
-            onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'light' : t === 'light' ? 'navy' : t === 'navy' ? 'mono' : t === 'mono' ? 'dark' : 'light')}
-            className={`h-7 bg-bg-input border border-border-main text-[10px] font-mono rounded px-2.5 transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-200 text-black' : 'hover:bg-border-main text-text-main'}`}
+            onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'light' : t === 'light' ? 'mono' : t === 'mono' ? 'navy' : t === 'navy' ? 'dark' : 'light')}
+            className={`h-7 w-[130px] bg-bg-input border border-border-main text-[10px] font-mono rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
           >
             {t('theme', lang)}: {t(`theme_${theme}` as keyof typeof translations, lang)}
           </button>
           <button 
             onClick={() => setPaperMode(!paperMode)}
-            className={`h-7 text-[10px] font-mono border rounded px-2.5 transition-colors flex items-center justify-center shrink-0 ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-bold' : theme === 'mono' ? 'bg-bg-input hover:bg-gray-200 border-border-main text-black' : 'bg-bg-input hover:bg-border-main border-border-main text-text-main'}`}
+            className={`h-7 w-[120px] text-[10px] font-mono border rounded transition-colors flex items-center justify-center shrink-0 ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-bold' : theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white border-border-main text-text-main' : 'bg-bg-input hover:bg-border-main border-border-main text-text-main'}`}
           >
             {t('paper_mode', lang)}: {paperMode ? 'ON' : 'OFF'}
           </button>
           <button 
             onClick={() => setLang(l => l === 'en' ? 'ja' : 'en')}
-            className={`h-7 px-2.5 bg-bg-input text-[10px] font-mono border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-200 text-black' : 'hover:bg-border-main text-text-main'}`}
+            className={`h-7 px-2.5 bg-bg-input text-[10px] font-mono border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
           >
             {lang === 'en' ? 'JP' : 'EN'}
           </button>
@@ -1256,7 +1256,7 @@ export default function App() {
               </div>
               <button 
                 onClick={handleChangeExportDir}
-                className={`w-full text-center px-2 py-1.5 bg-bg-panel border border-border-main rounded text-[10px] font-mono truncate transition-colors ${theme === 'mono' ? 'hover:bg-gray-200 text-black' : 'hover:bg-border-main text-text-main'}`}
+                className={`w-full text-center px-2 py-1.5 bg-bg-panel border border-border-main rounded text-[10px] font-mono truncate transition-colors ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
               >
                 {exportDirectoryName || '未設定 (設定するにはクリック)'}
               </button>
