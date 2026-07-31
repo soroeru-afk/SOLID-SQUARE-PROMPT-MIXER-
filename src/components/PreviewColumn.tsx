@@ -664,6 +664,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     const saved = localStorage.getItem('editorFontSize');
     return saved ? parseInt(saved, 10) : 14;
   });
+
+  const [editorLineHeight, setEditorLineHeight] = useState(() => {
+    const saved = localStorage.getItem('editorLineHeight');
+    return saved ? parseFloat(saved) : 1.625;
+  });
   const [editorFontFamily, setEditorFontFamily] = useState(() => {
     return localStorage.getItem('editorFontFamily') || 'font-mono';
   });
@@ -673,10 +678,21 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   }, [editorFontSize]);
 
   useEffect(() => {
+    localStorage.setItem('editorLineHeight', editorLineHeight.toString());
+  }, [editorLineHeight]);
+
+  useEffect(() => {
     localStorage.setItem('editorFontFamily', editorFontFamily);
   }, [editorFontFamily]);
   
-  const [negativeHeight, setNegativeHeight] = useState(120);
+  const [negativeHeight, setNegativeHeight] = useState(() => {
+    const saved = localStorage.getItem('ui_negative_height');
+    return saved ? parseInt(saved, 10) : 120;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ui_negative_height', negativeHeight.toString());
+  }, [negativeHeight]);
   const [isNegativeOpen, setIsNegativeOpen] = useState(true);
   const [isPositiveOpen, setIsPositiveOpen] = useState(true);
   const dragStartY = useRef(0);
@@ -972,7 +988,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   return (
     <>
       
-      <div className="p-2 border-b border-border-main flex items-center justify-between bg-bg-panel shrink-0 gap-2">
+      <div className="p-2 border-b border-border-main flex items-center bg-bg-panel shrink-0 gap-2 relative">
         {/* Left side: Title and Auto Optimize */}
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-[10px] font-mono text-text-main font-bold uppercase tracking-widest hidden 2xl:inline">{t('output_synthesis', lang)}</span>
@@ -984,33 +1000,34 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           </button>
         </div>
 
-        {/* Right side: Copy buttons and Char count */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-mono text-text-dim mr-1 flex items-center gap-1 font-bold">
-              <Copy className="w-3.5 h-3.5" /> COPY
-            </span>
-            <button 
-              onClick={() => handleCopy('main')}
-              className="w-24 py-1.5 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
-            >
-              {t('copy_main', lang)}
-            </button>
-            <button 
-              onClick={() => handleCopy('negative')}
-              className="w-24 py-1.5 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
-            >
-              {t('copy_negative_only', lang)}
-            </button>
-            <button 
-              onClick={() => handleCopy('all')}
-              className="w-24 py-1.5 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
-            >
-              {t('copy_all', lang)}
-            </button>
-          </div>
-          <div className="w-px h-4 bg-border-main mx-1"></div>
-          <span className="text-[9px] text-text-dim font-mono whitespace-nowrap hidden sm:inline w-[110px] text-right">CHAR: {editorText.length} / 4096</span>
+        {/* Middle: Char count */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center hidden md:flex">
+          <span className="text-[9px] text-text-dim font-mono whitespace-nowrap">CHAR: {editorText.length} / 4096</span>
+        </div>
+
+        {/* Right side: Copy buttons */}
+        <div className="flex items-center gap-1.5 ml-auto">
+          <span className="text-[10px] font-mono text-text-dim mr-1 flex items-center gap-1 font-bold">
+            <Copy className="w-3.5 h-3.5" /> COPY
+          </span>
+          <button 
+            onClick={() => handleCopy('main')}
+            className="w-24 py-1.5 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+          >
+            {t('copy_main', lang)}
+          </button>
+          <button 
+            onClick={() => handleCopy('negative')}
+            className="w-24 py-1.5 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+          >
+            {t('copy_negative_only', lang)}
+          </button>
+          <button 
+            onClick={() => handleCopy('all')}
+            className="w-24 py-1.5 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+          >
+            {t('copy_all', lang)}
+          </button>
         </div>
       </div>
       
@@ -1190,6 +1207,19 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
             }`}
             title="Clear All Emphasis"
           >{t('emphasize_clear', lang)}</button>
+        </div>
+        <div className="flex items-center gap-1 mx-2">
+          <span className="text-[9px] font-mono text-text-dim">↕</span>
+          <input 
+            type="range" 
+            min="1.0" 
+            max="2.5" 
+            step="0.1" 
+            value={editorLineHeight}
+            onChange={e => setEditorLineHeight(parseFloat(e.target.value))}
+            className="w-16 h-1 bg-border-main rounded-lg appearance-none cursor-pointer accent-blue-500"
+            title={`Line Height: ${editorLineHeight}`}
+          />
         </div>
 
         <button 
@@ -1383,8 +1413,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       </AnimatePresence>
             <div 
               ref={positiveHighlightRef}
-              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
-              style={{ fontSize: `${editorFontSize}px` }}
+              className={`absolute inset-0 p-4 pt-2 whitespace-pre-wrap break-words overflow-hidden pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
               aria-hidden="true"
             >
               {editorText ? <>{renderHighlightedText(editorText)}{editorText.endsWith('\n') ? ' ' : ''}</> : <span className="opacity-50">{t('placeholder', lang)}</span>}
@@ -1409,8 +1439,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                   positiveHighlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
                 }
               }}
-              style={{ fontSize: `${editorFontSize}px` }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap break-words selection:bg-blue-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} overflow-y-auto whitespace-pre-wrap break-words selection:bg-blue-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
@@ -1513,8 +1543,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
-              className={`absolute inset-0 p-4 pt-2 leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
-              style={{ fontSize: `${editorFontSize}px` }}
+              className={`absolute inset-0 p-4 pt-2 whitespace-pre-wrap break-words overflow-hidden pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
               aria-hidden="true"
             >
               {negativeEditorText ? <>{renderHighlightedText(negativeEditorText)}{negativeEditorText.endsWith('\n') ? ' ' : ''}</> : <span className="opacity-50">Negative prompt...</span>}
@@ -1539,8 +1569,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                   negativeHighlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
                 }
               }}
-              style={{ fontSize: `${editorFontSize}px` }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} leading-relaxed overflow-y-auto whitespace-pre-wrap break-words selection:bg-red-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} overflow-y-auto whitespace-pre-wrap break-words selection:bg-red-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
