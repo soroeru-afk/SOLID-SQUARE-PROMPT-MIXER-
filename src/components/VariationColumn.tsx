@@ -393,7 +393,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
         
         
 
-        <div className="flex-1 overflow-y-auto pr-2 space-y-4 content-start min-h-0 pb-12">
+        <div className="flex-1 overflow-y-scroll pr-2 space-y-4 content-start min-h-0 pb-12">
           {sectionOrder.map((secIdNum) => {
             const secId = String(secIdNum);
             const secData = groupedParts[secIdNum as keyof typeof groupedParts];
@@ -702,7 +702,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       )}
       </>
       ) : activeTab === 'mixer' ? (
-        <div className="p-4 flex-1 overflow-y-auto">
+        <div className="p-4 flex-1 overflow-y-scroll">
           <AttributeMixer onApply={onMixAttributes || (() => {})} theme={theme} />
         </div>
       ) : (
