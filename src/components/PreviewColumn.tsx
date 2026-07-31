@@ -5,6 +5,8 @@ import { Language, t } from '../i18n';
 import { SavePartModal } from './SavePartModal';
 import { SaveMasterModal } from './SaveMasterModal';
 import { SaveMemoModal } from './SaveMemoModal';
+import { extractMetadataFromImage } from '../utils/imageMetadata';
+
 
 interface PreviewColumnProps {
   tabs?: { id: string, name: string, pos: string, neg: string }[];
@@ -731,11 +733,22 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     e.preventDefault();
   };
 
-  const handleDropFile = (e: React.DragEvent<HTMLTextAreaElement>, isNegative: boolean) => {
+  const handleDropFile = async (e: React.DragEvent<HTMLTextAreaElement>, isNegative: boolean) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      if (file.type.includes('text') || file.name.endsWith('.txt')) {
+      if (file.type.includes('image/')) {
+        const metadata = await extractMetadataFromImage(file);
+        if (metadata) {
+          if (metadata.positive) {
+            setEditorText(prev => prev ? prev + '\n' + metadata.positive : metadata.positive);
+          }
+          if (metadata.negative) {
+            setNegativeEditorText(prev => prev ? prev + '\n' + metadata.negative : metadata.negative);
+          }
+          
+        }
+      } else if (file.type.includes('text') || file.name.endsWith('.txt')) {
         const reader = new FileReader();
         reader.onload = (event) => {
           const content = event.target?.result as string;
