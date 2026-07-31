@@ -1234,6 +1234,10 @@ export default function App() {
               onReorderNegative={handleReorderNegatives}
               onCopyToPart={(master) => setSavePartFromMasterData({ name: master.name, content: master.content })}
               onCopyBulkToPart={(masters) => setSavePartFromMasterData({ items: masters.map(m => ({ name: m.name, content: m.content })) })}
+              onCopyBulkToPartDirect={(masters, category, section) => {
+                masters.forEach(m => handleAddPart(category, section, m.name, m.content));
+              }}
+              uniqueCategories={uniqueCategories}
               activeTab={activeMasterTab}
               setActiveTab={setActiveMasterTab}
               lang={lang}
@@ -1439,6 +1443,10 @@ export default function App() {
               onReorderNegative={handleReorderNegatives}
               onCopyToPart={(master) => setSavePartFromMasterData({ name: master.name, content: master.content })}
               onCopyBulkToPart={(masters) => setSavePartFromMasterData({ items: masters.map(m => ({ name: m.name, content: m.content })) })}
+              onCopyBulkToPartDirect={(masters, category, section) => {
+                masters.forEach(m => handleAddPart(category, section, m.name, m.content));
+              }}
+              uniqueCategories={uniqueCategories}
               activeTab={activeMasterTab}
               setActiveTab={setActiveMasterTab}
               lang={lang}

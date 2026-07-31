@@ -341,13 +341,13 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
             onChange={handleBulkMove}
             value=""
             disabled={bulkSelectedIds.size === 0}
-            className="flex-1 min-w-[70px] bg-bg-input border border-border-main text-text-main text-[10px] font-mono px-2 py-1 rounded outline-none disabled:opacity-50"
+            className="flex-1 min-w-[70px] bg-bg-input hover:bg-text-main hover:text-bg-base border border-border-main text-text-main text-[10px] font-mono px-2 py-1 rounded outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:hover:bg-bg-input disabled:hover:text-text-main"
           >
-            <option value="" disabled>Move to...</option>
-            <option value="copy_to_master">{t('copy_to_master_prompts', lang)}</option>
-            <option disabled>──────────</option>
+            <option value="" disabled className="bg-bg-panel text-text-dim">Move to...</option>
+            <option value="copy_to_master" className="bg-bg-panel text-text-main">{t('copy_to_master_prompts', lang)}</option>
+            <option disabled className="bg-bg-panel text-text-dim">──────────</option>
             {uniqueCategories.map(([cat, sec]) => (
-              <option key={`${sec}:${cat}`} value={`${sec}:${cat}`}>
+              <option key={`${sec}:${cat}`} value={`${sec}:${cat}`} className="bg-bg-panel text-text-main">
                 {t(cat as any, lang) || cat} ({t(`sec_${sec === 1 ? 'composition' : sec === 2 ? 'pose' : sec === 3 ? 'details' : 'context'}` as any, lang)})
               </option>
             ))}
@@ -519,11 +519,11 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                       <Trash2 className="w-3 h-3" />
                                     </button>
                                     <div className="flex gap-2">
-                                      <button onClick={() => setEditingId(null)} className="text-text-dim hover:text-text-dim p-1">
-                                        <X className="w-3 h-3" />
+                                      <button onClick={() => setEditingId(null)} className="px-3 py-1.5 bg-transparent hover:bg-bg-input border border-transparent hover:border-border-main text-text-dim hover:text-text-main rounded text-[10px] font-mono transition-colors">
+                                        CANCEL
                                       </button>
-                                      <button onClick={() => handleSave(part.id)} className="text-green-500 hover:text-green-400 p-1">
-                                        <Check className="w-3 h-3" />
+                                      <button onClick={() => handleSave(part.id)} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-mono font-bold transition-colors">
+                                        {t('save', lang)}
                                       </button>
                                     </div>
                                   </div>
@@ -551,11 +551,11 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                 />
                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                                   <div className="flex justify-between items-center pr-6">
-                                    <span className={`text-[13px] font-bold font-mono truncate ${isSelected ? 'text-text-main' : 'text-text-dim'}`}>
+                                    <span className={`text-[13px] font-bold font-mono truncate text-text-main`}>
                                       {part.name}
                                     </span>
                                   </div>
-                                  <span className="text-[11px] font-mono text-text-dim truncate mt-0.5">{part.content || <span className="opacity-40">----- (No Content) -----</span>}</span>
+                                  <span className="text-[11px] font-mono truncate mt-0.5 text-text-main opacity-70">{part.content || <span className="opacity-40">----- (No Content) -----</span>}</span>
                                 </div>
                                 <div className="absolute right-2 flex items-center gap-1">
                                   <div className="opacity-0 group-hover:opacity-100 flex items-center transition-opacity bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden">

@@ -30,6 +30,8 @@ interface MasterColumnProps {
   onReorderNegative?: (startIndex: number, endIndex: number) => void;
   onCopyToPart?: (item: MasterPrompt) => void;
   onCopyBulkToPart?: (items: MasterPrompt[]) => void;
+  onCopyBulkToPartDirect?: (items: MasterPrompt[], category: string, section: number) => void;
+  uniqueCategories?: [string, number][];
   activeTab: 'master' | 'negative';
   theme?: string;
   setActiveTab: (tab: 'master' | 'negative') => void;
@@ -37,7 +39,7 @@ interface MasterColumnProps {
 }
 
 export const MasterColumn: React.FC<MasterColumnProps> = ({ 
-  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDuplicate, onDuplicateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onDeleteAll, onDeleteAllNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, onCopyToPart, onCopyBulkToPart, activeTab, setActiveTab, lang, theme 
+  masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDuplicate, onDuplicateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onDeleteAll, onDeleteAllNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, onCopyToPart, onCopyBulkToPart, onCopyBulkToPartDirect, uniqueCategories, activeTab, setActiveTab, lang, theme 
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'dropdown'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -202,11 +204,10 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-scroll p-2 space-y-2 bg-bg-panel relative">
-        {bulkSelectedIds.size > 0 && viewMode === 'list' && (
-          <div className="sticky top-0 z-20 bg-bg-panel/90 backdrop-blur pb-2 mb-2 border-b border-border-main flex flex-wrap gap-2 justify-between items-center">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-mono text-text-dim whitespace-nowrap">{bulkSelectedIds.size} selected</span>
+      <div className="p-2 border-b border-border-main bg-bg-panel shrink-0 z-10 shadow-sm">
+<div className={`flex flex-wrap items-center gap-2 bg-bg-surface p-2 border ${bulkSelectedIds.size > 0 ? "border-blue-500/30" : "border-border-main"} rounded shadow-sm shrink-0 min-h-[42px]`}>
+              <span className={`text-[10px] font-mono flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full font-bold ${bulkSelectedIds.size > 0 ? "text-blue-400 bg-blue-500/10" : "text-text-dim bg-bg-input"}`}>{bulkSelectedIds.size}</span>
+              
               {activeTab === 'master' && (
                 <div className="flex gap-1 p-0.5 bg-bg-base border border-border-main rounded shrink-0">
                   {['⭐', '✔', '💡', '📌', '⚠️', '❌'].map(m => (
@@ -216,7 +217,8 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                         bulkSelectedIds.forEach(id => currentOnUpdate(id, { mark: m === '❌' ? undefined : m }));
                         setBulkSelectedIds(new Set());
                       }}
-                      className={`w-5 h-5 rounded flex items-center justify-center text-xs hover:bg-bg-input ${m === '✔' ? 'text-blue-500' : ''}`}
+                      disabled={bulkSelectedIds.size === 0}
+                      className={`w-5 h-5 rounded flex items-center justify-center text-xs hover:bg-bg-input ${m === "✔" ? "text-blue-500" : ""} disabled:opacity-50`}
                       title={m === '❌' ? "Remove Mark" : "Apply Mark"}
                     >
                       {m}
@@ -224,47 +226,69 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                   ))}
                 </div>
               )}
-            </div>
-            <div className="flex flex-wrap gap-2 items-center justify-end flex-1">
+
               {currentOnMoveBulk && (
                 <div className="flex gap-1 p-0.5 bg-bg-base border border-border-main rounded shrink-0">
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'top')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move to Top">
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'top')} disabled={bulkSelectedIds.size === 0} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main disabled:opacity-50" title="Move to Top">
                     <ChevronsUp className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'up')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move Up">
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'up')} disabled={bulkSelectedIds.size === 0} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main disabled:opacity-50" title="Move Up">
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'down')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move Down">
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'down')} disabled={bulkSelectedIds.size === 0} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main disabled:opacity-50" title="Move Down">
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'bottom')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move to Bottom">
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'bottom')} disabled={bulkSelectedIds.size === 0} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main disabled:opacity-50" title="Move to Bottom">
                     <ChevronsDown className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
-              <button onClick={() => setBulkSelectedIds(new Set())} className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[10px] font-mono text-text-dim transition-colors">
-                {t('clear_selection', lang)}
-              </button>
+
               {onCopyBulkToPart && (
-                <button 
-                  onClick={() => {
+                <select 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) return;
                     const itemsToCopy = currentList.filter(item => bulkSelectedIds.has(item.id));
-                    onCopyBulkToPart(itemsToCopy);
+                    
+                    if (val === 'default') {
+                      onCopyBulkToPart(itemsToCopy);
+                    } else {
+                      const [sectionStr, ...catParts] = val.split(':');
+                      const category = catParts.join(':');
+                      const section = Number(sectionStr);
+                      if (onCopyBulkToPartDirect) {
+                        onCopyBulkToPartDirect(itemsToCopy, category, section);
+                      }
+                    }
                     setBulkSelectedIds(new Set());
-                  }} 
-                  className="flex items-center gap-1 px-2 py-1 bg-transparent hover:bg-green-500/10 border border-green-500/50 rounded text-[10px] font-mono text-green-500 transition-colors"
-                  title="Copy to Variation Parts"
+                    e.target.value = '';
+                  }}
+                  value=""
+                  disabled={bulkSelectedIds.size === 0}
+                  className="flex-1 min-w-[70px] bg-bg-input hover:bg-bg-surface border border-border-main hover:border-text-dim text-text-main text-[10px] font-mono px-2 py-1 rounded outline-none transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  <ArrowRightToLine className="w-3 h-3" /> COPY
-                </button>
+                  <option value="" disabled className="bg-bg-panel text-text-dim">Copy to Parts...</option>
+                  <option value="default" className="bg-bg-panel text-text-main">{t('save_as_part', lang)}...</option>
+                  {uniqueCategories && uniqueCategories.length > 0 && <option disabled className="bg-bg-panel text-text-dim">──────────</option>}
+                  {uniqueCategories?.map(([cat, sec]) => (
+                    <option key={`${sec}:${cat}`} value={`${sec}:${cat}`} className="bg-bg-panel text-text-main">
+                      {t(cat as any, lang) || cat} ({t(`sec_${sec === 1 ? 'composition' : sec === 2 ? 'pose' : sec === 3 ? 'details' : 'context'}` as any, lang)})
+                    </option>
+                  ))}
+                </select>
               )}
-              <button onClick={() => setConfirmDeleteBulk(true)} className="flex items-center gap-1 px-2 py-1 bg-transparent hover:bg-red-500/10 border border-red-500/50 rounded text-[10px] font-mono text-red-500 transition-colors">
+              
+              <button onClick={() => setConfirmDeleteBulk(true)} disabled={bulkSelectedIds.size === 0} className="flex items-center gap-1 px-2 py-1 bg-transparent hover:bg-red-500/10 border border-red-500/50 rounded text-[10px] font-mono text-red-500 transition-colors whitespace-nowrap disabled:opacity-50">
                 <Trash2 className="w-3 h-3" /> DELETE
               </button>
+              
+              <button onClick={() => setBulkSelectedIds(new Set())} disabled={bulkSelectedIds.size === 0} className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[10px] font-mono text-text-dim hover:text-text-main transition-colors whitespace-nowrap disabled:opacity-50">
+                {t('clear_selection', lang)}
+              </button>
             </div>
-          </div>
-        )}
-
+      </div>
+      <div className="flex-1 overflow-y-scroll p-2 space-y-2 bg-bg-panel relative">
         {currentList.filter(item => viewMode === 'list' || item.id === currentSelectedId).map((item, index) => {
           const isSelected = currentSelectedId === item.id;
           const isNegative = activeTab === 'negative';
@@ -313,11 +337,11 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                     <Trash2 className="w-3 h-3" />
                   </button>
                   <div className="flex gap-2">
-                    <button onClick={() => setEditingId(null)} className="text-text-dim hover:text-text-dim p-1">
-                      <X className="w-3 h-3" />
+                    <button onClick={() => setEditingId(null)} className="px-3 py-1.5 bg-transparent hover:bg-bg-input border border-transparent hover:border-border-main text-text-dim hover:text-text-main rounded text-[10px] font-mono transition-colors">
+                      CANCEL
                     </button>
-                    <button onClick={() => handleSave(item.id)} className="text-green-500 hover:text-green-400 p-1">
-                      <Check className="w-3 h-3" />
+                    <button onClick={() => handleSave(item.id)} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-mono font-bold transition-colors">
+                      {t('save', lang)}
                     </button>
                   </div>
                 </div>
