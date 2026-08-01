@@ -18,6 +18,8 @@ type Presets = {
   location: PresetItem[];
   situation: PresetItem[];
   partner: PresetItem[];
+  freeText1: PresetItem[];
+  freeText2: PresetItem[];
 };
 
 type Combination = {
@@ -25,8 +27,6 @@ type Combination = {
   name: string;
   selections: Record<keyof Presets, number>;
   negativePrompt: string;
-  freeText1?: string;
-  freeText2?: string;
 };
 
 const DEFAULT_PRESETS: Presets = {
@@ -130,17 +130,21 @@ const DEFAULT_PRESETS: Presets = {
     { label: '猫耳 / Cat Ears', value: 'cat ears, ' },
     { label: 'カチューシャ / Hairband', value: 'hairband, ' },
     { label: 'ピアス・イヤリング / Earrings', value: 'earrings, ' },
-    { label: 'タトゥー / Tattoo', value: 'tattoo, ' }
+    { label: 'タトゥー / Tattoo', value: 'tattoo, ' },
+    { label: '液体 (汗・ミルク等) / Liquid', value: 'liquid, body fluid, sweat, semen, milk, ' }
   ],
   angle: [
     { label: '指定なし / None', value: '' },
     { label: '正面 / Front View 🌟', value: 'front view, ' },
+    { label: '右斜め前から / From Front Right', value: 'from front right, ' },
     { label: '横顔 / Side View', value: 'side view, profile, ' },
+    { label: '斜め後ろから / From Back Oblique', value: 'from behind and side, oblique back angle, ' },
     { label: '後ろ姿 / Back View', value: 'back view, from behind, ' },
     { label: '見返り / Looking Back', value: 'looking back, ' },
     { label: '俯瞰(上から) / From Above 🌟', value: 'from above, high angle, ' },
     { label: 'アオリ(下から) / From Below', value: 'from below, low angle, ' },
-    { label: 'カウボーイショット / Cowboy Shot', value: 'cowboy shot, ' }
+    { label: 'カウボーイショット / Cowboy Shot', value: 'cowboy shot, ' },
+    { label: '遠くから(ロング) / From a distance', value: 'from a distance, extreme long shot, wide shot, ' }
   ],
   location: [
     { label: '指定なし / None', value: '' },
@@ -166,7 +170,11 @@ const DEFAULT_PRESETS: Presets = {
     { label: '拘束・縛られ / Bound & Tied', value: 'bound, tied up, ' },
     { label: '膝枕 / Lap Pillow', value: 'lap pillow, resting head on lap, ' },
     { label: '添い寝 / Sleeping Together', value: 'sleeping together, sharing bed, ' },
-    { label: '合体中 / Intercourse', value: 'intercourse, sex, mating, ' }
+    { label: '合体中 / Intercourse', value: 'intercourse, sex, mating, ' },
+    { label: '後ろから合体中(バック) / Doggy Style', value: 'doggy style, back mating, male from behind, ' },
+    { label: '騎乗位 / Cowgirl', value: 'cowgirl position, riding, ' },
+    { label: '正常位 / Missionary', value: 'missionary position, on back, ' },
+    { label: '授乳的スタイル / Nursing Style', value: 'breastfeeding, nursing, breast sucking, ' }
   ],
   partner: [
     { label: '指定なし / None', value: '' },
@@ -177,6 +185,12 @@ const DEFAULT_PRESETS: Presets = {
     { label: 'イケメン / Handsome', value: 'handsome young man, ' },
     { label: '主観視点 / POV 🌟', value: 'pov, pov shot, ' },
     { label: '複数人 / Multiple Men', value: 'multiple boys, gangbang, ' }
+  ],
+  freeText1: [
+    { label: '指定なし / None', value: '' }
+  ],
+  freeText2: [
+    { label: '指定なし / None', value: '' }
   ]
 };
 
@@ -194,7 +208,9 @@ const DEFAULT_SELECTIONS: Record<keyof Presets, number> = {
   angle: 0,
   location: 0,
   situation: 0,
-  partner: 0
+  partner: 0,
+  freeText1: 0,
+  freeText2: 0
 };
 
 interface AttributeMixerProps {
@@ -205,8 +221,6 @@ interface AttributeMixerProps {
 
 export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme = 'default', lang = 'ja' }) => {
   const [negativePrompt, setNegativePrompt] = useState('');
-  const [freeText1, setFreeText1] = useState('');
-  const [freeText2, setFreeText2] = useState('');
   const [combinationName, setCombinationName] = useState('');
   
   const [isSavedListOpen, setIsSavedListOpen] = useState(false);
@@ -268,12 +282,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   const [editModes, setEditModes] = useState<Record<string, boolean>>({});
 
   const handleApply = () => {
-    const formatFreeText = (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return '';
-      return trimmed.endsWith(',') ? trimmed + ' ' : trimmed + ', ';
-    };
-
     const parts = [
       presets.partner[selections.partner]?.value || '',
       presets.race[selections.race]?.value || '',
@@ -289,8 +297,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
       presets.angle[selections.angle]?.value || '',
       presets.location[selections.location]?.value || '',
       presets.situation[selections.situation]?.value || '',
-      formatFreeText(freeText1),
-      formatFreeText(freeText2)
+      presets.freeText1[selections.freeText1]?.value || '',
+      presets.freeText2[selections.freeText2]?.value || ''
     ].filter(Boolean);
 
     const pos = parts.join('');
@@ -301,8 +309,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   const handleReset = () => {
     setSelections(DEFAULT_SELECTIONS);
     setNegativePrompt('');
-    setFreeText1('');
-    setFreeText2('');
     setCombinationName('');
     setActiveCombinationId('');
   };
@@ -313,9 +319,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
       id: Date.now().toString(),
       name: combinationName.trim(),
       selections: { ...selections } as Record<keyof Presets, number>,
-      negativePrompt,
-      freeText1,
-      freeText2
+      negativePrompt
     };
     setCombinations(prev => [...prev, newComb]);
     setActiveCombinationId(newComb.id);
@@ -326,7 +330,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     if (!activeCombinationId) return;
     setCombinations(prev => prev.map(c => 
       c.id === activeCombinationId 
-        ? { ...c, selections: { ...selections } as Record<keyof Presets, number>, negativePrompt, freeText1, freeText2 }
+        ? { ...c, selections: { ...selections } as Record<keyof Presets, number>, negativePrompt }
         : c
     ));
   };
@@ -335,10 +339,10 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     if (!id) return;
     const comb = combinations.find(c => c.id === id);
     if (comb) {
-      setSelections({ ...DEFAULT_SELECTIONS, ...comb.selections });
+      // Ensure defaults for any newly added keys that might not exist in saved combinations
+      const safeSelections = { ...DEFAULT_SELECTIONS, ...comb.selections };
+      setSelections(safeSelections);
       setNegativePrompt(comb.negativePrompt || '');
-      setFreeText1(comb.freeText1 || '');
-      setFreeText2(comb.freeText2 || '');
       setActiveCombinationId(id);
       setCombinationName(comb.name);
     }
@@ -627,28 +631,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
         {renderCategory('angle', 'アングル (Angle)')}
         {renderCategory('location', '場所・背景 (Location)')}
         {renderCategory('situation', 'シチュエーション・状況 (Situation)')}
-        
-        <div className="flex flex-col gap-1.5 border border-border-main p-2 rounded bg-bg-surface mt-1">
-          <label className="text-[12px] font-bold text-text-main font-mono">自由・フリー設定 1 (Free Text 1)</label>
-          <input 
-            type="text" 
-            value={freeText1}
-            onChange={e => setFreeText1(e.target.value)}
-            placeholder="追加のプロンプトを自由に入力..."
-            className="bg-bg-input border border-border-main rounded px-2 py-1.5 text-[12px] text-text-main font-mono w-full"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5 border border-border-main p-2 rounded bg-bg-surface">
-          <label className="text-[12px] font-bold text-text-main font-mono">自由・フリー設定 2 (Free Text 2)</label>
-          <input 
-            type="text" 
-            value={freeText2}
-            onChange={e => setFreeText2(e.target.value)}
-            placeholder="追加のプロンプトを自由に入力..."
-            className="bg-bg-input border border-border-main rounded px-2 py-1.5 text-[12px] text-text-main font-mono w-full"
-          />
-        </div>
+        {renderCategory('freeText1', '自由・フリー設定 1 (Free Text 1)')}
+        {renderCategory('freeText2', '自由・フリー設定 2 (Free Text 2)')}
       </div>
       
       <div className="flex flex-col gap-2 pt-2 border-t border-border-main mt-2">
