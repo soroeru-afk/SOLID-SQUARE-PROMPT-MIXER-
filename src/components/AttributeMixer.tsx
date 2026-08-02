@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Settings2, Plus, Trash2, Save, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
+import { Check, Settings2, Plus, Trash2, Save, ChevronDown, ChevronUp, Edit2, RotateCcw } from 'lucide-react';
 import { Language } from '../i18n';
 
 type PresetItem = { label: string; value: string };
@@ -222,6 +222,7 @@ interface AttributeMixerProps {
 export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme = 'default', lang = 'ja' }) => {
   const [negativePrompt, setNegativePrompt] = useState('');
   const [combinationName, setCombinationName] = useState('');
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   
   const [isSavedListOpen, setIsSavedListOpen] = useState(false);
   const [editingCombId, setEditingCombId] = useState<string | null>(null);
@@ -323,7 +324,9 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     };
     setCombinations(prev => [...prev, newComb]);
     setActiveCombinationId(newComb.id);
-    // Don't clear name, let it stay
+    
+    setSaveSuccessMessage('新規保存しました！ (Saved!)');
+    setTimeout(() => setSaveSuccessMessage(null), 3000);
   };
 
   const updateActiveCombination = () => {
@@ -333,6 +336,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
         ? { ...c, selections: { ...selections } as Record<keyof Presets, number>, negativePrompt }
         : c
     ));
+    setSaveSuccessMessage('上書き保存しました！ (Overwritten!)');
+    setTimeout(() => setSaveSuccessMessage(null), 3000);
   };
 
   const loadCombination = (id: string) => {
@@ -376,10 +381,11 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   };
 
   const addPresetItem = (category: keyof Presets) => {
-    setPresets(prev => ({
-      ...prev,
-      [category]: [...prev[category], { label: 'New Item', value: '' }]
-    }));
+    setPresets(prev => {
+      const newCategory = [...prev[category], { label: 'New Item', value: '' }];
+      setSelections(s => ({ ...s, [category]: newCategory.length - 1 }));
+      return { ...prev, [category]: newCategory };
+    });
     setEditModes(prev => ({ ...prev, [category]: true }));
   };
 
@@ -496,7 +502,13 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
       </div>
 
       {/* 組み合わせ保存・ロード領域 */}
-      <div className="flex flex-col gap-2 p-3 bg-bg-surface border border-border-main rounded mb-2">
+      <div className="flex flex-col gap-2 p-3 bg-bg-surface border border-border-main rounded mb-2 relative">
+        {saveSuccessMessage && (
+          <div className="absolute -top-3 right-2 z-50 bg-green-600 text-white shadow-lg border border-green-500 px-3 py-1.5 rounded text-[12px] font-bold animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-none flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5" />
+            {saveSuccessMessage}
+          </div>
+        )}
         <label className="text-[13px] font-bold text-text-main font-mono flex items-center gap-1.5">
           <Save className="w-4 h-4 text-blue-500" />
           設定の保存と呼び出し
@@ -504,7 +516,11 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
         
         <div className="flex gap-2 items-center">
           <select 
-            onChange={(e) => loadCombination(e.target.value)}
+            onChange={(e) => {
+              loadCombination(e.target.value);
+              // Resetting select value to let it act as a command menu if needed
+              // However since value is bound to activeCombinationId, it will update anyway
+            }}
             className="flex-1 bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main font-mono"
             value={activeCombinationId || ""}
           >
@@ -513,6 +529,15 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+          {activeCombinationId && (
+            <button
+              onClick={() => loadCombination(activeCombinationId)}
+              className="p-1.5 bg-bg-input hover:bg-border-hover border border-border-main rounded text-text-dim transition-colors shrink-0"
+              title="保存状態に戻す (Revert to saved)"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         <div className="flex flex-wrap sm:flex-nowrap gap-2 mt-1">
