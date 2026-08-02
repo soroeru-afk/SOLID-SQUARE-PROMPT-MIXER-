@@ -1318,20 +1318,12 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
                 <button 
                   onClick={(e) => { 
                     e.stopPropagation(); 
-                    if (confirmCloseTabId === tab.id) {
-                      if (onTabClose) onTabClose(tab.id);
-                      setConfirmCloseTabId(null);
-                    } else {
-                      setConfirmCloseTabId(tab.id);
-                      setTimeout(() => setConfirmCloseTabId(null), 3000);
-                    }
+                    if (onTabClose) onTabClose(tab.id);
                   }}
                   className={`ml-1 w-3.5 h-3.5 flex items-center justify-center rounded-sm transition-colors ${
-                    confirmCloseTabId === tab.id 
-                      ? 'opacity-100 bg-red-500 text-white hover:bg-red-600' 
-                      : (activeTabId === tab.id 
-                          ? 'opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400' 
-                          : 'opacity-0 group-hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400')
+                    activeTabId === tab.id 
+                      ? 'opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400' 
+                      : 'opacity-0 group-hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400'
                   }`}
                 >
                   <X className="w-3 h-3" />

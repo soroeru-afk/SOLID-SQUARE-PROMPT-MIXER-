@@ -1105,15 +1105,27 @@ export default function App() {
       const memo = data.memos?.find(m => m.id === id);
       if (memo) {
         if (activeEditor === 'negative') {
-          setNegativeEditorText(prev => {
-            if (prev && prev.trim().length > 0) return prev;
-            return memo.content;
-          });
+          if (negativeEditorText && negativeEditorText.trim().length > 0) {
+            const newId = `tab-${Date.now()}`;
+            setTabs(prev => {
+              const newTabs = [...prev, { id: newId, name: '', pos: '', neg: memo.content }];
+              return newTabs.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
+            });
+            setActiveTabId(newId);
+          } else {
+            setNegativeEditorText(memo.content);
+          }
         } else {
-          setEditorText(prev => {
-            if (prev && prev.trim().length > 0) return prev;
-            return memo.content;
-          });
+          if (editorText && editorText.trim().length > 0) {
+            const newId = `tab-${Date.now()}`;
+            setTabs(prev => {
+              const newTabs = [...prev, { id: newId, name: '', pos: memo.content, neg: '' }];
+              return newTabs.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
+            });
+            setActiveTabId(newId);
+          } else {
+            setEditorText(memo.content);
+          }
         }
       }
     }
