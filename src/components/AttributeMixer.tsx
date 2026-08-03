@@ -180,7 +180,19 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   
   
   const [categories, setCategories] = useState<CategoryDef[]>(() => {
-    const saved = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
+    const migrated = localStorage.getItem('attribute_mixer_categories_migrated_to_v2');
+    let saved = localStorage.getItem('attribute_mixer_categories_v2');
+    if (!migrated || !saved) {
+      const legacyKeys = ['attribute_mixer_categories_v1', 'attribute_mixer_categories'];
+      for (const key of legacyKeys) {
+        const val = localStorage.getItem(key);
+        if (val) {
+          saved = val;
+          break;
+        }
+      }
+      localStorage.setItem('attribute_mixer_categories_migrated_to_v2', 'true');
+    }
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
@@ -191,12 +203,32 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
-    const saved = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
+    const migrated = localStorage.getItem('attribute_mixer_custom_presets_migrated_to_v7');
+    let saved = localStorage.getItem('attribute_mixer_custom_presets_v7');
+    if (!migrated || !saved) {
+      const legacyKeys = [
+        'attribute_mixer_custom_presets_v6',
+        'attribute_mixer_custom_presets_v5',
+        'attribute_mixer_custom_presets_v4',
+        'attribute_mixer_custom_presets_v3',
+        'attribute_mixer_custom_presets_v2',
+        'attribute_mixer_custom_presets_v1',
+        'attribute_mixer_custom_presets'
+      ];
+      for (const key of legacyKeys) {
+        const val = localStorage.getItem(key);
+        if (val) {
+          saved = val;
+          break;
+        }
+      }
+      localStorage.setItem('attribute_mixer_custom_presets_migrated_to_v7', 'true');
+    }
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.race) {
-          parsed.race = parsed.race.map(r => ({ ...r, value: r.value.replace(/1(japanese|russian|british|american|german|caucasian|dark skin|latina) girl/g, '1$1 woman') }));
+          parsed.race = parsed.race.map((r: any) => ({ ...r, value: r.value.replace(/1(japanese|russian|british|american|german|caucasian|dark skin|latina) girl/g, '1$1 woman') }));
         }
         return { ...DEFAULT_PRESETS, ...parsed, location: parsed.location || DEFAULT_PRESETS.location };
       } catch (e) {}
