@@ -180,7 +180,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   
   
   const [categories, setCategories] = useState<CategoryDef[]>(() => {
-    const saved = localStorage.getItem('attribute_mixer_categories_v2');
+    const saved = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
@@ -191,7 +191,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
-    const saved = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6');
+    const saved = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -231,7 +231,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
 
   useEffect(() => {
     const handleImported = () => {
-      const savedPresets = localStorage.getItem('attribute_mixer_custom_presets_v6');
+      const savedPresets = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
       if (savedPresets) {
         try {
           const parsed = JSON.parse(savedPresets);
@@ -244,7 +244,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           setCombinations(JSON.parse(savedCombos));
         } catch (e) {}
       }
-      const savedCats = localStorage.getItem('attribute_mixer_categories_v2');
+      const savedCats = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
       if (savedCats) {
         try {
           setCategories(JSON.parse(savedCats));
