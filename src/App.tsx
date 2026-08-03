@@ -14,6 +14,58 @@ import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 
 const STORAGE_KEY = 'prompt_console_data';
 
+
+const mergeMixerData = (parsed: any) => {
+  if (parsed.attributeMixerCategories) {
+    const incoming = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
+    let local: any[] = [];
+    try {
+      local = JSON.parse(localStorage.getItem('attribute_mixer_categories_v2') || '[]');
+    } catch (e) {}
+    const map = new Map();
+    local.forEach((c: any) => map.set(c.id, c));
+    incoming.forEach((c: any) => map.set(c.id, c));
+    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(Array.from(map.values())));
+  }
+  
+  if (parsed.attributeMixerPresets) {
+    const incoming = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
+    let local = {};
+    try {
+      local = JSON.parse(localStorage.getItem('attribute_mixer_custom_presets_v7') || '{}');
+    } catch(e) {}
+    
+    const merged = { ...local };
+    for (const key of Object.keys(incoming)) {
+      if (!merged[key]) {
+        merged[key] = incoming[key];
+      } else if (Array.isArray(merged[key]) && Array.isArray(incoming[key])) {
+        const map = new Map();
+        merged[key].forEach((item: any) => map.set(item.label, item));
+        incoming[key].forEach((item: any) => map.set(item.label, item));
+        merged[key] = Array.from(map.values());
+      } else {
+        merged[key] = incoming[key];
+      }
+    }
+    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(merged));
+  }
+
+  if (parsed.attributeMixerCombos) {
+    const incoming = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
+    let local: any[] = [];
+    try {
+      local = JSON.parse(localStorage.getItem('attribute_mixer_combinations_v1') || '[]');
+    } catch (e) {}
+    const map = new Map();
+    local.forEach((c: any) => map.set(c.id, c));
+    incoming.forEach((c: any) => map.set(c.id, c));
+    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(Array.from(map.values())));
+  }
+  
+  window.dispatchEvent(new Event('attributeMixerDataImported'));
+};
+
 export default function App() {
   const [lang, setLang] = useState<Language>(() => {
     return (localStorage.getItem('ui_lang') as Language) || 'ja';
@@ -408,16 +460,7 @@ export default function App() {
         const parsed = JSON.parse(text);
         if (parsed.masters && parsed.parts) {
           setData(parsed);
-          if (parsed.attributeMixerPresets) {
-            localStorage.setItem('attribute_mixer_custom_presets_v6', typeof parsed.attributeMixerPresets === 'string' ? parsed.attributeMixerPresets : JSON.stringify(parsed.attributeMixerPresets));
-          }
-          if (parsed.attributeMixerCombos) {
-            localStorage.setItem('attribute_mixer_combinations_v1', typeof parsed.attributeMixerCombos === 'string' ? parsed.attributeMixerCombos : JSON.stringify(parsed.attributeMixerCombos));
-          }
-          if (parsed.attributeMixerCategories) {
-            localStorage.setItem('attribute_mixer_categories_v2', typeof parsed.attributeMixerCategories === 'string' ? parsed.attributeMixerCategories : JSON.stringify(parsed.attributeMixerCategories));
-          }
-          window.dispatchEvent(new Event('attributeMixerDataImported'));
+          mergeMixerData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
           setLoadSuccessMessage(`Resumed from ${latestFile.name}`);
           setTimeout(() => setLoadSuccessMessage(null), 3000);
@@ -932,7 +975,7 @@ export default function App() {
       parts: data.parts.map(p => ({ ...p, content: cleanString(p.content) }))
     };
 
-    const presetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7');
+    const presetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6');
     const combosStr = localStorage.getItem('attribute_mixer_combinations_v1');
     const catsStr = localStorage.getItem('attribute_mixer_categories_v2');
     
@@ -1023,18 +1066,7 @@ export default function App() {
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed.masters && parsed.parts) {
           setData(parsed);
-          if (parsed.attributeMixerPresets) {
-            localStorage.setItem('attribute_mixer_custom_presets_v7', typeof parsed.attributeMixerPresets === 'string' ? parsed.attributeMixerPresets : JSON.stringify(parsed.attributeMixerPresets));
-            localStorage.setItem('attribute_mixer_custom_presets_migrated_to_v7', 'true');
-          }
-          if (parsed.attributeMixerCombos) {
-            localStorage.setItem('attribute_mixer_combinations_v1', typeof parsed.attributeMixerCombos === 'string' ? parsed.attributeMixerCombos : JSON.stringify(parsed.attributeMixerCombos));
-          }
-          if (parsed.attributeMixerCategories) {
-            localStorage.setItem('attribute_mixer_categories_v2', typeof parsed.attributeMixerCategories === 'string' ? parsed.attributeMixerCategories : JSON.stringify(parsed.attributeMixerCategories));
-            localStorage.setItem('attribute_mixer_categories_migrated_to_v2', 'true');
-          }
-          window.dispatchEvent(new Event('attributeMixerDataImported'));
+          mergeMixerData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
           showSaveToast("インポート完了！");
         } else {

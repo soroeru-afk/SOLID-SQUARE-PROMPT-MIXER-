@@ -180,71 +180,92 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   
   
   const [categories, setCategories] = useState<CategoryDef[]>(() => {
-    const migrated = localStorage.getItem('attribute_mixer_categories_migrated_to_v2');
-    let saved = localStorage.getItem('attribute_mixer_categories_v2');
-    if (!migrated || !saved) {
-      const legacyKeys = ['attribute_mixer_categories_v1', 'attribute_mixer_categories'];
-      for (const key of legacyKeys) {
-        const val = localStorage.getItem(key);
-        if (val) {
-          saved = val;
-          break;
+    let finalCats = [...DEFAULT_CATEGORIES];
+    const keys = ['attribute_mixer_categories', 'attribute_mixer_categories_v1', 'attribute_mixer_categories_v2'];
+    keys.forEach(k => {
+      try {
+        const saved = localStorage.getItem(k);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const map = new Map();
+          finalCats.forEach(c => map.set(c.id, c));
+          parsed.forEach((c: any) => map.set(c.id, c));
+          finalCats = Array.from(map.values());
         }
-      }
-      localStorage.setItem('attribute_mixer_categories_migrated_to_v2', 'true');
-    }
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return DEFAULT_CATEGORIES;
+      } catch (e) {}
+    });
+    return finalCats;
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(categories));
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
-    const migrated = localStorage.getItem('attribute_mixer_custom_presets_migrated_to_v7');
-    let saved = localStorage.getItem('attribute_mixer_custom_presets_v7');
-    if (!migrated || !saved) {
-      const legacyKeys = [
-        'attribute_mixer_custom_presets_v6',
-        'attribute_mixer_custom_presets_v5',
-        'attribute_mixer_custom_presets_v4',
-        'attribute_mixer_custom_presets_v3',
-        'attribute_mixer_custom_presets_v2',
-        'attribute_mixer_custom_presets_v1',
-        'attribute_mixer_custom_presets'
-      ];
-      for (const key of legacyKeys) {
-        const val = localStorage.getItem(key);
-        if (val) {
-          saved = val;
-          break;
+    const mergePresets = (target: any, source: any) => {
+      if (!source) return target;
+      const result = { ...target };
+      for (const key of Object.keys(source)) {
+        if (!result[key]) {
+          result[key] = source[key];
+        } else if (Array.isArray(result[key]) && Array.isArray(source[key])) {
+          const map = new Map();
+          result[key].forEach((item: any) => map.set(item.label, item));
+          source[key].forEach((item: any) => map.set(item.label, item));
+          result[key] = Array.from(map.values());
+        } else {
+          result[key] = source[key];
         }
       }
-      localStorage.setItem('attribute_mixer_custom_presets_migrated_to_v7', 'true');
-    }
-    if (saved) {
+      return result;
+    };
+
+    let finalPresets = { ...DEFAULT_PRESETS };
+    const keys = [
+      'attribute_mixer_custom_presets',
+      'attribute_mixer_custom_presets_v1',
+      'attribute_mixer_custom_presets_v2',
+      'attribute_mixer_custom_presets_v3',
+      'attribute_mixer_custom_presets_v4',
+      'attribute_mixer_custom_presets_v5',
+      'attribute_mixer_custom_presets_v6',
+      'attribute_mixer_custom_presets_v7'
+    ];
+    
+    keys.forEach(k => {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed.race) {
-          parsed.race = parsed.race.map((r: any) => ({ ...r, value: r.value.replace(/1(japanese|russian|british|american|german|caucasian|dark skin|latina) girl/g, '1$1 woman') }));
+        const saved = localStorage.getItem(k);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          finalPresets = mergePresets(finalPresets, parsed);
         }
-        return { ...DEFAULT_PRESETS, ...parsed, location: parsed.location || DEFAULT_PRESETS.location };
       } catch (e) {}
+    });
+
+    if (finalPresets.race) {
+      finalPresets.race = finalPresets.race.map(r => ({ ...r, value: r.value.replace(/1(japanese|russian|british|american|german|caucasian|dark skin|latina) girl/g, '1$1 woman') }));
     }
-    return DEFAULT_PRESETS;
+    return finalPresets;
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(presets));
   }, [presets]);
 
   const [combinations, setCombinations] = useState<Combination[]>(() => {
-    const saved = localStorage.getItem('attribute_mixer_combinations_v1');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return [];
+    let finalCombos: Combination[] = [];
+    const keys = ['attribute_mixer_combinations', 'attribute_mixer_combinations_v1'];
+    keys.forEach(k => {
+      try {
+        const saved = localStorage.getItem(k);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const map = new Map();
+          finalCombos.forEach(c => map.set(c.id, c));
+          parsed.forEach((c: any) => map.set(c.id, c));
+          finalCombos = Array.from(map.values());
+        }
+      } catch (e) {}
+    });
+    return finalCombos;
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(combinations));
@@ -347,58 +368,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   const deleteCombination = (id: string) => {
     setCombinations(prev => prev.filter(c => c.id !== id));
     if (activeCombinationId === id) setActiveCombinationId('');
-  };
-
-  const restoreLegacyPresets = () => {
-    const legacyKeys = [
-      'attribute_mixer_custom_presets_v6',
-      'attribute_mixer_custom_presets_v5',
-      'attribute_mixer_custom_presets_v4',
-      'attribute_mixer_custom_presets_v3',
-      'attribute_mixer_custom_presets_v2',
-      'attribute_mixer_custom_presets_v1',
-      'attribute_mixer_custom_presets'
-    ];
-    let found = false;
-    for (const key of legacyKeys) {
-      const val = localStorage.getItem(key);
-      if (val) {
-        try {
-          const parsed = JSON.parse(val);
-          if (parsed && (parsed.race || parsed.age || parsed.bodyType)) {
-            setPresets({ ...DEFAULT_PRESETS, ...parsed, location: parsed.location || DEFAULT_PRESETS.location });
-            localStorage.setItem('attribute_mixer_custom_presets_v7', val);
-            localStorage.setItem('attribute_mixer_custom_presets_migrated_to_v7', 'true');
-            found = true;
-            break;
-          }
-        } catch (e) {}
-      }
-    }
-    
-    const legacyCatsKeys = ['attribute_mixer_categories_v1', 'attribute_mixer_categories'];
-    for (const key of legacyCatsKeys) {
-      const val = localStorage.getItem(key);
-      if (val) {
-        try {
-          const parsed = JSON.parse(val);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setCategories(parsed);
-            localStorage.setItem('attribute_mixer_categories_v2', val);
-            localStorage.setItem('attribute_mixer_categories_migrated_to_v2', 'true');
-            found = true;
-            break;
-          }
-        } catch (e) {}
-      }
-    }
-
-    if (found) {
-      setSaveSuccessMessage('過去のデータを復旧しました！ (Restored!)');
-      setTimeout(() => setSaveSuccessMessage(null), 3000);
-    } else {
-      alert('復旧可能な過去のデータ（v1〜v6）が見つかりませんでした。');
-    }
   };
 
   const startEditingCombination = (id: string, currentName: string) => {
@@ -724,16 +693,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
               上書き保存
             </button>
           )}
-        </div>
-
-        <div className="mt-1">
-          <button
-            onClick={restoreLegacyPresets}
-            className="w-full py-1 bg-amber-600/10 hover:bg-amber-600/20 border border-amber-600/30 hover:border-amber-600/50 rounded text-amber-500 hover:text-amber-400 text-[10px] font-bold transition-colors font-mono flex items-center justify-center gap-1"
-            title="アプリのバージョン更新に伴い消えてしまった昨日までのカスタムプリセットを、ChromeのLocalStorageから検索して復元します。"
-          >
-            🔄 過去のカスタム設定をスキャンして復元 (Rescue Presets)
-          </button>
         </div>
         
         {combinations.length > 0 && (
