@@ -204,6 +204,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(categories));
+    localStorage.setItem('attribute_mixer_categories_updated_at', String(Date.now()));
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
@@ -285,6 +286,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(presets));
+    localStorage.setItem('attribute_mixer_presets_updated_at', String(Date.now()));
   }, [presets]);
 
   const [combinations, setCombinations] = useState<Combination[]>(() => {
@@ -307,6 +309,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(combinations));
+    localStorage.setItem('attribute_mixer_combos_updated_at', String(Date.now()));
   }, [combinations]);
 
   const [selections, setSelections] = useState<Record<string, number>>(() => {

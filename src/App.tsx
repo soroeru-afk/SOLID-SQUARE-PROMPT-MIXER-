@@ -15,20 +15,31 @@ import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 const STORAGE_KEY = 'prompt_console_data';
 
 
-const mergeMixerData = (parsed: any) => {
+const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
+  const fileTime = parsed.exportDate ? new Date(parsed.exportDate).getTime() : 0;
+
   if (parsed.attributeMixerCategories) {
-    const incoming = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
-    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(incoming));
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_categories_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incoming = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
+      localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(incoming));
+    }
   }
   
   if (parsed.attributeMixerPresets) {
-    const incoming = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
-    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(incoming));
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_presets_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incoming = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
+      localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(incoming));
+    }
   }
 
   if (parsed.attributeMixerCombos) {
-    const incoming = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
-    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(incoming));
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_combos_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incoming = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
+      localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(incoming));
+    }
   }
   
   window.dispatchEvent(new Event('attributeMixerDataImported'));
@@ -428,7 +439,7 @@ export default function App() {
         const parsed = JSON.parse(text);
         if (parsed.masters && parsed.parts) {
           setData(parsed);
-          mergeMixerData(parsed);
+          mergeMixerData(parsed, true);
           setSelectedMasterId(parsed.masters[0]?.id || null);
           setLoadSuccessMessage(`Resumed from ${latestFile.name}`);
           setTimeout(() => setLoadSuccessMessage(null), 3000);
