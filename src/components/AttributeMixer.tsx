@@ -189,8 +189,12 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
         if (saved) {
           const parsed = JSON.parse(saved);
           const map = new Map();
-          finalCats.forEach(c => map.set(c.id, c));
           parsed.forEach((c: any) => map.set(c.id, c));
+          finalCats.forEach(c => {
+            if (!map.has(c.id)) {
+              map.set(c.id, c);
+            }
+          });
           finalCats = Array.from(map.values());
           break; // only load the latest available
         }
