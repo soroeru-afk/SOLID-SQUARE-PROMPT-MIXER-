@@ -712,7 +712,14 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     localStorage.setItem('editorFontFamily', editorFontFamily);
   }, [editorFontFamily]);
   
-  const [negativeHeight, setNegativeHeight] = useState(120);
+  const [negativeHeight, setNegativeHeight] = useState(() => {
+    const saved = localStorage.getItem('ui_negative_height');
+    return saved ? parseInt(saved, 10) : 120;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ui_negative_height', negativeHeight.toString());
+  }, [negativeHeight]);
   const [isNegativeOpen, setIsNegativeOpen] = useState(true);
   const [isPositiveOpen, setIsPositiveOpen] = useState(true);
   const dragStartY = useRef(0);

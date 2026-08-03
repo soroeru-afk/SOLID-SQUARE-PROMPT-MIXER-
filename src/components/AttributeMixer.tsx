@@ -204,7 +204,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(categories));
-    localStorage.setItem('attribute_mixer_categories_updated_at', String(Date.now()));
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
@@ -286,7 +285,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(presets));
-    localStorage.setItem('attribute_mixer_presets_updated_at', String(Date.now()));
   }, [presets]);
 
   const [combinations, setCombinations] = useState<Combination[]>(() => {
@@ -309,7 +307,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(combinations));
-    localStorage.setItem('attribute_mixer_combos_updated_at', String(Date.now()));
   }, [combinations]);
 
   const [selections, setSelections] = useState<Record<string, number>>(() => {
@@ -352,6 +349,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   const [editModes, setEditModes] = useState<Record<string, boolean>>({});
   const [draggedCatId, setDraggedCatId] = useState<string | null>(null);
   const [draggedItemId, setDraggedItemId] = useState<{ category: string; index: number } | null>(null);
+  const [dragEnabledItemId, setDragEnabledItemId] = useState<{ category: string; index: number } | null>(null);
+  const [dragEnabledCatId, setDragEnabledCatId] = useState<string | null>(null);
   const [editingCatName, setEditingCatName] = useState<string | null>(null);
 
   const [activeCombinationId, setActiveCombinationId] = useState<string>('');
@@ -586,7 +585,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
       <div 
         className={`flex flex-col gap-1.5 p-2 rounded border border-border-main bg-bg-surface transition-colors min-w-0 ${draggedCatId === key ? 'opacity-50' : 'hover:bg-bg-panel/30'}`}
         key={key}
-        draggable={!isRenaming && !isEditing}
+        draggable={!isRenaming && !isEditing && dragEnabledCatId === key}
         onDragStart={(e) => {
           if (isRenaming || isEditing) { e.preventDefault(); e.stopPropagation(); return; }
           handleDragStart(e, key);
@@ -596,7 +595,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
       >
         <div className="flex items-center justify-between group">
           <div className="flex items-center gap-1 flex-1 min-w-0">
-            <div className="cursor-grab active:cursor-grabbing p-1 text-text-main hover:text-white transition-opacity">
+            <div className="cursor-grab active:cursor-grabbing p-1 text-text-main hover:text-blue-500 transition-opacity" onMouseEnter={() => setDragEnabledCatId(key)} onMouseLeave={() => setDragEnabledCatId(null)}>
               <GripVertical className="w-3 h-3" />
             </div>
             {isRenaming ? (
@@ -624,7 +623,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
               />
             ) : (
               <label 
-                className="text-[13px] text-text-main font-mono cursor-pointer hover:text-white truncate"
+                className="text-[13px] text-text-main font-mono cursor-pointer hover:text-blue-500 truncate"
                 onDoubleClick={() => setEditingCatName(key)}
                 title="ダブルクリックで名前を変更"
               >
@@ -634,8 +633,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           </div>
           
           <div className="flex items-center gap-1 transition-opacity mr-2">
-            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'top'); }} className="p-0.5 text-text-main hover:text-white" title="一番上へ"><ChevronsUp className="w-3 h-3" /></button>
-            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'bottom'); }} className="p-0.5 text-text-main hover:text-white" title="一番下へ"><ChevronsDown className="w-3 h-3" /></button>
+            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'top'); }} className="p-0.5 text-text-main hover:text-blue-500" title="一番上へ"><ChevronsUp className="w-3 h-3" /></button>
+            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'bottom'); }} className="p-0.5 text-text-main hover:text-blue-500" title="一番下へ"><ChevronsDown className="w-3 h-3" /></button>
             {!DEFAULT_CATEGORIES.some(c => c.id === key) && (
               <button 
                 onClick={(e) => {
@@ -680,7 +679,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
               <div 
                 key={idx} 
                 className={`flex gap-1 items-start ${draggedItemId?.category === key && draggedItemId?.index === idx ? 'opacity-50' : ''}`}
-                draggable={idx !== 0}
+                draggable={idx !== 0 && dragEnabledItemId?.category === key && dragEnabledItemId?.index === idx}
                 onDragStart={(e) => {
                   if (idx !== 0) handleItemDragStart(e, key, idx);
                 }}
@@ -688,7 +687,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                 onDrop={(e) => handleItemDrop(e, key, idx)}
               >
                 {idx !== 0 ? (
-                  <div className="cursor-grab active:cursor-grabbing pt-1.5 text-text-dim hover:text-text-main transition-opacity">
+                  <div className="cursor-grab active:cursor-grabbing pt-1.5 text-text-dim hover:text-text-main transition-opacity" onMouseEnter={() => setDragEnabledItemId({ category: key, index: idx })} onMouseLeave={() => setDragEnabledItemId(null)}>
                     <GripVertical className="w-3.5 h-3.5" />
                   </div>
                 ) : (
@@ -835,7 +834,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           {activeCombinationId && (
             <button
               onClick={() => loadCombination(activeCombinationId)}
-              className="p-1.5 bg-bg-input hover:bg-border-hover border border-border-main rounded text-text-main hover:text-white transition-colors shrink-0"
+              className="p-1.5 bg-bg-input hover:bg-border-hover border border-border-main rounded text-text-main hover:text-blue-500 transition-colors shrink-0"
               title="保存状態に戻す (Revert to saved)"
             >
               <RotateCcw className="w-4 h-4" />
@@ -860,7 +859,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           <div className="mt-2 flex flex-col gap-1 border-t border-border-main pt-2">
             <button 
               onClick={() => setIsSavedListOpen(!isSavedListOpen)}
-              className="flex items-center justify-between w-full text-[12px] text-text-main hover:text-white py-1"
+              className="flex items-center justify-between w-full text-[12px] text-text-main hover:text-blue-500 py-1"
             >
               <span>保存済み一覧 ({combinations.length}件)</span>
               {isSavedListOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -893,7 +892,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                         {editingCombId !== c.id && (
                           <button 
                             onClick={() => startEditingCombination(c.id, c.name)}
-                            className="text-text-main hover:text-white p-1 rounded transition-colors"
+                            className="text-text-main hover:text-blue-500 p-1 rounded transition-colors"
                             title="名前を変更"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
