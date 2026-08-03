@@ -349,6 +349,58 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     if (activeCombinationId === id) setActiveCombinationId('');
   };
 
+  const restoreLegacyPresets = () => {
+    const legacyKeys = [
+      'attribute_mixer_custom_presets_v6',
+      'attribute_mixer_custom_presets_v5',
+      'attribute_mixer_custom_presets_v4',
+      'attribute_mixer_custom_presets_v3',
+      'attribute_mixer_custom_presets_v2',
+      'attribute_mixer_custom_presets_v1',
+      'attribute_mixer_custom_presets'
+    ];
+    let found = false;
+    for (const key of legacyKeys) {
+      const val = localStorage.getItem(key);
+      if (val) {
+        try {
+          const parsed = JSON.parse(val);
+          if (parsed && (parsed.race || parsed.age || parsed.bodyType)) {
+            setPresets({ ...DEFAULT_PRESETS, ...parsed, location: parsed.location || DEFAULT_PRESETS.location });
+            localStorage.setItem('attribute_mixer_custom_presets_v7', val);
+            localStorage.setItem('attribute_mixer_custom_presets_migrated_to_v7', 'true');
+            found = true;
+            break;
+          }
+        } catch (e) {}
+      }
+    }
+    
+    const legacyCatsKeys = ['attribute_mixer_categories_v1', 'attribute_mixer_categories'];
+    for (const key of legacyCatsKeys) {
+      const val = localStorage.getItem(key);
+      if (val) {
+        try {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCategories(parsed);
+            localStorage.setItem('attribute_mixer_categories_v2', val);
+            localStorage.setItem('attribute_mixer_categories_migrated_to_v2', 'true');
+            found = true;
+            break;
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (found) {
+      setSaveSuccessMessage('過去のデータを復旧しました！ (Restored!)');
+      setTimeout(() => setSaveSuccessMessage(null), 3000);
+    } else {
+      alert('復旧可能な過去のデータ（v1〜v6）が見つかりませんでした。');
+    }
+  };
+
   const startEditingCombination = (id: string, currentName: string) => {
     setEditingCombId(id);
     setEditingCombName(currentName);
@@ -672,6 +724,16 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
               上書き保存
             </button>
           )}
+        </div>
+
+        <div className="mt-1">
+          <button
+            onClick={restoreLegacyPresets}
+            className="w-full py-1 bg-amber-600/10 hover:bg-amber-600/20 border border-amber-600/30 hover:border-amber-600/50 rounded text-amber-500 hover:text-amber-400 text-[10px] font-bold transition-colors font-mono flex items-center justify-center gap-1"
+            title="アプリのバージョン更新に伴い消えてしまった昨日までのカスタムプリセットを、ChromeのLocalStorageから検索して復元します。"
+          >
+            🔄 過去のカスタム設定をスキャンして復元 (Rescue Presets)
+          </button>
         </div>
         
         {combinations.length > 0 && (

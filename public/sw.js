@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prompt-mixer-cache-v1.0.44';
+const CACHE_NAME = 'prompt-mixer-cache-v1.0.45';
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
