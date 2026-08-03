@@ -932,7 +932,7 @@ export default function App() {
       parts: data.parts.map(p => ({ ...p, content: cleanString(p.content) }))
     };
 
-    const presetsStr = localStorage.getItem('attribute_mixer_custom_presets_v6');
+    const presetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7');
     const combosStr = localStorage.getItem('attribute_mixer_combinations_v1');
     const catsStr = localStorage.getItem('attribute_mixer_categories_v2');
     
@@ -1024,13 +1024,15 @@ export default function App() {
         if (parsed.masters && parsed.parts) {
           setData(parsed);
           if (parsed.attributeMixerPresets) {
-            localStorage.setItem('attribute_mixer_custom_presets_v6', typeof parsed.attributeMixerPresets === 'string' ? parsed.attributeMixerPresets : JSON.stringify(parsed.attributeMixerPresets));
+            localStorage.setItem('attribute_mixer_custom_presets_v7', typeof parsed.attributeMixerPresets === 'string' ? parsed.attributeMixerPresets : JSON.stringify(parsed.attributeMixerPresets));
+            localStorage.setItem('attribute_mixer_custom_presets_migrated_to_v7', 'true');
           }
           if (parsed.attributeMixerCombos) {
             localStorage.setItem('attribute_mixer_combinations_v1', typeof parsed.attributeMixerCombos === 'string' ? parsed.attributeMixerCombos : JSON.stringify(parsed.attributeMixerCombos));
           }
           if (parsed.attributeMixerCategories) {
             localStorage.setItem('attribute_mixer_categories_v2', typeof parsed.attributeMixerCategories === 'string' ? parsed.attributeMixerCategories : JSON.stringify(parsed.attributeMixerCategories));
+            localStorage.setItem('attribute_mixer_categories_migrated_to_v2', 'true');
           }
           window.dispatchEvent(new Event('attributeMixerDataImported'));
           setSelectedMasterId(parsed.masters[0]?.id || null);
