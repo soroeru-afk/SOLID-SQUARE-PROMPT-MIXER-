@@ -1,45 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Settings2, Plus, Trash2, Save, ChevronDown, ChevronUp, Edit2, RotateCcw } from 'lucide-react';
+import { Check, Settings2, Plus, Trash2, Save, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown, Edit2, RotateCcw, GripVertical } from 'lucide-react';
 import { Language } from '../i18n';
 
 type PresetItem = { label: string; value: string };
-type Presets = {
-  race: PresetItem[];
-  age: PresetItem[];
-  physique: PresetItem[];
-  pose: PresetItem[];
-  characteristics: PresetItem[];
-  expression: PresetItem[];
-  clothing: PresetItem[];
-  hair: PresetItem[];
-  bodyHair: PresetItem[];
-  accessories: PresetItem[];
-  angle: PresetItem[];
-  location: PresetItem[];
-  situation: PresetItem[];
-  partner: PresetItem[];
-  freeText1: PresetItem[];
-  freeText2: PresetItem[];
+type Presets = Record<string, PresetItem[]>;
+export type CategoryDef = {
+  id: string;
+  label: string;
+  isNegative?: boolean;
 };
 
 type Combination = {
   id: string;
   name: string;
-  selections: Record<keyof Presets, number>;
+  selections: Record<string, number>;
   negativePrompt: string;
 };
+
+const DEFAULT_CATEGORIES: CategoryDef[] = [
+  { id: 'race', label: '人種 (Race)' },
+  { id: 'age', label: '年齢 (Age)' },
+  { id: 'physique', label: '体型 (Physique)' },
+  { id: 'pose', label: '体位・ポーズ (Pose)' },
+  { id: 'characteristics', label: '特徴・個性 (Characteristics)' },
+  { id: 'expression', label: '表情・気持ち (Expression)' },
+  { id: 'clothing', label: '衣類・コスチューム (Clothing)' },
+  { id: 'hair', label: 'ヘア・髪型 (Hair)' },
+  { id: 'bodyHair', label: 'アンダーヘア・脇毛 (Body Hair)' },
+  { id: 'accessories', label: 'アクセサリー (Accessories)' },
+  { id: 'angle', label: 'アングル (Angle)' },
+  { id: 'location', label: '場所・背景 (Location)' },
+  { id: 'situation', label: 'シチュエーション・状況 (Situation)' },
+  { id: 'freeText1', label: '自由・フリー設定 1 (Free Text 1)' },
+  { id: 'freeText2', label: '自由・フリー設定 2 (Free Text 2)' },
+  { id: 'partner', label: '男 (Partner)' }
+];
 
 const DEFAULT_PRESETS: Presets = {
   race: [
     { label: '指定なし / None', value: '' },
-    { label: '日本人 / Japanese 🌟', value: '1japanese girl, ' },
-    { label: 'ロシア人 / Russian 🌟', value: '1russian girl, white skin, ' },
-    { label: 'イギリス人 / British', value: '1british girl, ' },
-    { label: 'アメリカ人 / American', value: '1american girl, ' },
-    { label: 'ドイツ人 / German', value: '1german girl, ' },
-    { label: '白人 / Caucasian', value: '1caucasian girl, ' },
-    { label: '黒人 / Black', value: '1dark skin girl, ' },
-    { label: 'ラテン系 / Latina', value: '1latina girl, ' }
+    { label: '日本人 / Japanese 🌟', value: '1japanese woman, ' },
+    { label: 'ロシア人 / Russian 🌟', value: '1russian woman, white skin, ' },
+    { label: 'イギリス人 / British', value: '1british woman, ' },
+    { label: 'アメリカ人 / American', value: '1american woman, ' },
+    { label: 'ドイツ人 / German', value: '1german woman, ' },
+    { label: '白人 / Caucasian', value: '1caucasian woman, ' },
+    { label: '黒人 / Black', value: '1dark skin woman, ' },
+    { label: 'ラテン系 / Latina', value: '1latina woman, ' }
   ],
   age: [
     { label: '指定なし / None', value: '' },
@@ -80,23 +87,15 @@ const DEFAULT_PRESETS: Presets = {
   ],
   expression: [
     { label: '指定なし / None', value: '' },
-    { label: '嬉しい・笑顔 / Happy & Smiling', value: 'happy, smiling, ' },
-    { label: '悲しい・涙 / Sad & Crying', value: 'sad, crying, tears, ' },
-    { label: '寂しい / Lonely', value: 'lonely, melancholic, ' },
-    { label: '怒り / Angry', value: 'angry, glaring, ' },
-    { label: '驚き / Surprised', value: 'surprised, wide eyes, ' },
-    { label: '無表情 / Emotionless', value: 'emotionless, blank stare, expressionless, ' },
-    { label: '苦悶 / Agony', value: 'agony, pained expression, ' },
-    { label: '恍惚 / Ecstasy', value: 'ecstasy, trance, ' },
-    { label: '困り / Troubled', value: 'troubled, confused, frowned eyebrows, ' },
-    { label: '口半開き / Parted Lips', value: 'parted lips, half-open mouth, ' }
+    { label: '笑顔 / Smile 🌟', value: 'smile, happy, ' },
+    { label: '泣き顔 / Crying', value: 'crying, tears, sad, ' },
+    { label: '怒り顔 / Angry', value: 'angry, glaring, ' },
+    { label: 'アヘ顔 / Ahegao', value: 'ahegao, rolled eyes, tongue out, ' },
+    { label: '口を開けた顔 / Open Mouth', value: 'open mouth, ' }
   ],
   clothing: [
     { label: '指定なし / None', value: '' },
-    { label: '全裸 / Nude', value: 'nude, naked, ' },
-    { label: '制服(セーラー) / School Uniform', value: 'school uniform, sailor collar, ' },
-    { label: 'メイド服 / Maid Outfit', value: 'maid outfit, apron, ' },
-    { label: 'OLスーツ / Office Lady', value: 'office lady, business suit, pencil skirt, ' },
+    { label: '全裸 / Nude 🌟', value: 'nude, naked, completely nude, ' },
     { label: 'ビキニ / Bikini', value: 'bikini, swimsuit, ' },
     { label: 'ランジェリー / Lingerie', value: 'lingerie, bra, panties, ' },
     { label: '私服 / Casual', value: 'casual wear, t-shirt, jeans, ' }
@@ -118,99 +117,57 @@ const DEFAULT_PRESETS: Presets = {
   bodyHair: [
     { label: '指定なし / None', value: '' },
     { label: 'アンダーヘアあり / Pubic Hair', value: 'pubic hair, ' },
-    { label: 'アンダーヘアなし / Hairless', value: 'hairless, shaved, ' },
-    { label: '濃いアンダーヘア / Bushy Pubic Hair', value: 'bushy pubic hair, ' },
-    { label: '脇毛あり / Armpit Hair', value: 'armpit hair, ' },
-    { label: '脇毛なし / Shaved Armpits', value: 'shaved armpits, ' }
+    { label: 'わき毛あり / Armpit Hair', value: 'armpit hair, ' },
+    { label: 'ツルツル / Hairless', value: 'hairless, shaved, ' }
   ],
   accessories: [
     { label: '指定なし / None', value: '' },
-    { label: 'メガネ / Glasses', value: 'glasses, ' },
-    { label: '首輪・チョーカー / Collar & Choker', value: 'collar, choker, ' },
-    { label: '猫耳 / Cat Ears', value: 'cat ears, ' },
-    { label: 'カチューシャ / Hairband', value: 'hairband, ' },
-    { label: 'ピアス・イヤリング / Earrings', value: 'earrings, ' },
-    { label: 'タトゥー / Tattoo', value: 'tattoo, ' },
-    { label: '液体 (汗・ミルク等) / Liquid', value: 'liquid, body fluid, sweat, semen, milk, ' }
+    { label: '眼鏡 / Glasses', value: 'glasses, megane, ' },
+    { label: 'チョーカー / Choker', value: 'choker, ' },
+    { label: 'ピアス / Piercings', value: 'piercings, earrings, ' },
+    { label: 'タトゥー / Tattoos', value: 'tattoos, body art, ' }
   ],
   angle: [
     { label: '指定なし / None', value: '' },
-    { label: '正面 / Front View 🌟', value: 'front view, ' },
-    { label: '右斜め前から / From Front Right', value: 'from front right, ' },
+    { label: '正面 / Front View', value: 'front view, facing viewer, ' },
     { label: '横顔 / Side View', value: 'side view, profile, ' },
-    { label: '斜め後ろから / From Back Oblique', value: 'from behind and side, oblique back angle, ' },
     { label: '後ろ姿 / Back View', value: 'back view, from behind, ' },
-    { label: '見返り / Looking Back', value: 'looking back, ' },
-    { label: '俯瞰(上から) / From Above 🌟', value: 'from above, high angle, ' },
-    { label: 'アオリ(下から) / From Below', value: 'from below, low angle, ' },
-    { label: 'カウボーイショット / Cowboy Shot', value: 'cowboy shot, ' },
-    { label: '遠くから(ロング) / From a distance', value: 'from a distance, extreme long shot, wide shot, ' }
+    { label: '俯瞰(上から) / High Angle', value: 'high angle, from above, ' },
+    { label: 'アオリ(下から) / Low Angle', value: 'low angle, from below, ' }
   ],
   location: [
     { label: '指定なし / None', value: '' },
-    { label: 'ベッドルーム / Bedroom 🌟', value: 'bedroom, bed, ' },
-    { label: 'リビング / Living Room', value: 'living room, sofa, ' },
-    { label: 'バスルーム / Bathroom', value: 'bathroom, bathtub, ' },
-    { label: '屋外 / Outdoors 🌟', value: 'outdoors, nature, daylight, ' },
-    { label: 'ビーチ / Beach', value: 'beach, ocean, sand, ' },
-    { label: 'ホテル / Hotel Room', value: 'hotel room, ' },
-    { label: 'オフィス / Office', value: 'office, desk, ' },
-    { label: '教室 / Classroom', value: 'classroom, school desk, ' },
-    { label: 'ジム / Gym', value: 'gym, fitness equipment, ' },
-    { label: '裏路地 / Back Alley', value: 'back alley, dark street, ' },
-    { label: '公園 / Park', value: 'park, trees, grass, ' },
-    { label: '森林 / Forest', value: 'forest, nature, trees, ' }
+    { label: '屋内・部屋 / Indoors', value: 'indoors, bedroom, ' },
+    { label: '屋外・街中 / Outdoors', value: 'outdoors, street, ' },
+    { label: '海・ビーチ / Beach', value: 'beach, ocean, ' },
+    { label: '学校・教室 / School', value: 'school, classroom, ' },
+    { label: 'オフィス / Office', value: 'office, workplace, ' },
+    { label: '自然・森 / Nature', value: 'nature, forest, ' }
   ],
   situation: [
     { label: '指定なし / None', value: '' },
-    { label: '睡眠中 / Sleeping', value: 'sleeping, closed eyes, ' },
-    { label: '食事中 / Eating', value: 'eating, food, ' },
-    { label: '汗だく / Sweating', value: 'sweat, heavy breathing, ' },
-    { label: '泣いている / Crying', value: 'crying, tears, ' },
-    { label: '拘束・縛られ / Bound & Tied', value: 'bound, tied up, ' },
-    { label: '膝枕 / Lap Pillow', value: 'lap pillow, resting head on lap, ' },
-    { label: '添い寝 / Sleeping Together', value: 'sleeping together, sharing bed, ' },
-    { label: '合体中 / Intercourse', value: 'intercourse, sex, mating, ' },
-    { label: '後ろから合体中(バック) / Doggy Style', value: 'doggy style, back mating, male from behind, ' },
-    { label: '騎乗位 / Cowgirl', value: 'cowgirl position, riding, ' },
-    { label: '正常位 / Missionary', value: 'missionary position, on back, ' },
-    { label: '授乳的スタイル / Nursing Style', value: 'breastfeeding, nursing, breast sucking, ' }
+    { label: '自撮り / Selfie', value: 'selfie, holding phone, ' },
+    { label: '見つめ合う / Eye Contact', value: 'looking at viewer, eye contact, ' },
+    { label: '食事中 / Eating', value: 'eating, holding food, ' },
+    { label: '運動中 / Exercising', value: 'exercising, sweat, ' },
+    { label: '戦闘中 / Fighting', value: 'fighting, action pose, ' }
   ],
   partner: [
     { label: '指定なし / None', value: '' },
-    { label: '日本人の男 / Japanese Man', value: 'japanese man, ' },
-    { label: '日本人の老人 / Japanese Old Man', value: 'japanese old man, ' },
-    { label: 'アグバ・醜い男 / Ugly Bastard 🌟', value: 'ugly bastard, fat ugly man, ' },
-    { label: '老人 / Old Man', value: 'old man, ' },
-    { label: 'イケメン / Handsome', value: 'handsome young man, ' },
-    { label: '主観視点 / POV 🌟', value: 'pov, pov shot, ' },
-    { label: '複数人 / Multiple Men', value: 'multiple boys, gangbang, ' }
+    { label: '見えない男 / Faceless Male', value: '1other, faceless male, anonymous male, ' },
+    { label: 'オーク / Orc', value: '1other, orc, monster, ' },
+    { label: '触手 / Tentacles', value: 'tentacles, alien, monster, ' }
   ],
   freeText1: [
-    { label: '指定なし / None', value: '' }
+    { label: '指定なし / None', value: '' },
+    { label: '高品質 / Masterpiece', value: 'masterpiece, best quality, ultra-detailed, ' },
+    { label: 'リアル / Realistic', value: 'realistic, photorealistic, 8k, raw photo, ' }
   ],
   freeText2: [
-    { label: '指定なし / None', value: '' }
+    { label: '指定なし / None', value: '' },
+    { label: 'シネマティック / Cinematic', value: 'cinematic lighting, dramatic lighting, ' },
+    { label: 'アニメ風 / Anime Style', value: 'anime artwork, illustration, flat color, ' }
   ]
-};
-
-const DEFAULT_SELECTIONS: Record<keyof Presets, number> = {
-  race: 0,
-  age: 0,
-  physique: 0,
-  pose: 0,
-  characteristics: 0,
-  expression: 0,
-  clothing: 0,
-  hair: 0,
-  bodyHair: 0,
-  accessories: 0,
-  angle: 0,
-  location: 0,
-  situation: 0,
-  partner: 0,
-  freeText1: 0,
-  freeText2: 0
 };
 
 interface AttributeMixerProps {
@@ -220,145 +177,144 @@ interface AttributeMixerProps {
 }
 
 export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme = 'default', lang = 'ja' }) => {
-  const [negativePrompt, setNegativePrompt] = useState('');
-  const [combinationName, setCombinationName] = useState('');
-  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   
-  const [isSavedListOpen, setIsSavedListOpen] = useState(false);
-  const [editingCombId, setEditingCombId] = useState<string | null>(null);
-  const [editingCombName, setEditingCombName] = useState('');
   
-  const [activeCombinationId, setActiveCombinationId] = useState<string>('');
-  
+  const [categories, setCategories] = useState<CategoryDef[]>(() => {
+    const saved = localStorage.getItem('attribute_mixer_categories_v2');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return DEFAULT_CATEGORIES;
+  });
+  useEffect(() => {
+    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(categories));
+  }, [categories]);
+
   const [presets, setPresets] = useState<Presets>(() => {
-    const saved = localStorage.getItem('attribute_mixer_custom_presets_v6') || 
-                  localStorage.getItem('attribute_mixer_custom_presets_v5') || 
-                  localStorage.getItem('attribute_mixer_custom_presets_v4') ||
-                  localStorage.getItem('attribute_mixer_custom_presets_v3');
+    const saved = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const merged = { ...DEFAULT_PRESETS };
-        for (const key of Object.keys(DEFAULT_PRESETS) as (keyof Presets)[]) {
-          if (parsed[key] && Array.isArray(parsed[key])) {
-             const defaultLabels = new Set(merged[key].map(item => item.label));
-             let customItems = parsed[key].filter((item: PresetItem) => !defaultLabels.has(item.label));
-             if (key === 'partner') {
-               customItems = customItems.filter((item: PresetItem) => 
-                 !item.label.includes('顔なし男') && 
-                 !item.label.includes('オーク') &&
-                 !item.label.includes('Faceless Male') &&
-                 !item.label.includes('Orc')
-               );
-             }
-             merged[key] = [...merged[key], ...customItems];
-          }
+        if (parsed.race) {
+          parsed.race = parsed.race.map(r => ({ ...r, value: r.value.replace(/1(japanese|russian|british|american|german|caucasian|dark skin|latina) girl/g, '1$1 woman') }));
         }
-        return merged;
+        return { ...DEFAULT_PRESETS, ...parsed, location: parsed.location || DEFAULT_PRESETS.location };
       } catch (e) {}
     }
     return DEFAULT_PRESETS;
   });
+  useEffect(() => {
+    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(presets));
+  }, [presets]);
 
   const [combinations, setCombinations] = useState<Combination[]>(() => {
     const saved = localStorage.getItem('attribute_mixer_combinations_v1');
     if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
+      try { return JSON.parse(saved); } catch (e) {}
     }
     return [];
   });
-
-  useEffect(() => {
-    localStorage.setItem('attribute_mixer_custom_presets_v6', JSON.stringify(presets));
-  }, [presets]);
-
   useEffect(() => {
     localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(combinations));
   }, [combinations]);
 
-  const [selections, setSelections] = useState<Record<string, number>>(DEFAULT_SELECTIONS);
+  const [selections, setSelections] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('attribute_mixer_selections_v1');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return Object.fromEntries(DEFAULT_CATEGORIES.map(c => [c.id, 0]));
+  });
+  useEffect(() => {
+    localStorage.setItem('attribute_mixer_selections_v1', JSON.stringify(selections));
+  }, [selections]);
+
+  useEffect(() => {
+    const handleImported = () => {
+      const savedPresets = localStorage.getItem('attribute_mixer_custom_presets_v6');
+      if (savedPresets) {
+        try {
+          const parsed = JSON.parse(savedPresets);
+          setPresets({ ...DEFAULT_PRESETS, ...parsed, location: parsed.location || DEFAULT_PRESETS.location });
+        } catch (e) {}
+      }
+      const savedCombos = localStorage.getItem('attribute_mixer_combinations_v1');
+      if (savedCombos) {
+        try {
+          setCombinations(JSON.parse(savedCombos));
+        } catch (e) {}
+      }
+      const savedCats = localStorage.getItem('attribute_mixer_categories_v2');
+      if (savedCats) {
+        try {
+          setCategories(JSON.parse(savedCats));
+        } catch(e) {}
+      }
+    };
+    window.addEventListener('attributeMixerDataImported', handleImported);
+    return () => window.removeEventListener('attributeMixerDataImported', handleImported);
+  }, []);
 
   const [editModes, setEditModes] = useState<Record<string, boolean>>({});
+  const [draggedCatId, setDraggedCatId] = useState<string | null>(null);
+  const [editingCatName, setEditingCatName] = useState<string | null>(null);
 
-  const handleApply = () => {
-    const parts = [
-      presets.partner[selections.partner]?.value || '',
-      presets.race[selections.race]?.value || '',
-      presets.age[selections.age]?.value || '',
-      presets.physique[selections.physique]?.value || '',
-      presets.pose[selections.pose]?.value || '',
-      presets.characteristics[selections.characteristics]?.value || '',
-      presets.expression[selections.expression]?.value || '',
-      presets.clothing[selections.clothing]?.value || '',
-      presets.hair[selections.hair]?.value || '',
-      presets.bodyHair[selections.bodyHair]?.value || '',
-      presets.accessories[selections.accessories]?.value || '',
-      presets.angle[selections.angle]?.value || '',
-      presets.location[selections.location]?.value || '',
-      presets.situation[selections.situation]?.value || '',
-      presets.freeText1[selections.freeText1]?.value || '',
-      presets.freeText2[selections.freeText2]?.value || ''
-    ].filter(Boolean);
+  const [activeCombinationId, setActiveCombinationId] = useState<string>('');
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const [isSavedListOpen, setIsSavedListOpen] = useState(false);
+  const [editingCombId, setEditingCombId] = useState<string | null>(null);
+  const [editingCombName, setEditingCombName] = useState<string>('');
 
-    const pos = parts.join('');
-    // Remove target replacement string (third argument is empty)
-    onApply(pos, negativePrompt, '');
-  };
+  const [negativePrompt, setNegativePrompt] = useState('');
+  const [confirmDeleteCatId, setConfirmDeleteCatId] = useState<string | null>(null);
+  const [confirmDeleteCombId, setConfirmDeleteCombId] = useState<string | null>(null);
 
-  const handleReset = () => {
-    setSelections(DEFAULT_SELECTIONS);
-    setNegativePrompt('');
-    setCombinationName('');
-    setActiveCombinationId('');
-  };
-
-  const saveCombination = () => {
-    if (!combinationName.trim()) return;
+  const saveCurrentCombination = () => {
+    const defaultName = `カスタム設定 ${combinations.length + 1}`;
+    
     const newComb: Combination = {
-      id: Date.now().toString(),
-      name: combinationName.trim(),
-      selections: { ...selections } as Record<keyof Presets, number>,
+      id: `comb_${Date.now()}`,
+      name: defaultName,
+      selections: { ...selections },
       negativePrompt
     };
+    
     setCombinations(prev => [...prev, newComb]);
     setActiveCombinationId(newComb.id);
+    
+    setIsSavedListOpen(true);
+    setEditingCombId(newComb.id);
+    setEditingCombName(defaultName);
     
     setSaveSuccessMessage('新規保存しました！ (Saved!)');
     setTimeout(() => setSaveSuccessMessage(null), 3000);
   };
 
-  const updateActiveCombination = () => {
-    if (!activeCombinationId) return;
-    setCombinations(prev => prev.map(c => 
-      c.id === activeCombinationId 
-        ? { ...c, selections: { ...selections } as Record<keyof Presets, number>, negativePrompt }
-        : c
-    ));
-    setSaveSuccessMessage('上書き保存しました！ (Overwritten!)');
-    setTimeout(() => setSaveSuccessMessage(null), 3000);
-  };
-
   const loadCombination = (id: string) => {
-    if (!id) return;
     const comb = combinations.find(c => c.id === id);
     if (comb) {
-      // Ensure defaults for any newly added keys that might not exist in saved combinations
-      const safeSelections = { ...DEFAULT_SELECTIONS, ...comb.selections };
+      const safeSelections = { ...Object.fromEntries(categories.map(c => [c.id, 0])), ...comb.selections };
       setSelections(safeSelections);
       setNegativePrompt(comb.negativePrompt || '');
       setActiveCombinationId(id);
-      setCombinationName(comb.name);
+      
+      setSaveSuccessMessage('読み込みました！ (Loaded!)');
+      setTimeout(() => setSaveSuccessMessage(null), 3000);
     }
+  };
+
+  const updateCombination = () => {
+    if (!activeCombinationId) return;
+    setCombinations(prev => prev.map(c => 
+      c.id === activeCombinationId ? { ...c, selections: { ...selections }, negativePrompt } : c
+    ));
+    setSaveSuccessMessage('上書き保存しました！ (Updated!)');
+    setTimeout(() => setSaveSuccessMessage(null), 3000);
   };
 
   const deleteCombination = (id: string) => {
     setCombinations(prev => prev.filter(c => c.id !== id));
-    if (id === activeCombinationId) {
-      setActiveCombinationId('');
-      setCombinationName('');
-    }
+    if (activeCombinationId === id) setActiveCombinationId('');
   };
 
   const startEditingCombination = (id: string, currentName: string) => {
@@ -367,32 +323,61 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   };
 
   const saveEditedCombination = (id: string) => {
-    if (!editingCombName.trim()) return;
-    setCombinations(prev => prev.map(c => c.id === id ? { ...c, name: editingCombName.trim() } : c));
+    if (editingCombName.trim()) {
+      setCombinations(prev => prev.map(c => 
+        c.id === id ? { ...c, name: editingCombName.trim() } : c
+      ));
+    }
     setEditingCombId(null);
   };
 
-  const updatePresetItem = (category: keyof Presets, index: number, field: 'label' | 'value', newValue: string) => {
+  const handleApply = () => {
+    const posParts: string[] = [];
+    const negParts: string[] = [];
+    
+    categories.forEach(cat => {
+      const val = (presets[cat.id] || DEFAULT_PRESETS[cat.id] || [])[selections[cat.id] || 0]?.value || '';
+      if (val) {
+        if (cat.isNegative) {
+          negParts.push(val);
+        } else {
+          posParts.push(val);
+        }
+      }
+    });
+
+    const pos = posParts.join('');
+    const neg = negParts.join('');
+    onApply(pos, negativePrompt + (negativePrompt && neg ? ', ' : '') + neg, '');
+  };
+
+  const handleReset = () => {
+    setSelections(Object.fromEntries(categories.map(c => [c.id, 0])));
+    
+    setNegativePrompt('');
+    setActiveCombinationId('');
+  };
+
+  const updatePresetItem = (category: string, index: number, field: 'label' | 'value', newValue: string) => {
     setPresets(prev => {
-      const newCategory = [...prev[category]];
+      const newCategory = [...(prev[category] || [])];
       newCategory[index] = { ...newCategory[index], [field]: newValue };
       return { ...prev, [category]: newCategory };
     });
   };
 
-  const addPresetItem = (category: keyof Presets) => {
-    setPresets(prev => {
-      const newCategory = [...prev[category], { label: 'New Item', value: '' }];
-      setSelections(s => ({ ...s, [category]: newCategory.length - 1 }));
-      return { ...prev, [category]: newCategory };
-    });
+  const addPresetItem = (category: string) => {
+    setPresets(prev => ({
+      ...prev,
+      [category]: [...(prev[category] || []), { label: 'New Item', value: '' }]
+    }));
     setEditModes(prev => ({ ...prev, [category]: true }));
   };
 
-  const removePresetItem = (category: keyof Presets, index: number) => {
+  const removePresetItem = (category: string, index: number) => {
     if (index === 0) return;
     setPresets(prev => {
-      const newCategory = [...prev[category]];
+      const newCategory = [...(prev[category] || [])];
       newCategory.splice(index, 1);
       return { ...prev, [category]: newCategory };
     });
@@ -404,15 +389,130 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     }
   };
 
-  const renderCategory = (key: keyof Presets, label: string) => {
-    const items = presets[key] || DEFAULT_PRESETS[key] || [];
+  const moveCategory = (id: string, direction: 'up' | 'down' | 'top' | 'bottom') => {
+    setCategories(prev => {
+      const idx = prev.findIndex(c => c.id === id);
+      if (idx === -1) return prev;
+      const newCats = [...prev];
+      const [item] = newCats.splice(idx, 1);
+      if (direction === 'up') newCats.splice(Math.max(0, idx - 1), 0, item);
+      else if (direction === 'down') newCats.splice(Math.min(newCats.length, idx + 1), 0, item);
+      else if (direction === 'top') newCats.unshift(item);
+      else if (direction === 'bottom') newCats.push(item);
+      return newCats;
+    });
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedCatId(id);
+    e.dataTransfer.setData('text/plain', id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedCatId || draggedCatId === targetId) return;
+    setCategories(prev => {
+      const draggedIdx = prev.findIndex(c => c.id === draggedCatId);
+      const targetIdx = prev.findIndex(c => c.id === targetId);
+      if (draggedIdx === -1 || targetIdx === -1) return prev;
+      if (!!prev[draggedIdx].isNegative !== !!prev[targetIdx].isNegative) return prev;
+      const newCats = [...prev];
+      const [item] = newCats.splice(draggedIdx, 1);
+      newCats.splice(targetIdx, 0, item);
+      return newCats;
+    });
+    setDraggedCatId(null);
+  };
+
+  const renderCategory = (cat: CategoryDef, index: number) => {
+    const key = cat.id;
+    const items = presets[key] || DEFAULT_PRESETS[key] || [{ label: '指定なし / None', value: '' }];
     const currentIdx = selections[key] ?? 0;
     const isEditing = editModes[key] || false;
+    const isRenaming = editingCatName === key;
 
     return (
-      <div className="flex flex-col gap-1.5" key={key}>
-        <div className="flex items-center justify-between">
-          <label className="text-[13px] text-text-dim font-mono">{label}</label>
+      <div 
+        className={`flex flex-col gap-1.5 p-2 rounded border border-border-main bg-bg-surface transition-colors ${draggedCatId === key ? 'opacity-50' : 'hover:bg-bg-panel/30'}`}
+        key={key}
+        draggable={!isRenaming && !isEditing}
+        onDragStart={(e) => {
+          if (isRenaming || isEditing) { e.preventDefault(); e.stopPropagation(); return; }
+          handleDragStart(e, key);
+        }}
+        onDragOver={handleDragOver}
+        onDrop={(e) => handleDrop(e, key)}
+      >
+        <div className="flex items-center justify-between group">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            <div className="cursor-grab active:cursor-grabbing p-1 text-text-dim hover:text-text-main opacity-20 group-hover:opacity-100 transition-opacity">
+              <GripVertical className="w-3 h-3" />
+            </div>
+            {isRenaming ? (
+              <input 
+                autoFocus
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                className="bg-bg-input border border-border-main rounded px-2 py-0.5 text-[13px] text-text-main font-mono w-full"
+                defaultValue={cat.label}
+                onBlur={(e) => {
+                  const newLabel = e.target.value.trim();
+                  if (newLabel) setCategories(prev => prev.map(c => c.id === key ? { ...c, label: newLabel } : c));
+                  setEditingCatName(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const newLabel = e.currentTarget.value.trim();
+                    if (newLabel) setCategories(prev => prev.map(c => c.id === key ? { ...c, label: newLabel } : c));
+                    setEditingCatName(null);
+                  } else if (e.key === 'Escape') {
+                    setEditingCatName(null);
+                  }
+                }}
+              />
+            ) : (
+              <label 
+                className="text-[13px] text-text-dim font-mono cursor-pointer hover:text-text-main truncate"
+                onDoubleClick={() => setEditingCatName(key)}
+                title="ダブルクリックで名前を変更"
+              >
+                {cat.isNegative && "⛔ "}{cat.label}
+              </label>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mr-2">
+            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'top'); }} className="p-0.5 text-text-dim hover:text-text-main" title="一番上へ"><ChevronsUp className="w-3 h-3" /></button>
+            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'bottom'); }} className="p-0.5 text-text-dim hover:text-text-main" title="一番下へ"><ChevronsDown className="w-3 h-3" /></button>
+            {!DEFAULT_CATEGORIES.some(c => c.id === key) && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  if (confirmDeleteCatId === key) {
+                    setCategories(prev => prev.filter(c => c.id !== key));
+                    setPresets(prev => { const n = {...prev}; delete n[key]; return n; });
+                    setConfirmDeleteCatId(null);
+                  } else {
+                    setConfirmDeleteCatId(key);
+                    setTimeout(() => setConfirmDeleteCatId(null), 3000);
+                  }
+                }}
+                className={`p-0.5 ml-1 transition-colors ${confirmDeleteCatId === key ? 'text-red-500 bg-red-500/20 rounded' : 'text-red-500 hover:text-red-400'}`}
+                title={confirmDeleteCatId === key ? "クリックして削除" : "削除"}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
           <button
             onClick={() => setEditModes(prev => ({ ...prev, [key]: !prev[key] }))}
             className={`w-[64px] justify-center px-2 py-0.5 rounded text-[10px] font-bold transition-colors shrink-0 flex items-center gap-1 border ${
@@ -437,20 +537,23 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                   <input 
                     value={item.label}
                     onChange={(e) => updatePresetItem(key, idx, 'label', e.target.value)}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     className="w-full bg-bg-input border border-border-main rounded px-2 py-1 text-[11px] text-text-main"
                     placeholder="項目名 (例: Russian)"
-                    disabled={idx === 0}
                   />
-                  {idx !== 0 && (
-                    <textarea 
-                      value={item.value}
-                      onChange={(e) => updatePresetItem(key, idx, 'value', e.target.value)}
-                      className="w-full bg-bg-surface border border-border-main rounded px-2 py-1 text-[11px] text-text-main font-mono h-[40px] resize-y min-h-[40px]"
-                      placeholder="プロンプト (例: 1russian girl, )"
-                    />
-                  )}
+                  <textarea 
+                    value={item.value}
+                    onChange={(e) => updatePresetItem(key, idx, 'value', e.target.value)}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    className="w-full bg-bg-surface border border-border-main rounded px-2 py-1 text-[11px] text-text-main font-mono h-[40px] resize-y min-h-[40px]"
+                    placeholder="プロンプト (例: 1russian girl, )"
+                  />
                 </div>
-                {idx !== 0 && (
+                {(idx !== 0 || (cat.isNegative && items.length > 1)) && (
                   <button 
                     onClick={() => removePresetItem(key, idx)}
                     className="p-1.5 text-red-500 hover:bg-red-500/10 rounded shrink-0"
@@ -469,7 +572,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
             </button>
           </div>
         ) : (
-          <div className="flex gap-2 items-start">
+          <div className="flex gap-2 items-start pl-4">
             <select 
               value={currentIdx} 
               onChange={e => setSelections(prev => ({ ...prev, [key]: Number(e.target.value) }))} 
@@ -485,22 +588,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
 
   return (
     <div className="w-full flex flex-col gap-4 p-4">
-      
-      <div className="flex gap-2 pb-2 border-b border-border-main">
-        <button 
-          onClick={handleReset}
-          className="flex-1 px-3 py-2 bg-gray-500 hover:bg-gray-400 text-white rounded text-[13px] font-mono font-bold transition-colors"
-        >
-          リセット
-        </button>
-        <button 
-          onClick={handleApply}
-          className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-[13px] font-mono font-bold transition-colors flex items-center justify-center gap-1"
-        >
-          <Check className="w-4 h-4" /> 適用する
-        </button>
-      </div>
-
       {/* 組み合わせ保存・ロード領域 */}
       <div className="flex flex-col gap-2 p-3 bg-bg-surface border border-border-main rounded mb-2 relative">
         {saveSuccessMessage && (
@@ -518,8 +605,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           <select 
             onChange={(e) => {
               loadCombination(e.target.value);
-              // Resetting select value to let it act as a command menu if needed
-              // However since value is bound to activeCombinationId, it will update anyway
             }}
             className="flex-1 bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main font-mono"
             value={activeCombinationId || ""}
@@ -540,37 +625,19 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           )}
         </div>
 
-        <div className="flex flex-wrap sm:flex-nowrap gap-2 mt-1">
-          <input 
-            type="text" 
-            placeholder="新しい設定の名前"
-            value={combinationName}
-            onChange={e => setCombinationName(e.target.value)}
-            className="flex-1 w-full min-w-[120px] bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main placeholder-text-dim font-mono"
-          />
-          {activeCombinationId ? (
-            <div className="flex gap-1 shrink-0 w-full sm:w-auto">
-              <button 
-                onClick={updateActiveCombination}
-                className="flex-1 sm:flex-none px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded text-[12px] font-bold transition-colors whitespace-nowrap"
-              >
-                上書き保存
-              </button>
-              <button 
-                onClick={saveCombination}
-                disabled={!combinationName.trim()}
-                className="flex-1 sm:flex-none px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded text-[12px] font-bold transition-colors whitespace-nowrap"
-              >
-                新規保存
-              </button>
-            </div>
-          ) : (
+        <div className="flex gap-2 mt-1">
+          <button 
+            onClick={saveCurrentCombination}
+            className="flex-1 py-1.5 bg-bg-input hover:bg-border-hover border border-border-main rounded text-text-main text-[11px] font-bold transition-colors"
+          >
+            新規保存
+          </button>
+          {activeCombinationId && (
             <button 
-              onClick={saveCombination}
-              disabled={!combinationName.trim()}
-              className="w-full sm:w-auto px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded text-[12px] font-bold transition-colors whitespace-nowrap shrink-0"
+              onClick={updateCombination}
+              className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-500 text-white border border-blue-600 rounded text-[11px] font-bold transition-colors"
             >
-              保存
+              上書き保存
             </button>
           )}
         </div>
@@ -619,9 +686,19 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                           </button>
                         )}
                         <button 
-                          onClick={() => deleteCombination(c.id)}
-                          className="text-red-500/70 hover:text-red-500 hover:bg-red-500/10 p-1 rounded transition-colors"
-                          title="削除"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (confirmDeleteCombId === c.id) {
+                              deleteCombination(c.id);
+                              setConfirmDeleteCombId(null);
+                            } else {
+                              setConfirmDeleteCombId(c.id);
+                              setTimeout(() => setConfirmDeleteCombId(null), 3000);
+                            }
+                          }}
+                          className={`p-1 rounded transition-colors ${confirmDeleteCombId === c.id ? 'text-red-500 bg-red-500/20' : 'text-red-500/70 hover:text-red-500 hover:bg-red-500/10'}`}
+                          title={confirmDeleteCombId === c.id ? "クリックして削除" : "削除"}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -642,36 +719,46 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
         )}
       </div>
 
-      <div className="flex flex-col gap-3">
-        {renderCategory('race', '人種 (Race)')}
-        {renderCategory('age', '年齢 (Age)')}
-        {renderCategory('physique', '体型 (Physique)')}
-        {renderCategory('pose', '体位・ポーズ (Pose)')}
-        {renderCategory('characteristics', '特徴・個性 (Characteristics)')}
-        {renderCategory('expression', '表情・気持ち (Expression)')}
-        {renderCategory('clothing', '衣類・コスチューム (Clothing)')}
-        {renderCategory('hair', 'ヘア・髪型 (Hair)')}
-        {renderCategory('bodyHair', 'アンダーヘア・脇毛 (Body Hair)')}
-        {renderCategory('accessories', 'アクセサリー (Accessories)')}
-        {renderCategory('angle', 'アングル (Angle)')}
-        {renderCategory('location', '場所・背景 (Location)')}
-        {renderCategory('situation', 'シチュエーション・状況 (Situation)')}
-        {renderCategory('freeText1', '自由・フリー設定 1 (Free Text 1)')}
-        {renderCategory('freeText2', '自由・フリー設定 2 (Free Text 2)')}
+      
+
+      <div className="flex flex-col gap-2">
+        {categories.map((c, i) => !c.isNegative && renderCategory(c, i))}
       </div>
       
-      <div className="flex flex-col gap-2 pt-2 border-t border-border-main mt-2">
-        {renderCategory('partner', '男 (Partner)')}
+      <div className="flex gap-2 justify-end mt-2">
+        <button
+          onClick={() => {
+            const id = 'custom_' + Date.now();
+            setCategories(prev => [...prev, { id, label: '新規カテゴリ' }]);
+            setPresets(prev => ({ ...prev, [id]: [{ label: '指定なし / None', value: '' }] }));
+          }}
+          className="px-2 py-1 bg-bg-surface hover:bg-bg-input border border-border-main rounded text-[11px] font-bold flex items-center gap-1 transition-colors text-text-main"
+        >
+          <Plus className="w-3 h-3" /> カテゴリ追加
+        </button>
       </div>
 
       <div className="flex flex-col gap-1.5 pt-2 border-t border-border-main mt-2">
-        <label className="text-[13px] font-bold text-text-main font-mono">⛔ ネガティブプロンプト (Negative Prompt)</label>
+        <div className="flex flex-col gap-2 mb-2">
+          {categories.map((c, i) => c.isNegative && renderCategory(c, i))}
+        </div>
+        <label className="text-[13px] font-bold text-text-main font-mono mt-2">⛔ ネガティブプロンプト (自由入力)</label>
         <textarea 
           value={negativePrompt}
           onChange={e => setNegativePrompt(e.target.value)}
           placeholder="ネガティブプロンプトを追加..."
           className="w-full bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main font-mono min-h-[60px] resize-y"
         />
+        <button
+          onClick={() => {
+            const id = 'custom_neg_' + Date.now();
+            setCategories(prev => [...prev, { id, label: '新規ネガティブ', isNegative: true }]);
+            setPresets(prev => ({ ...prev, [id]: [{ label: '指定なし / None', value: '' }] }));
+          }}
+          className="px-2 py-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded text-[11px] font-bold flex items-center gap-1 transition-colors text-red-400 self-end mt-1"
+        >
+          <Plus className="w-3 h-3" /> ネガティブ追加
+        </button>
       </div>
 
       <div className="flex gap-2 pt-2 mt-2 border-t border-border-main">
@@ -691,4 +778,3 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     </div>
   );
 };
-
