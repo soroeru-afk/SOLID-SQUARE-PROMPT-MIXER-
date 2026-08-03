@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trash2, ChevronDown, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, RotateCcw, ArrowDown, ArrowUp, Copy, Plus, X } from 'lucide-react';
 import { Language, t } from '../i18n';
@@ -719,26 +719,33 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const dragStartHeight = useRef(0);
   const [isResizing, setIsResizing] = useState(false);
 
-  
-  useEffect(() => {
-    if (positiveTextRef.current && positiveCursorPos !== null) {
-      positiveTextRef.current.setSelectionRange(positiveCursorPos, positiveCursorPos);
-      if (activeEditor === 'positive') {
-        positiveTextRef.current.focus();
-      }
-    }
-  }, [positiveCursorPos, editorText]);
 
-  useEffect(() => {
-    if (negativeTextRef.current && negativeCursorPos !== null) {
-      negativeTextRef.current.setSelectionRange(negativeCursorPos, negativeCursorPos);
-      if (activeEditor === 'negative') {
-        negativeTextRef.current.focus();
+  useLayoutEffect(() => {
+    if (editorText !== lastUserTextRef.current) {
+      if (positiveTextRef.current && positiveCursorPos !== null) {
+        positiveTextRef.current.setSelectionRange(positiveCursorPos, positiveCursorPos);
+        if (activeEditor === 'positive') {
+          positiveTextRef.current.focus();
+        }
       }
+      lastUserTextRef.current = editorText;
     }
-  }, [negativeCursorPos, negativeEditorText]);
+  }, [editorText, positiveCursorPos, activeEditor]);
 
-  const handleResizeStart = (e: React.MouseEvent) => {
+  useLayoutEffect(() => {
+    if (negativeEditorText !== lastUserNegativeTextRef.current) {
+      if (negativeTextRef.current && negativeCursorPos !== null) {
+        negativeTextRef.current.setSelectionRange(negativeCursorPos, negativeCursorPos);
+        if (activeEditor === 'negative') {
+          negativeTextRef.current.focus();
+        }
+      }
+      lastUserNegativeTextRef.current = negativeEditorText;
+    }
+  }, [negativeEditorText, negativeCursorPos, activeEditor]);
+
+
+const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
     dragStartY.current = e.clientY;
@@ -763,9 +770,27 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const positiveHighlightRef = useRef<HTMLDivElement>(null);
   const negativeHighlightRef = useRef<HTMLDivElement>(null);
   const positiveTextRef = useRef<HTMLTextAreaElement>(null);
+
+  const lastUserTextRef = useRef(editorText);
+  const lastUserNegativeTextRef = useRef(negativeEditorText);
+
   const negativeTextRef = useRef<HTMLTextAreaElement>(null);
 
   
+  useLayoutEffect(() => {
+    if (positiveTextRef.current && positiveHighlightRef.current) {
+      positiveHighlightRef.current.scrollTop = positiveTextRef.current.scrollTop;
+      positiveHighlightRef.current.scrollLeft = positiveTextRef.current.scrollLeft;
+    }
+  }, [editorText]);
+
+  useLayoutEffect(() => {
+    if (negativeTextRef.current && negativeHighlightRef.current) {
+      negativeHighlightRef.current.scrollTop = negativeTextRef.current.scrollTop;
+      negativeHighlightRef.current.scrollLeft = negativeTextRef.current.scrollLeft;
+    }
+  }, [negativeEditorText]);
+
   const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
   };
@@ -1455,11 +1480,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       </AnimatePresence>
             <div 
               ref={positiveHighlightRef}
-              className={`absolute inset-0 p-4 pt-2 whitespace-pre-wrap break-words overflow-hidden pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 whitespace-pre-wrap break-words overflow-y-auto pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
               aria-hidden="true"
             >
-              {editorText ? <>{renderHighlightedText(editorText)}{editorText.endsWith('\n') ? ' ' : ''}</> : <span className="opacity-50">{t('placeholder', lang)}</span>}
+              {editorText ? <>{renderHighlightedText(editorText)}{editorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">{t('placeholder', lang)}</span>}
             </div>
             <textarea
               ref={positiveTextRef}
@@ -1467,6 +1492,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropFile(e, false)}
               onChange={(e) => {
+                lastUserTextRef.current = e.target.value;
                 setEditorText(e.target.value);
                 setActiveEditor('positive');
                 setPositiveCursorPos(e.target.selectionStart);
@@ -1585,11 +1611,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
-              className={`absolute inset-0 p-4 pt-2 whitespace-pre-wrap break-words overflow-hidden pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 whitespace-pre-wrap break-words overflow-y-auto pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
               aria-hidden="true"
             >
-              {negativeEditorText ? <>{renderHighlightedText(negativeEditorText)}{negativeEditorText.endsWith('\n') ? ' ' : ''}</> : <span className="opacity-50">Negative prompt...</span>}
+              {negativeEditorText ? <>{renderHighlightedText(negativeEditorText)}{negativeEditorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">Negative prompt...</span>}
             </div>
             <textarea
               ref={negativeTextRef}
@@ -1597,6 +1623,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropFile(e, true)}
               onChange={(e) => {
+                lastUserNegativeTextRef.current = e.target.value;
                 setNegativeEditorText(e.target.value);
                 setActiveEditor('negative');
                 setNegativeCursorPos(e.target.selectionStart);

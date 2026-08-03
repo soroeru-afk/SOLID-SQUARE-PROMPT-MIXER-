@@ -702,7 +702,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       )}
       </>
       ) : activeTab === 'mixer' ? (
-        <div className="p-4 flex-1 overflow-y-scroll">
+        <div className="p-4 flex-1 overflow-y-scroll overflow-x-hidden min-w-0">
           <AttributeMixer onApply={onMixAttributes || (() => {})} theme={theme} lang={lang} />
         </div>
       ) : (

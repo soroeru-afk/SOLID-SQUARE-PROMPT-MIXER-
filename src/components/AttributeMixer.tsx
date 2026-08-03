@@ -268,6 +268,19 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     if (finalPresets.race) {
       finalPresets.race = finalPresets.race.map(r => ({ ...r, value: r.value.replace(/1(japanese|russian|british|american|german|caucasian|dark skin|latina) girl/g, '1$1 woman') }));
     }
+
+    // Ensure index 0 is always '指定なし / None'
+    for (const catKey of Object.keys(finalPresets)) {
+      const arr = finalPresets[catKey];
+      if (arr && arr.length > 0) {
+        if (arr[0].label !== '指定なし / None' || arr[0].value !== '') {
+          const filtered = arr.filter(a => a.label !== '指定なし / None' || a.value !== '');
+          finalPresets[catKey] = [{ label: '指定なし / None', value: '' }, ...filtered];
+        }
+      } else {
+        finalPresets[catKey] = [{ label: '指定なし / None', value: '' }];
+      }
+    }
     return finalPresets;
   });
   useEffect(() => {
@@ -335,6 +348,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
 
   const [editModes, setEditModes] = useState<Record<string, boolean>>({});
   const [draggedCatId, setDraggedCatId] = useState<string | null>(null);
+  const [draggedItemId, setDraggedItemId] = useState<{ category: string; index: number } | null>(null);
   const [editingCatName, setEditingCatName] = useState<string | null>(null);
 
   const [activeCombinationId, setActiveCombinationId] = useState<string>('');
@@ -436,6 +450,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   };
 
   const updatePresetItem = (category: string, index: number, field: 'label' | 'value', newValue: string) => {
+    if (index === 0) return;
     setPresets(prev => {
       const newCategory = [...(prev[category] || [])];
       newCategory[index] = { ...newCategory[index], [field]: newValue };
@@ -480,6 +495,56 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     });
   };
 
+  
+  const handleItemDragStart = (e: React.DragEvent, category: string, index: number) => {
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedItemId({ category, index });
+    e.dataTransfer.setData('text/plain', `item:${category}:${index}`);
+  };
+
+  const handleItemDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleItemDrop = (e: React.DragEvent, targetCategory: string, targetIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedItemId || draggedItemId.category !== targetCategory) {
+      setDraggedItemId(null);
+      return;
+    }
+    const draggedIdx = draggedItemId.index;
+    if (draggedIdx === targetIndex || draggedIdx === 0 || targetIndex === 0) {
+      setDraggedItemId(null);
+      return;
+    }
+
+    setPresets(prev => {
+      const newCategory = [...(prev[targetCategory] || [])];
+      const [item] = newCategory.splice(draggedIdx, 1);
+      newCategory.splice(targetIndex, 0, item);
+      return { ...prev, [targetCategory]: newCategory };
+    });
+
+    setSelections(prev => {
+      const currentSel = prev[targetCategory] || 0;
+      let newSel = currentSel;
+      
+      if (currentSel === draggedIdx) {
+        newSel = targetIndex;
+      } else if (currentSel > draggedIdx && currentSel <= targetIndex) {
+        newSel = currentSel - 1;
+      } else if (currentSel < draggedIdx && currentSel >= targetIndex) {
+        newSel = currentSel + 1;
+      }
+      return { ...prev, [targetCategory]: newSel };
+    });
+    setDraggedItemId(null);
+  };
+
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.effectAllowed = 'move';
     setDraggedCatId(id);
@@ -516,7 +581,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
 
     return (
       <div 
-        className={`flex flex-col gap-1.5 p-2 rounded border border-border-main bg-bg-surface transition-colors ${draggedCatId === key ? 'opacity-50' : 'hover:bg-bg-panel/30'}`}
+        className={`flex flex-col gap-1.5 p-2 rounded border border-border-main bg-bg-surface transition-colors min-w-0 ${draggedCatId === key ? 'opacity-50' : 'hover:bg-bg-panel/30'}`}
         key={key}
         draggable={!isRenaming && !isEditing}
         onDragStart={(e) => {
@@ -608,8 +673,24 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
         
         {isEditing ? (
           <div className="flex flex-col gap-2 p-2 border border-blue-500/30 rounded bg-blue-500/5">
-            {items.map((item, idx) => (
-              <div key={idx} className="flex gap-1 items-start">
+            {items.map((item, idx) => idx === 0 && items.length > 1 ? null : (
+              <div 
+                key={idx} 
+                className={`flex gap-1 items-start ${draggedItemId?.category === key && draggedItemId?.index === idx ? 'opacity-50' : ''}`}
+                draggable={idx !== 0}
+                onDragStart={(e) => {
+                  if (idx !== 0) handleItemDragStart(e, key, idx);
+                }}
+                onDragOver={handleItemDragOver}
+                onDrop={(e) => handleItemDrop(e, key, idx)}
+              >
+                {idx !== 0 ? (
+                  <div className="cursor-grab active:cursor-grabbing pt-1.5 text-text-dim hover:text-text-main transition-opacity">
+                    <GripVertical className="w-3.5 h-3.5" />
+                  </div>
+                ) : (
+                  <div className="w-[14px] shrink-0" />
+                )}
                 <div className="flex flex-col gap-1 flex-1">
                   <input 
                     value={item.label}
@@ -617,7 +698,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                     onMouseDown={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                     onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    className="w-full bg-bg-input border border-border-main rounded px-2 py-1 text-[11px] text-text-main"
+                    className={`w-full bg-bg-input border border-border-main rounded px-2 py-1 text-[11px] ${idx === 0 ? 'text-text-dim cursor-not-allowed opacity-70' : 'text-text-main'}`} disabled={idx === 0}
                     placeholder="項目名 (例: Russian)"
                   />
                   <textarea 
@@ -626,7 +707,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                     onMouseDown={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                     onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    className="w-full bg-bg-surface border border-border-main rounded px-2 py-1 text-[11px] text-text-main font-mono h-[40px] resize-y min-h-[40px]"
+                    className={`w-full bg-bg-surface border border-border-main rounded px-2 py-1 text-[11px] font-mono h-[40px] resize-y min-h-[40px] ${idx === 0 ? 'text-text-dim cursor-not-allowed opacity-70' : 'text-text-main'}`} disabled={idx === 0}
                     placeholder="プロンプト (例: 1russian girl, )"
                   />
                 </div>
@@ -649,11 +730,11 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
             </button>
           </div>
         ) : (
-          <div className="flex gap-2 items-start pl-4">
+          <div className="flex gap-2 items-start pl-4 w-full min-w-0">
             <select 
               value={currentIdx} 
               onChange={e => setSelections(prev => ({ ...prev, [key]: Number(e.target.value) }))} 
-              className="flex-1 bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main"
+              className="flex-1 min-w-0 bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main truncate"
             >
               {items.map((o, idx) => <option key={idx} value={idx}>{o.label}</option>)}
             </select>
@@ -735,12 +816,12 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           </button>
         </div>
         
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center min-w-0">
           <select 
             onChange={(e) => {
               loadCombination(e.target.value);
             }}
-            className="flex-1 bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main font-mono"
+            className="flex-1 min-w-0 bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main font-mono truncate"
             value={activeCombinationId || ""}
           >
             <option value="" disabled>{t('load_saved_settings', lang)}</option>
