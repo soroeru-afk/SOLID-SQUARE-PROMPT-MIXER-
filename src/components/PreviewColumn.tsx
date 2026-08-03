@@ -19,6 +19,8 @@ interface PreviewColumnProps {
   setEditorText: React.Dispatch<React.SetStateAction<string>>;
   negativeEditorText: string;
   setNegativeEditorText: React.Dispatch<React.SetStateAction<string>>;
+  positiveCursorPos: number | null;
+  negativeCursorPos: number | null;
   setPositiveCursorPos: (pos: number) => void;
   setNegativeCursorPos: (pos: number) => void;
   activeEditor: 'positive' | 'negative';
@@ -56,7 +58,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   onTabsClear, 
   editorText, setEditorText,
   negativeEditorText, setNegativeEditorText,
-  activeEditor, setActiveEditor, setPositiveCursorPos, setNegativeCursorPos,
+  activeEditor, setActiveEditor, positiveCursorPos, negativeCursorPos, setPositiveCursorPos, setNegativeCursorPos,
   onSaveAsMaster,
   onSaveAsPart,
   onSaveAsMemo,
@@ -716,6 +718,25 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(0);
   const [isResizing, setIsResizing] = useState(false);
+
+  
+  useEffect(() => {
+    if (positiveTextRef.current && positiveCursorPos !== null) {
+      positiveTextRef.current.setSelectionRange(positiveCursorPos, positiveCursorPos);
+      if (activeEditor === 'positive') {
+        positiveTextRef.current.focus();
+      }
+    }
+  }, [positiveCursorPos, editorText]);
+
+  useEffect(() => {
+    if (negativeTextRef.current && negativeCursorPos !== null) {
+      negativeTextRef.current.setSelectionRange(negativeCursorPos, negativeCursorPos);
+      if (activeEditor === 'negative') {
+        negativeTextRef.current.focus();
+      }
+    }
+  }, [negativeCursorPos, negativeEditorText]);
 
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();

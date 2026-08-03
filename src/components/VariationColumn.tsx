@@ -306,7 +306,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
               onClick={() => setActiveTab('mixer')}
               className={`flex-1 flex justify-center items-center gap-1 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'mixer' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
             >
-              <User size={12} /> 属性設定ミキサー
+              <User size={12} /> {t('prompt_mixer', lang)}
             </button>
           )}
           {setActiveTab && (
@@ -703,7 +703,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       </>
       ) : activeTab === 'mixer' ? (
         <div className="p-4 flex-1 overflow-y-scroll">
-          <AttributeMixer onApply={onMixAttributes || (() => {})} theme={theme} />
+          <AttributeMixer onApply={onMixAttributes || (() => {})} theme={theme} lang={lang} />
         </div>
       ) : (
         children

@@ -18,49 +18,17 @@ const STORAGE_KEY = 'prompt_console_data';
 const mergeMixerData = (parsed: any) => {
   if (parsed.attributeMixerCategories) {
     const incoming = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
-    let local: any[] = [];
-    try {
-      local = JSON.parse(localStorage.getItem('attribute_mixer_categories_v2') || '[]');
-    } catch (e) {}
-    const map = new Map();
-    local.forEach((c: any) => map.set(c.id, c));
-    incoming.forEach((c: any) => map.set(c.id, c));
-    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(Array.from(map.values())));
+    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(incoming));
   }
   
   if (parsed.attributeMixerPresets) {
     const incoming = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
-    let local = {};
-    try {
-      local = JSON.parse(localStorage.getItem('attribute_mixer_custom_presets_v7') || '{}');
-    } catch(e) {}
-    
-    const merged = { ...local };
-    for (const key of Object.keys(incoming)) {
-      if (!merged[key]) {
-        merged[key] = incoming[key];
-      } else if (Array.isArray(merged[key]) && Array.isArray(incoming[key])) {
-        const map = new Map();
-        merged[key].forEach((item: any) => map.set(item.label, item));
-        incoming[key].forEach((item: any) => map.set(item.label, item));
-        merged[key] = Array.from(map.values());
-      } else {
-        merged[key] = incoming[key];
-      }
-    }
-    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(merged));
+    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(incoming));
   }
 
   if (parsed.attributeMixerCombos) {
     const incoming = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
-    let local: any[] = [];
-    try {
-      local = JSON.parse(localStorage.getItem('attribute_mixer_combinations_v1') || '[]');
-    } catch (e) {}
-    const map = new Map();
-    local.forEach((c: any) => map.set(c.id, c));
-    incoming.forEach((c: any) => map.set(c.id, c));
-    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(Array.from(map.values())));
+    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(incoming));
   }
   
   window.dispatchEvent(new Event('attributeMixerDataImported'));
@@ -656,7 +624,7 @@ export default function App() {
       return cleanString(before + insertedStr + after);
     };
     
-    if (part.isNegative || activeEditor === 'negative') {
+    if (part.isNegative) {
       setNegativeEditorText(prev => insert(prev, negativeCursorPos, setNegativeCursorPos as any));
     } else {
       setEditorText(prev => insert(prev, positiveCursorPos, setPositiveCursorPos as any));
@@ -1105,19 +1073,6 @@ export default function App() {
             setTimeout(() => setNegativeCursorPos(actualPos + insertedStr.length), 0);
             return cleanString(before + insertedStr + after);
           });
-        } else if (activeEditor === 'negative') {
-          let newPos = 0;
-          setNegativeEditorText(prev => {
-            const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
-            const before = prev.slice(0, actualPos);
-            const after = prev.slice(actualPos);
-            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
-            const insertedStr = prefix + newMaster.content + suffix;
-            newPos = actualPos + insertedStr.length;
-            return cleanString(before + insertedStr + after);
-          });
-          setTimeout(() => setNegativeCursorPos(newPos), 0);
         } else {
           let newPos = 0;
           setEditorText(prev => {
@@ -1316,6 +1271,7 @@ export default function App() {
               setActiveTab={setActiveVariationTab}
             >
               <MemoColumn
+                theme={theme}
                 masters={data.memos || []}
                 selectedId={selectedMemoId}
                 onSelect={handleSelectMemoId}
@@ -1370,9 +1326,9 @@ export default function App() {
           <div className="p-3 border-t border-border-main flex flex-col gap-2 shrink-0">
             <div className="bg-bg-input border border-border-main rounded p-2 flex flex-col">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[10px] font-mono text-text-main font-bold tracking-widest">08 DRIVE 保存先</span>
+                <span className="text-[10px] font-mono text-text-main font-bold tracking-widest">{t('drive_destination', lang)}</span>
                 <div className="flex space-x-1">
-                  <button onClick={handleChangeExportDir} className="text-[10px] font-mono text-text-main font-bold hover:text-accent-main transition-colors">変更</button>
+                  <button onClick={handleChangeExportDir} className="text-[10px] font-mono text-text-main font-bold hover:text-accent-main transition-colors">{t('change', lang)}</button>
                   {exportDirectoryName && (
                     <>
                       <button onClick={handleResumeFromDir} className="text-[10px] font-mono text-text-main font-bold hover:text-accent-main transition-colors">(RESUME)</button>
@@ -1385,7 +1341,7 @@ export default function App() {
                 onClick={handleChangeExportDir}
                 className={`w-full text-center px-2 py-1.5 bg-bg-panel border border-border-main rounded text-[10px] font-mono truncate transition-colors ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
               >
-                {exportDirectoryName || '未設定 (設定するにはクリック)'}
+                {exportDirectoryName || t('not_set', lang)}
               </button>
               {loadSuccessMessage && (<div className="mt-1 text-center text-[10px] font-mono text-accent-main animate-pulse font-bold">{loadSuccessMessage}</div>)}
             </div>
@@ -1603,6 +1559,7 @@ export default function App() {
               setActiveTab={setActiveVariationTab}
             >
               <MemoColumn
+                theme={theme}
                 masters={data.memos || []}
                 selectedId={selectedMemoId}
                 onSelect={handleSelectMemoId}

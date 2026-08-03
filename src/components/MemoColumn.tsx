@@ -6,6 +6,7 @@ import { Pencil, Trash2, Check, X, ChevronUp, ChevronDown, ChevronsUp, ChevronsD
 import { Language, t } from '../i18n';
 
 interface MemoColumnProps {
+  theme?: string;
   masters: MasterPrompt[];
     selectedId: string | null;
     onSelect: (id: string, insert?: boolean) => void;
@@ -21,7 +22,7 @@ interface MemoColumnProps {
 }
 
 export const MemoColumn: React.FC<MemoColumnProps> = ({ 
-  masters, selectedId, onSelect, onAdd, onUpdate, onDuplicate, onDelete, onDeleteBulk, onDeleteAll, onMoveBulk, onReorder, lang 
+  masters, selectedId, onSelect, onAdd, onUpdate, onDuplicate, onDelete, onDeleteBulk, onDeleteAll, onMoveBulk, onReorder, lang, theme 
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'dropdown'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -281,7 +282,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`block p-3 rounded-lg group cursor-pointer transition-colors relative bg-transparent border border-border-main hover:border-border-hover`}
+              className={`block p-3 rounded-lg group cursor-pointer transition-colors relative ${(theme === 'light' || theme === 'mono') ? 'bg-white shadow-sm' : (isSelected ? 'bg-bg-input' : 'bg-transparent')} ${isSelected ? 'border border-blue-500/50' : 'border border-border-main hover:border-border-hover'}`}
               onClick={(e) => {
                 e.preventDefault();
                 currentOnSelect(item.id);

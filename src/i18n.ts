@@ -1,6 +1,21 @@
 export type Language = 'en' | 'ja';
 
 export const translations = {
+
+  drive_destination: { en: '08 DRIVE DESTINATION', ja: '08 DRIVE 保存先' },
+  change: { en: 'CHANGE', ja: '変更' },
+  save_and_load_settings: { en: 'SAVE & LOAD SETTINGS', ja: '設定の保存と呼び出し' },
+  load_saved_settings: { en: 'Load saved settings...', ja: '保存した設定を呼び出す...' },
+  save_new: { en: 'SAVE NEW', ja: '新規保存' },
+  overwrite_save: { en: 'OVERWRITE', ja: '上書き保存' },
+
+
+  reset_selection_confirm: { en: 'Are you sure you want to reset the selection to the initial state (None)?', ja: '選択を初期状態(指定なし)にリセットしますか？' },
+  reset_mixer_confirm: { en: 'Are you sure you want to reset the mixer settings to the initial state? After initialization, it will only have default items.', ja: 'ミキサーの設定を初期状態に戻しますか？初期化後は初期項目のみの状態になります。' },
+  reset_to_default: { en: 'RESET TO DEFAULT', ja: '初期化' },
+  prompt_mixer: { en: 'PROMPT MIXER', ja: 'プロンプトミキサー' },
+  not_set: { en: 'Not set (Click to set)', ja: '未設定 (設定するにはクリック)' },
+
   app_title: { en: 'SOLID SQUARE PROMPT MIXER', ja: 'SOLID SQUARE PROMPT MIXER' },
   import_json: { en: 'IMPORT_JSON', ja: 'JSON読込' },
   export_config: { en: 'EXPORT_CONFIG', ja: '設定書出' },

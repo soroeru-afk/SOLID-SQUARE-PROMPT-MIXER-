@@ -357,7 +357,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`block p-3 rounded-lg group cursor-pointer transition-colors relative ${isSelected ? (isNegative ? 'bg-red-500/10 border border-red-500/50' : 'bg-bg-input border border-blue-500/50') : (isNegative ? 'bg-red-500/5 border border-red-500/30 hover:border-red-500/50' : 'bg-transparent border border-border-main hover:border-border-hover')}`}
+              className={`block p-3 rounded-lg group cursor-pointer transition-colors relative ${(theme === 'light' || theme === 'mono') ? (isNegative ? 'bg-red-50' : 'bg-white shadow-sm') : (isSelected ? (isNegative ? 'bg-red-500/10' : 'bg-bg-input') : (isNegative ? 'bg-red-500/5' : 'bg-transparent'))} ${isSelected ? (isNegative ? 'border border-red-500/50' : 'border border-blue-500/50') : (isNegative ? 'border border-red-500/30 hover:border-red-500/50' : 'border border-border-main hover:border-border-hover')}`}
               onClick={(e) => {
                 e.preventDefault();
                 currentOnSelect(item.id);

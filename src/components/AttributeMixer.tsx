@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, Settings2, Plus, Trash2, Save, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown, Edit2, RotateCcw, GripVertical } from 'lucide-react';
-import { Language } from '../i18n';
+import { ConfirmModal } from './ConfirmModal';
+import { Language, t } from '../i18n';
 
 type PresetItem = { label: string; value: string };
 type Presets = Record<string, PresetItem[]>;
@@ -39,8 +40,8 @@ const DEFAULT_CATEGORIES: CategoryDef[] = [
 const DEFAULT_PRESETS: Presets = {
   race: [
     { label: '指定なし / None', value: '' },
-    { label: '日本人 / Japanese 🌟', value: '1japanese woman, ' },
-    { label: 'ロシア人 / Russian 🌟', value: '1russian woman, white skin, ' },
+    { label: '日本人 / Japanese', value: '1japanese woman, ' },
+    { label: 'ロシア人 / Russian', value: '1russian woman, white skin, ' },
     { label: 'イギリス人 / British', value: '1british woman, ' },
     { label: 'アメリカ人 / American', value: '1american woman, ' },
     { label: 'ドイツ人 / German', value: '1german woman, ' },
@@ -50,17 +51,17 @@ const DEFAULT_PRESETS: Presets = {
   ],
   age: [
     { label: '指定なし / None', value: '' },
-    { label: '大人の女性 / Adult 🌟', value: 'adult woman, mature female, ' },
-    { label: '熟女 / Mature 🌟', value: 'mature woman, milf, ' },
+    { label: '大人の女性 / Adult', value: 'adult woman, mature female, ' },
+    { label: '熟女 / Mature', value: 'mature woman, milf, ' },
     { label: '人妻 / MILF', value: 'milf, mature woman, ' },
     { label: '老人 / Old Woman', value: 'old woman, aged, wrinkles, ' },
-    { label: '若い女性 / Young Woman 🌟', value: 'young woman, youth, ' },
+    { label: '若い女性 / Young Woman', value: 'young woman, youth, ' },
     { label: '10代 / Teen', value: 'teenager, teen girl, ' },
-    { label: '女子高生 / High School Girl 🌟', value: 'high school girl, school uniform, ' }
+    { label: '女子高生 / High School Girl', value: 'high school girl, school uniform, ' }
   ],
   physique: [
     { label: '指定なし / None', value: '' },
-    { label: 'スリム・美しい体型 / Slender 🌟', value: 'slender body, slim, ' },
+    { label: 'スリム・美しい体型 / Slender', value: 'slender body, slim, ' },
     { label: 'ガチ重量級 / Heavyweight', value: 'heavyweight, colossal female, thick, fat, ' },
     { label: '筋肉質 / Muscular', value: 'muscular female, abs, ' },
     { label: 'カーヴィー(安産型) / Curvy', value: 'curvy, wide hips, thick thighs, ' },
@@ -87,7 +88,7 @@ const DEFAULT_PRESETS: Presets = {
   ],
   expression: [
     { label: '指定なし / None', value: '' },
-    { label: '笑顔 / Smile 🌟', value: 'smile, happy, ' },
+    { label: '笑顔 / Smile', value: 'smile, happy, ' },
     { label: '泣き顔 / Crying', value: 'crying, tears, sad, ' },
     { label: '怒り顔 / Angry', value: 'angry, glaring, ' },
     { label: 'アヘ顔 / Ahegao', value: 'ahegao, rolled eyes, tongue out, ' },
@@ -95,7 +96,7 @@ const DEFAULT_PRESETS: Presets = {
   ],
   clothing: [
     { label: '指定なし / None', value: '' },
-    { label: '全裸 / Nude 🌟', value: 'nude, naked, completely nude, ' },
+    { label: '全裸 / Nude', value: 'nude, naked, completely nude, ' },
     { label: 'ビキニ / Bikini', value: 'bikini, swimsuit, ' },
     { label: 'ランジェリー / Lingerie', value: 'lingerie, bra, panties, ' },
     { label: '私服 / Casual', value: 'casual wear, t-shirt, jeans, ' }
@@ -176,13 +177,13 @@ interface AttributeMixerProps {
   lang?: Language;
 }
 
-export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme = 'default', lang = 'ja' }) => {
+export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme = 'default', lang = 'ja' as Language }) => {
   
   
   const [categories, setCategories] = useState<CategoryDef[]>(() => {
     let finalCats = [...DEFAULT_CATEGORIES];
-    const keys = ['attribute_mixer_categories', 'attribute_mixer_categories_v1', 'attribute_mixer_categories_v2'];
-    keys.forEach(k => {
+    const keys = ['attribute_mixer_categories_v2', 'attribute_mixer_categories_v1', 'attribute_mixer_categories'];
+    for (const k of keys) {
       try {
         const saved = localStorage.getItem(k);
         if (saved) {
@@ -191,9 +192,10 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           finalCats.forEach(c => map.set(c.id, c));
           parsed.forEach((c: any) => map.set(c.id, c));
           finalCats = Array.from(map.values());
+          break; // only load the latest available
         }
       } catch (e) {}
-    });
+    }
     return finalCats;
   });
   useEffect(() => {
@@ -209,8 +211,25 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           result[key] = source[key];
         } else if (Array.isArray(result[key]) && Array.isArray(source[key])) {
           const map = new Map();
-          result[key].forEach((item: any) => map.set(item.label, item));
-          source[key].forEach((item: any) => map.set(item.label, item));
+          result[key].forEach((item: any) => {
+            map.set(item.label, item);
+          });
+          source[key].forEach((item: any) => {
+            const clean = item.label;
+            const existing = map.get(clean);
+            if (existing) {
+              map.set(clean, { label: item.label, value: item.value });
+            } else {
+              // Also check if value matches to prevent duplicates if only label changed
+              const existingByVal = Array.from(map.entries()).find(([k, v]) => v.value === item.value && item.value !== '');
+              if (existingByVal) {
+                map.delete(existingByVal[0]);
+                map.set(clean, item);
+              } else {
+                map.set(clean, item);
+              }
+            }
+          });
           result[key] = Array.from(map.values());
         } else {
           result[key] = source[key];
@@ -221,25 +240,26 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
 
     let finalPresets = { ...DEFAULT_PRESETS };
     const keys = [
-      'attribute_mixer_custom_presets',
-      'attribute_mixer_custom_presets_v1',
-      'attribute_mixer_custom_presets_v2',
-      'attribute_mixer_custom_presets_v3',
-      'attribute_mixer_custom_presets_v4',
-      'attribute_mixer_custom_presets_v5',
+      'attribute_mixer_custom_presets_v7',
       'attribute_mixer_custom_presets_v6',
-      'attribute_mixer_custom_presets_v7'
+      'attribute_mixer_custom_presets_v5',
+      'attribute_mixer_custom_presets_v4',
+      'attribute_mixer_custom_presets_v3',
+      'attribute_mixer_custom_presets_v2',
+      'attribute_mixer_custom_presets_v1',
+      'attribute_mixer_custom_presets'
     ];
     
-    keys.forEach(k => {
+    for (const k of keys) {
       try {
         const saved = localStorage.getItem(k);
         if (saved) {
           const parsed = JSON.parse(saved);
           finalPresets = mergePresets(finalPresets, parsed);
+          break; // only load the latest available
         }
       } catch (e) {}
-    });
+    }
 
     if (finalPresets.race) {
       finalPresets.race = finalPresets.race.map(r => ({ ...r, value: r.value.replace(/1(japanese|russian|british|american|german|caucasian|dark skin|latina) girl/g, '1$1 woman') }));
@@ -252,8 +272,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
 
   const [combinations, setCombinations] = useState<Combination[]>(() => {
     let finalCombos: Combination[] = [];
-    const keys = ['attribute_mixer_combinations', 'attribute_mixer_combinations_v1'];
-    keys.forEach(k => {
+    const keys = ['attribute_mixer_combinations_v1', 'attribute_mixer_combinations'];
+    for (const k of keys) {
       try {
         const saved = localStorage.getItem(k);
         if (saved) {
@@ -262,9 +282,10 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           finalCombos.forEach(c => map.set(c.id, c));
           parsed.forEach((c: any) => map.set(c.id, c));
           finalCombos = Array.from(map.values());
+          break; // only load the latest available
         }
       } catch (e) {}
-    });
+    }
     return finalCombos;
   });
   useEffect(() => {
@@ -321,6 +342,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   const [negativePrompt, setNegativePrompt] = useState('');
   const [confirmDeleteCatId, setConfirmDeleteCatId] = useState<string | null>(null);
   const [confirmDeleteCombId, setConfirmDeleteCombId] = useState<string | null>(null);
+  const [confirmResetState, setConfirmResetState] = useState(false);
+  const [confirmResetToDefaultState, setConfirmResetToDefaultState] = useState(false);
 
   const saveCurrentCombination = () => {
     const defaultName = `カスタム設定 ${combinations.length + 1}`;
@@ -339,7 +362,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     setEditingCombId(newComb.id);
     setEditingCombName(defaultName);
     
-    setSaveSuccessMessage('新規保存しました！ (Saved!)');
+    setSaveSuccessMessage(lang === 'en' ? 'Saved as new!' : '新規保存しました！ (Saved!)');
     setTimeout(() => setSaveSuccessMessage(null), 3000);
   };
 
@@ -351,7 +374,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
       setNegativePrompt(comb.negativePrompt || '');
       setActiveCombinationId(id);
       
-      setSaveSuccessMessage('読み込みました！ (Loaded!)');
+      setSaveSuccessMessage(lang === 'en' ? 'Loaded!' : '読み込みました！ (Loaded!)');
       setTimeout(() => setSaveSuccessMessage(null), 3000);
     }
   };
@@ -361,7 +384,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     setCombinations(prev => prev.map(c => 
       c.id === activeCombinationId ? { ...c, selections: { ...selections }, negativePrompt } : c
     ));
-    setSaveSuccessMessage('上書き保存しました！ (Updated!)');
+    setSaveSuccessMessage(lang === 'en' ? 'Updated!' : '上書き保存しました！ (Updated!)');
     setTimeout(() => setSaveSuccessMessage(null), 3000);
   };
 
@@ -405,10 +428,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   };
 
   const handleReset = () => {
-    setSelections(Object.fromEntries(categories.map(c => [c.id, 0])));
-    
-    setNegativePrompt('');
-    setActiveCombinationId('');
+    setConfirmResetState(true);
   };
 
   const updatePresetItem = (category: string, index: number, field: 'label' | 'value', newValue: string) => {
@@ -504,7 +524,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
       >
         <div className="flex items-center justify-between group">
           <div className="flex items-center gap-1 flex-1 min-w-0">
-            <div className="cursor-grab active:cursor-grabbing p-1 text-text-dim hover:text-text-main opacity-20 group-hover:opacity-100 transition-opacity">
+            <div className="cursor-grab active:cursor-grabbing p-1 text-text-main hover:text-white transition-opacity">
               <GripVertical className="w-3 h-3" />
             </div>
             {isRenaming ? (
@@ -532,7 +552,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
               />
             ) : (
               <label 
-                className="text-[13px] text-text-dim font-mono cursor-pointer hover:text-text-main truncate"
+                className="text-[13px] text-text-main font-mono cursor-pointer hover:text-white truncate"
                 onDoubleClick={() => setEditingCatName(key)}
                 title="ダブルクリックで名前を変更"
               >
@@ -541,9 +561,9 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
             )}
           </div>
           
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mr-2">
-            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'top'); }} className="p-0.5 text-text-dim hover:text-text-main" title="一番上へ"><ChevronsUp className="w-3 h-3" /></button>
-            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'bottom'); }} className="p-0.5 text-text-dim hover:text-text-main" title="一番下へ"><ChevronsDown className="w-3 h-3" /></button>
+          <div className="flex items-center gap-1 transition-opacity mr-2">
+            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'top'); }} className="p-0.5 text-text-main hover:text-white" title="一番上へ"><ChevronsUp className="w-3 h-3" /></button>
+            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'bottom'); }} className="p-0.5 text-text-main hover:text-white" title="一番下へ"><ChevronsDown className="w-3 h-3" /></button>
             {!DEFAULT_CATEGORIES.some(c => c.id === key) && (
               <button 
                 onClick={(e) => {
@@ -571,7 +591,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
             className={`w-[64px] justify-center px-2 py-0.5 rounded text-[10px] font-bold transition-colors shrink-0 flex items-center gap-1 border ${
               isEditing 
                 ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-600' 
-                : 'bg-bg-surface hover:bg-bg-input text-text-dim border-border-main'
+                : 'bg-bg-surface hover:bg-bg-input text-text-main border-border-main'
             }`}
           >
             {isEditing ? (
@@ -639,8 +659,57 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     );
   };
 
-  return (
-    <div className="w-full flex flex-col gap-4 p-4">
+  const handleResetToDefault = () => {
+    setConfirmResetToDefaultState(true);
+  };
+  
+  const performResetToDefault = () => {
+      setCategories([...DEFAULT_CATEGORIES]);
+      setPresets({ ...DEFAULT_PRESETS });
+      setCombinations([]);
+      setSelections(Object.fromEntries(DEFAULT_CATEGORIES.map(c => [c.id, 0])));
+      setNegativePrompt('');
+      localStorage.removeItem('attribute_mixer_categories_v2');
+      localStorage.removeItem('attribute_mixer_categories_v1');
+      localStorage.removeItem('attribute_mixer_categories');
+      localStorage.removeItem('attribute_mixer_custom_presets_v7');
+      localStorage.removeItem('attribute_mixer_custom_presets_v6');
+      localStorage.removeItem('attribute_mixer_custom_presets_v5');
+      localStorage.removeItem('attribute_mixer_custom_presets_v4');
+      localStorage.removeItem('attribute_mixer_custom_presets_v3');
+      localStorage.removeItem('attribute_mixer_custom_presets_v2');
+      localStorage.removeItem('attribute_mixer_custom_presets_v1');
+      localStorage.removeItem('attribute_mixer_custom_presets');
+      localStorage.removeItem('attribute_mixer_combinations_v1');
+      localStorage.removeItem('attribute_mixer_combinations');
+      localStorage.removeItem('attribute_mixer_selections_v1');
+      setSaveSuccessMessage(lang === 'en' ? 'Initialized' : '初期化しました');
+      setTimeout(() => setSaveSuccessMessage(null), 3000);
+  };
+
+  return (    <div className="w-full flex flex-col gap-4 p-4">
+      <ConfirmModal
+        isOpen={confirmResetState}
+        message={t('reset_selection_confirm', lang)}
+        onConfirm={() => {
+          setSelections(Object.fromEntries(categories.map(c => [c.id, 0])));
+          setNegativePrompt('');
+          setActiveCombinationId('');
+          setConfirmResetState(false);
+        }}
+        onCancel={() => setConfirmResetState(false)}
+        lang={lang}
+      />
+      <ConfirmModal
+        isOpen={confirmResetToDefaultState}
+        message={t('reset_mixer_confirm', lang)}
+        onConfirm={() => {
+          performResetToDefault();
+          setConfirmResetToDefaultState(false);
+        }}
+        onCancel={() => setConfirmResetToDefaultState(false)}
+        lang={lang}
+      />
       {/* 組み合わせ保存・ロード領域 */}
       <div className="flex flex-col gap-2 p-3 bg-bg-surface border border-border-main rounded mb-2 relative">
         {saveSuccessMessage && (
@@ -649,10 +718,18 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
             {saveSuccessMessage}
           </div>
         )}
-        <label className="text-[13px] font-bold text-text-main font-mono flex items-center gap-1.5">
-          <Save className="w-4 h-4 text-blue-500" />
-          設定の保存と呼び出し
-        </label>
+                <div className="flex gap-2 items-center">
+          <label className="text-[13px] font-bold text-text-main font-mono flex items-center gap-1.5 flex-1">
+            <Save className="w-4 h-4 text-blue-500" />
+            {t('save_and_load_settings', lang)}
+          </label>
+          <button
+            onClick={handleResetToDefault}
+            className="px-2 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded text-[11px] font-bold transition-colors flex items-center gap-1"
+          >
+            {t('reset_to_default', lang)}
+          </button>
+        </div>
         
         <div className="flex gap-2 items-center">
           <select 
@@ -662,7 +739,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
             className="flex-1 bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main font-mono"
             value={activeCombinationId || ""}
           >
-            <option value="" disabled>保存した設定を呼び出す...</option>
+            <option value="" disabled>{t('load_saved_settings', lang)}</option>
             {combinations.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -670,7 +747,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           {activeCombinationId && (
             <button
               onClick={() => loadCombination(activeCombinationId)}
-              className="p-1.5 bg-bg-input hover:bg-border-hover border border-border-main rounded text-text-dim transition-colors shrink-0"
+              className="p-1.5 bg-bg-input hover:bg-border-hover border border-border-main rounded text-text-main hover:text-white transition-colors shrink-0"
               title="保存状態に戻す (Revert to saved)"
             >
               <RotateCcw className="w-4 h-4" />
@@ -682,16 +759,12 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           <button 
             onClick={saveCurrentCombination}
             className="flex-1 py-1.5 bg-bg-input hover:bg-border-hover border border-border-main rounded text-text-main text-[11px] font-bold transition-colors"
-          >
-            新規保存
-          </button>
+          >{t('save_new', lang)}</button>
           {activeCombinationId && (
             <button 
               onClick={updateCombination}
               className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-500 text-white border border-blue-600 rounded text-[11px] font-bold transition-colors"
-            >
-              上書き保存
-            </button>
+            >{t('overwrite_save', lang)}</button>
           )}
         </div>
         
@@ -699,7 +772,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           <div className="mt-2 flex flex-col gap-1 border-t border-border-main pt-2">
             <button 
               onClick={() => setIsSavedListOpen(!isSavedListOpen)}
-              className="flex items-center justify-between w-full text-[12px] text-text-dim hover:text-text-main py-1"
+              className="flex items-center justify-between w-full text-[12px] text-text-main hover:text-white py-1"
             >
               <span>保存済み一覧 ({combinations.length}件)</span>
               {isSavedListOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -732,7 +805,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                         {editingCombId !== c.id && (
                           <button 
                             onClick={() => startEditingCombination(c.id, c.name)}
-                            className="text-text-dim hover:text-text-main p-1 rounded transition-colors"
+                            className="text-text-main hover:text-white p-1 rounded transition-colors"
                             title="名前を変更"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
