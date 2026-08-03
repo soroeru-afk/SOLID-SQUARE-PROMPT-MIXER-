@@ -1119,28 +1119,15 @@ export default function App() {
     if (insert && id) {
       const memo = data.memos?.find(m => m.id === id);
       if (memo) {
-        if (activeEditor === 'negative') {
-          if (negativeEditorText && negativeEditorText.trim().length > 0) {
-            const newId = `tab-${Date.now()}`;
-            setTabs(prev => {
-              const newTabs = [...prev, { id: newId, name: '', pos: '', neg: memo.content }];
-              return newTabs.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
-            });
-            setActiveTabId(newId);
-          } else {
-            setNegativeEditorText(memo.content);
-          }
+        if (editorText && editorText.trim().length > 0) {
+          const newId = `tab-${Date.now()}`;
+          setTabs(prev => {
+            const newTabs = [...prev, { id: newId, name: '', pos: memo.content, neg: '' }];
+            return newTabs.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
+          });
+          setActiveTabId(newId);
         } else {
-          if (editorText && editorText.trim().length > 0) {
-            const newId = `tab-${Date.now()}`;
-            setTabs(prev => {
-              const newTabs = [...prev, { id: newId, name: '', pos: memo.content, neg: '' }];
-              return newTabs.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
-            });
-            setActiveTabId(newId);
-          } else {
-            setEditorText(memo.content);
-          }
+          setEditorText(memo.content);
         }
       }
     }
