@@ -84,6 +84,41 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [findText, setFindText] = useState('');
+  const [showScrollButtons, setShowScrollButtons] = useState(false);
+
+  const positiveHighlightRef = useRef<HTMLDivElement>(null);
+  const negativeHighlightRef = useRef<HTMLDivElement>(null);
+  
+  const positiveTextRef = useRef<HTMLTextAreaElement>(null);
+  const negativeTextRef = useRef<HTMLTextAreaElement>(null);
+  const lastUserTextRef = useRef(editorText);
+  const lastUserNegativeTextRef = useRef(negativeEditorText);
+  
+  const tabsScrollRef = useRef<HTMLDivElement>(null);
+  const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startScroll = (direction: 'left' | 'right') => {
+    if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
+    const scroll = () => {
+      if (tabsScrollRef.current) {
+        tabsScrollRef.current.scrollBy({ left: direction === 'left' ? -10 : 10, behavior: 'auto' });
+      }
+    };
+    scroll();
+    scrollIntervalRef.current = setInterval(scroll, 20);
+  };
+
+  const stopScroll = () => {
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => stopScroll();
+  }, []);
+
   const [replaceText, setReplaceText] = useState('');
   
   const [isSavePartModalOpen, setIsSavePartModalOpen] = useState(false);
@@ -486,6 +521,144 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     applyTransformToSelectionOrAll(toggle);
   };
 
+  const runStripHtml = (text: string) => {
+    const div = document.createElement("div");
+    div.style.position = "fixed";
+    div.style.left = "-9999px";
+    div.style.whiteSpace = "pre-wrap";
+    div.style.width = "1000px";
+    document.body.appendChild(div);
+
+    div.innerHTML = text.replace(/<iframe/gi, "&lt;iframe");
+
+    div.querySelectorAll("p, div, li, tr, h1, h2, h3, h4").forEach((el) => {
+      (el as HTMLElement).style.display = "block";
+    });
+    div.querySelectorAll("br").forEach(br => br.after("\n"));
+    const clean = div.innerText.replace(/\n{3,}/g, "\n\n").trim();
+    document.body.removeChild(div);
+    return clean;
+  };
+
+
+  
+  const handleStripPunctuation = () => {
+    const toggle = (text: string) => {
+      // Replace commas and periods (and Japanese comma/period) with a space, 
+      // avoiding double spaces if there was already a space after.
+      return text.replace(/[.,、。]+\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    };
+    applyTransformToSelectionOrAll(toggle);
+  };
+
+  const handleCleanupChat = () => {
+    const toggle = (text: string) => {
+      let processText = text;
+      if (processText.includes("<") && processText.includes(">")) {
+        processText = runStripHtml(processText);
+      }
+
+      processText = processText.replace(/\u200B/g, "");
+
+      const lines = processText.split(/\r?\n/).map(l => l.trim());
+      const result: string[] = [];
+      
+      const timeRegex = /^(\d{1,2}:\d{2}|\[\d{1,2}:\d{2}\])/;
+      const listRegex = /^(\d+[\.\)）]|[\・\-\*])/; 
+      const headingRegex = /^(#+|(\d+[\.\)）]))\s+/;
+      const labelRegex = /^([^:：\s]{1,15})[:：]/;
+      const speakerRegex = /^(User|ChatGPT|Assistant|Gemini|You|Me|MGR|Manager|カオル|AI|Antigravity)[:：]/i;
+      const citationRegex = /^(\+\d+|\[\d+\])$/; 
+      
+      const keywordHeadingRegex = /^.{1,30}(概要|まとめ|について|方法|原因|対策|手順|ポイント|メモ|注意|ヒント|ステップ|理由|背景|目的|結論|でした|ました|です|さい)$/;
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        if (line === "") {
+          if (result.length > 0 && result[result.length-1] !== "") {
+            result.push("");
+          }
+          continue;
+        }
+
+        if (citationRegex.test(line) && result.length > 0) {
+          let lastIdx = result.length - 1;
+          while (lastIdx >= 0 && result[lastIdx] === "") lastIdx--;
+          if (lastIdx >= 0) {
+            result[lastIdx] = result[lastIdx] + " " + line;
+            continue;
+          }
+        }
+
+        const isHeading = headingRegex.test(line) || keywordHeadingRegex.test(line) || (line.length < 25 && (!line.includes("。") || line.length < 15));
+        
+        const isList = listRegex.test(line);
+        const isTime = timeRegex.test(line);
+        const isSpeaker = speakerRegex.test(line);
+        const isLabel = labelRegex.test(line) && !isTime && !isSpeaker && !isList && !isHeading;
+
+        if (result.length > 0 && result[result.length-1] !== "") {
+          if (isList || isTime || isSpeaker || isHeading || isLabel) {
+            result.push("");
+          }
+        }
+
+        if (isTime) {
+          const parts = line.split(/\s+/);
+          if (parts.length >= 2) {
+            result.push(line);
+          } else {
+            const time = line;
+            const name = lines[i+1] || "Unknown";
+            const body = lines[i+2] || "";
+            result.push(`[${time.replace(/[\[\]]/g, "")}] ${name}: ${body}`);
+            i += 2;
+          }
+        } else {
+          result.push(line);
+          
+          if (isHeading || isLabel) {
+            const nextLine = (lines[i+1] || "").trim();
+            if (nextLine !== "" && !headingRegex.test(nextLine) && !listRegex.test(nextLine) && !labelRegex.test(nextLine) && !keywordHeadingRegex.test(nextLine) && !citationRegex.test(nextLine)) {
+              result.push("");
+            }
+          }
+        }
+      }
+
+      const finalLines = result.join("\n").split("\n");
+      const processed: string[] = [];
+      for (let i = 0; i < finalLines.length; i++) {
+        const l = finalLines[i];
+        const trimmed = l.trim();
+        if (trimmed === "") {
+          if (processed.length > 0 && processed[processed.length-1] !== "") processed.push("");
+          continue;
+        }
+        
+        const isStrongHeading = headingRegex.test(trimmed) || keywordHeadingRegex.test(trimmed);
+        
+        if (i > 0 && (isStrongHeading || listRegex.test(trimmed) || labelRegex.test(trimmed)) && processed[processed.length - 1] !== "") {
+          processed.push("");
+        }
+        
+        processed.push(l);
+
+        if (isStrongHeading || (labelRegex.test(trimmed) && trimmed.length < 40)) {
+          const next = (finalLines[i+1] || "").trim();
+          if (next !== "" && !headingRegex.test(next) && !listRegex.test(next) && !labelRegex.test(next) && !keywordHeadingRegex.test(next)) {
+            processed.push("");
+          }
+        }
+      }
+
+      return processed.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    };
+    applyTransformToSelectionOrAll(toggle);
+  };
+
+
+
   const handleSaveSetClick = () => {
     if (!onSaveAsMaster) return;
     const posText = editorText.trim();
@@ -649,6 +822,34 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     }
   };
 
+  
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>, isNegative: boolean) => {
+    const html = e.clipboardData.getData("text/html");
+    if (html) {
+      e.preventDefault();
+      let content = runStripHtml(html);
+      
+      const textarea = e.currentTarget;
+      const start = textarea.selectionStart || 0;
+      const end = textarea.selectionEnd || 0;
+      
+      const currentText = isNegative ? negativeEditorText : editorText;
+      const newText = currentText.slice(0, start) + content + currentText.slice(end);
+      
+      if (isNegative) {
+        setNegativeEditorText(newText);
+        setNegativeCursorPos(start + content.length);
+      } else {
+        setEditorText(newText);
+        setPositiveCursorPos(start + content.length);
+      }
+      
+      requestAnimationFrame(() => {
+         textarea.setSelectionRange(start + content.length, start + content.length);
+      });
+    }
+  };
+
   const handleOptimizeSyntax = () => {
     const process = (text: string) => {
       if (/\({2,}/.test(text)) {
@@ -774,16 +975,6 @@ const handleResizeStart = (e: React.MouseEvent) => {
     window.addEventListener('mouseup', handleMouseUp);
   };
 
-  const positiveHighlightRef = useRef<HTMLDivElement>(null);
-  const negativeHighlightRef = useRef<HTMLDivElement>(null);
-  const positiveTextRef = useRef<HTMLTextAreaElement>(null);
-
-  const lastUserTextRef = useRef(editorText);
-  const lastUserNegativeTextRef = useRef(negativeEditorText);
-
-  const negativeTextRef = useRef<HTMLTextAreaElement>(null);
-
-  
   useLayoutEffect(() => {
     if (positiveTextRef.current && positiveHighlightRef.current) {
       positiveHighlightRef.current.scrollTop = positiveTextRef.current.scrollTop;
@@ -1304,6 +1495,21 @@ const handleResizeStart = (e: React.MouseEvent) => {
           />
         </div>
 
+        
+        <button 
+          onClick={handleCleanupChat}
+          className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          title="Clean Chat Logs"
+        >
+          {t('cleanup_chat', lang) || 'CHAT CLEAN'}
+        </button>
+        <button 
+          onClick={handleStripPunctuation}
+          className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          title="Replace commas and periods with spaces"
+        >
+          {t('strip_punct', lang) || '., ➔ SPACE'}
+        </button>
         <button 
           onClick={handleUppercase}
           className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
@@ -1354,40 +1560,76 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
       <div className="flex-1 p-4 pt-2 overflow-y-auto bg-bg-panel flex flex-col gap-2">
         {/* Tabs */}
-      {tabs && tabs.length > 0 && onTabChange && (
-        <div className="flex items-center overflow-x-auto px-0 pt-0 pb-1 bg-transparent shrink-0 [&::-webkit-scrollbar]:hidden" style={{ gap: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {tabs.map(tab => (
+
+      {tabs && onTabChange && (
+        <div 
+          className="group/tabs flex items-center w-full shrink-0 mb-1"
+          onMouseEnter={() => setShowScrollButtons(true)}
+          onMouseLeave={() => {
+            setShowScrollButtons(false);
+            stopScroll();
+          }}
+        >
+          <div className="relative flex-1 flex overflow-hidden">
+            {showScrollButtons && (
+              <button
+                onMouseDown={() => startScroll('left')} onTouchStart={() => startScroll('left')}
+                onMouseUp={stopScroll}
+                onMouseLeave={stopScroll} onTouchEnd={stopScroll}
+                className="absolute left-0 z-10 flex h-full px-1 items-center justify-center bg-gradient-to-r from-bg-panel via-bg-panel to-transparent text-text-main opacity-70 hover:opacity-100"
+              >
+                <ChevronLeft className="w-4 h-4 drop-shadow-md" />
+              </button>
+            )}
             <div 
-              key={tab.id}
-              className={`group flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono border rounded cursor-pointer whitespace-nowrap transition-all ${
-                activeTabId === tab.id 
-                  ? ((theme === 'light' || theme === 'mono') ? 'bg-gray-700 border-gray-700 text-white font-bold shadow-sm' : 'bg-white border-white text-gray-900 font-bold shadow-sm') 
-                  : 'bg-bg-base border-border-main text-text-dim hover:bg-bg-input hover:text-text-main hover:border-border-hover'
-              }`}
-              onClick={() => onTabChange(tab.id)}
+              ref={tabsScrollRef}
+              className="flex-1 flex items-center overflow-x-auto px-0 pt-0 pb-1 bg-transparent [&::-webkit-scrollbar]:hidden" 
+              style={{ gap: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {tab.name}
-              {tabs.length > 1 ? (
-                <button 
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    if (onTabClose) onTabClose(tab.id);
-                  }}
-                  className={`ml-1 w-3.5 h-3.5 flex items-center justify-center rounded-sm transition-colors ${
+              {tabs.map(tab => (
+                <div 
+                  key={tab.id}
+                  className={`group flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono border rounded cursor-pointer whitespace-nowrap transition-all ${
                     activeTabId === tab.id 
-                      ? 'opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400' 
-                      : 'opacity-0 group-hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400'
+                      ? ((theme === 'light' || theme === 'mono') ? 'bg-gray-700 border-gray-700 text-white font-bold shadow-sm' : 'bg-white border-white text-gray-900 font-bold shadow-sm') 
+                      : 'bg-bg-base border-border-main text-text-dim hover:bg-bg-input hover:text-text-main hover:border-border-hover'
                   }`}
+                  onClick={() => onTabChange(tab.id)}
                 >
-                  <X className="w-3 h-3" />
-                </button>
-              ) : (
-                <div className="ml-1 w-3.5 h-3.5 flex items-center justify-center opacity-0 pointer-events-none shrink-0">
-                  <X className="w-3 h-3" />
+                  {tab.name}
+                  {tabs.length > 1 ? (
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if (onTabClose) onTabClose(tab.id);
+                      }}
+                      className={`ml-1 w-3.5 h-3.5 flex items-center justify-center rounded-sm transition-colors ${
+                        activeTabId === tab.id 
+                          ? 'opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400' 
+                          : 'opacity-0 group-hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400'
+                      }`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  ) : (
+                    <div className="ml-1 w-3.5 h-3.5 flex items-center justify-center opacity-0 pointer-events-none shrink-0">
+                      <X className="w-3 h-3" />
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
+            {showScrollButtons && (
+              <button
+                onMouseDown={() => startScroll('right')} onTouchStart={() => startScroll('right')}
+                onMouseUp={stopScroll}
+                onMouseLeave={stopScroll} onTouchEnd={stopScroll}
+                className="absolute right-0 z-10 flex h-full px-1 items-center justify-center bg-gradient-to-l from-bg-panel via-bg-panel to-transparent text-text-main opacity-70 hover:opacity-100"
+              >
+                <ChevronRight className="w-4 h-4 drop-shadow-md" />
+              </button>
+            )}
+          </div>
           <button 
             onClick={onTabAdd} 
             className="ml-1 px-2 py-1.5 text-text-dim hover:text-text-main hover:bg-bg-input rounded-sm border border-transparent transition-colors flex items-center justify-center shrink-0"
@@ -1417,6 +1659,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           </button>
         </div>
       )}
+
         <div className={`${isPositiveOpen ? 'flex-1 min-h-[100px]' : 'shrink-0'} border border-border-main rounded-lg flex flex-col relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}>
           <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-wrap border-b border-border-main/30">
             <button 
@@ -1494,6 +1737,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               {editorText ? <>{renderHighlightedText(editorText)}{editorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">{t('placeholder', lang)}</span>}
             </div>
             <textarea
+              onPaste={(e) => handlePaste(e, false)}
               ref={positiveTextRef}
               value={editorText}
               onDragOver={handleDragOver}
@@ -1625,6 +1869,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               {negativeEditorText ? <>{renderHighlightedText(negativeEditorText)}{negativeEditorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">Negative prompt...</span>}
             </div>
             <textarea
+              onPaste={(e) => handlePaste(e, true)}
               ref={negativeTextRef}
               value={negativeEditorText}
               onDragOver={handleDragOver}

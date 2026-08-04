@@ -35,9 +35,64 @@ const DEFAULT_CATEGORIES: CategoryDef[] = [
   { id: 'freeText1', label: '自由・フリー設定 1 (Free Text 1)' },
   { id: 'freeText2', label: '自由・フリー設定 2 (Free Text 2)' },
   { id: 'partner', label: '男 (Partner)' }
+,
+{ id: 'weather', label: '天候 (Weather)' },
+  { id: 'emptyLocation', label: '無人の場所 (Empty Location)' },
+  { id: 'bodyWet', label: '濡れ表現 (Wet Body)' },
+  { id: 'showerScene', label: 'シャワーシーン (Shower Scene)' },
+  { id: 'skinDetail', label: '肌の質感 (Skin Detail)' }
 ];
 
 const DEFAULT_PRESETS: Presets = {
+  weather: [
+    { label: '指定なし / None', value: '' },
+    { label: '快晴（雲一つない青空）', value: 'crystal clear sky, ' },
+    { label: '晴天（自然な晴れ）', value: 'sunny day, bright sunlight, ' },
+    { label: '木漏れ日のある晴れ', value: 'dappled sunlight, ' },
+    { label: '薄曇り', value: 'lightly overcast sky, ' },
+    { label: '完全な曇天', value: 'gloomy overcast weather, ' },
+    { label: '濃霧', value: 'heavy fog, ' },
+    { label: '朝霧', value: 'soft morning mist, ' },
+    { label: '地面に漂う霧', value: 'ground fog, ' },
+    { label: '雪', value: 'heavy snowfall, ' },
+    { label: '嵐', value: 'cinematic stormy weather, ' },
+    { label: '暴風', value: 'gale force winds, ' },
+    { label: '大雨', value: 'torrential pouring rain, ' },
+    { label: '普通の雨', value: 'steady rainy day, ' },
+    { label: '雷雨', value: 'dramatic thunderstorm, ' }
+  ],
+  emptyLocation: [
+    { label: '指定なし / None', value: '' },
+    { label: '無人のアスファルト道路', value: 'empty asphalt road, no people, ' },
+    { label: '寂れた一本道', value: 'deserted highway, ' },
+    { label: '寂しい田舎道', value: 'lonely country road, ' },
+    { label: '荒野の道路', value: 'wilderness road, ' },
+    { label: '嵐の無人道路', value: 'empty stormy street, ' }
+  ],
+  bodyWet: [
+    { label: '指定なし / None', value: '' },
+    { label: 'びしょ濡れ', value: 'soaking wet, ' },
+    { label: '肌と服の濡れツヤ', value: 'wet skin and clothing texture, ' },
+    { label: '滴る水滴', value: 'dripping water droplets, ' },
+    { label: 'ずぶ濡れの髪', value: 'drenched hair, ' }
+  ],
+  showerScene: [
+    { label: '指定なし / None', value: '' },
+    { label: 'シャワーを浴びる', value: 'taking a shower, ' },
+    { label: 'シャワーヘッドを持つ', value: 'holding a shower head, ' },
+    { label: '浴室', value: 'steamy bathroom background, ' },
+    { label: '滴る温水', value: 'dripping warm water, ' }
+  ],
+  skinDetail: [
+    { label: '指定なし / None', value: '' },
+    { label: 'ランダムなホクロ', value: 'sporadic skin moles, ' },
+    { label: '鳥肌・微細な凹凸', value: 'gooseflesh skin texture, ' },
+    { label: '胸元の斑点・日焼けムラ', value: 'sun-damaged skin on chest, ' },
+    { label: '背中全体の濃いそばかす', value: 'heavy back freckles, ' },
+    { label: '加工なしの生写真', value: 'un-retouched skin, ' },
+    { label: 'くしゃみ', value: '(about to sneeze:1.1), ' },
+    { label: 'あくび', value: '(subtle yawn, sleepy eyes:1.1), ' }
+  ],
   race: [
     { label: '指定なし / None', value: '' },
     { label: '日本人 / Japanese', value: '1japanese woman, ' },
@@ -69,6 +124,8 @@ const DEFAULT_PRESETS: Presets = {
   ],
   pose: [
     { label: '指定なし / None', value: '' },
+    { label: '何も持っていない', value: 'empty hands, ' },
+    { label: '開いた手のひら', value: 'open hands, ' },
     { label: '直立姿勢 / Standing', value: 'standing, ' },
     { label: '座った姿勢 / Sitting', value: 'sitting, ' },
     { label: '蹲踞の姿勢 / Squatting', value: 'squatting, ' },
@@ -96,6 +153,8 @@ const DEFAULT_PRESETS: Presets = {
   ],
   clothing: [
     { label: '指定なし / None', value: '' },
+    { label: '旅行者の服', value: 'traveler attire, ' },
+    { label: '普通の普段着', value: 'casual everyday clothes, ' },
     { label: '全裸 / Nude', value: 'nude, naked, completely nude, ' },
     { label: 'ビキニ / Bikini', value: 'bikini, swimsuit, ' },
     { label: 'ランジェリー / Lingerie', value: 'lingerie, bra, panties, ' },
@@ -347,6 +406,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   }, []);
 
   const [editModes, setEditModes] = useState<Record<string, boolean>>({});
+  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [confirmBulkDeleteState, setConfirmBulkDeleteState] = useState(false);
   const [draggedCatId, setDraggedCatId] = useState<string | null>(null);
   const [draggedItemId, setDraggedItemId] = useState<{ category: string; index: number } | null>(null);
   const [dragEnabledItemId, setDragEnabledItemId] = useState<{ category: string; index: number } | null>(null);
@@ -483,6 +544,120 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     }
   };
 
+  
+  
+    const deleteCheckedItems = () => {
+    if (checkedItems.size === 0) return;
+    
+    setPresets(prev => {
+      const newState = { ...prev };
+      const itemsToDelete = [];
+      
+      checkedItems.forEach(id => {
+        const [catId, idxStr] = id.split(':');
+        const idx = parseInt(idxStr, 10);
+        if (catId && !isNaN(idx)) {
+          itemsToDelete.push({ catId, idx });
+        }
+      });
+      
+      const catIds = Array.from(new Set(itemsToDelete.map(i => i.catId)));
+      catIds.forEach(catId => {
+        const indicesToRemove = itemsToDelete.filter(i => i.catId === catId).map(i => i.idx).sort((a, b) => b - a);
+        const newList = [...(newState[catId] || [])];
+        indicesToRemove.forEach(idx => {
+          newList.splice(idx, 1);
+        });
+        newState[catId] = newList;
+      });
+      
+      return newState;
+    });
+
+    setSelections(prev => {
+      const next = { ...prev };
+      checkedItems.forEach(id => {
+        const [catId] = id.split(':');
+        next[catId] = 0;
+      });
+      return next;
+    });
+
+    setCheckedItems(new Set());
+    setConfirmBulkDeleteState(false);
+  };
+
+  const moveCheckedItemsToCategory = (targetCatId: string) => {
+    if (checkedItems.size === 0) return;
+    
+    setPresets(prev => {
+      const newState = { ...prev };
+      
+      const itemsToMove: { fromCat: string, index: number, item: any }[] = [];
+      
+      checkedItems.forEach(id => {
+        const [catId, idxStr] = id.split(':');
+        const idx = parseInt(idxStr, 10);
+        if (catId && !isNaN(idx) && prev[catId] && prev[catId][idx]) {
+          itemsToMove.push({ fromCat: catId, index: idx, item: prev[catId][idx] });
+        }
+      });
+      
+      if (itemsToMove.length === 0) return prev;
+      
+      const fromCats = Array.from(new Set(itemsToMove.map(i => i.fromCat)));
+      fromCats.forEach(fromCat => {
+        const indicesToRemove = itemsToMove.filter(i => i.fromCat === fromCat).map(i => i.index).sort((a, b) => b - a);
+        const newList = [...(newState[fromCat] || [])];
+        indicesToRemove.forEach(idx => {
+          newList.splice(idx, 1);
+        });
+        newState[fromCat] = newList;
+      });
+      
+      const targetList = [...(newState[targetCatId] || [{ label: '指定なし / None', value: '' }])];
+      itemsToMove.forEach(i => {
+        targetList.push(i.item);
+      });
+      newState[targetCatId] = targetList;
+      
+      return newState;
+    });
+    
+    setSelections(prev => {
+      const next = { ...prev };
+      checkedItems.forEach(id => {
+        const [catId, idxStr] = id.split(':');
+        next[catId] = 0; 
+      });
+      return next;
+    });
+
+    setCheckedItems(new Set());
+  };
+
+  const movePresetItemToCategory = (fromCategory: string, index: number, toCategory: string) => {
+    if (index === 0) return;
+    setPresets(prev => {
+      const fromList = [...(prev[fromCategory] || [])];
+      const itemToMove = fromList[index];
+      if (!itemToMove) return prev;
+      
+      fromList.splice(index, 1);
+      
+      const toList = [...(prev[toCategory] || [{ label: '指定なし / None', value: '' }])];
+      toList.push(itemToMove);
+      
+      return { ...prev, [fromCategory]: fromList, [toCategory]: toList };
+    });
+    
+    if (selections[fromCategory] === index) {
+      setSelections(prev => ({ ...prev, [fromCategory]: 0 }));
+    } else if (selections[fromCategory] > index) {
+      setSelections(prev => ({ ...prev, [fromCategory]: prev[fromCategory] - 1 }));
+    }
+  };
+
   const moveCategory = (id: string, direction: 'up' | 'down' | 'top' | 'bottom') => {
     setCategories(prev => {
       const idx = prev.findIndex(c => c.id === id);
@@ -601,9 +776,9 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
             {isRenaming ? (
               <input 
                 autoFocus
-                onMouseDown={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                
+                
+                
                 className="bg-bg-input border border-border-main rounded px-2 py-0.5 text-[13px] text-text-main font-mono w-full"
                 defaultValue={cat.label}
                 onBlur={(e) => {
@@ -623,11 +798,13 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
               />
             ) : (
               <label 
-                className="text-[13px] text-text-main font-mono cursor-pointer hover:text-blue-500 truncate"
+                className={`text-[13px] font-mono cursor-pointer hover:text-blue-500 truncate flex items-center gap-1.5 ${currentIdx !== 0 ? 'text-blue-500 font-bold' : 'text-text-main'}`}
                 onDoubleClick={() => setEditingCatName(key)}
                 title="ダブルクリックで名前を変更"
               >
-                {cat.isNegative && "⛔ "}{cat.label}
+                {cat.isNegative && "⛔ "}
+                {currentIdx !== 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block shrink-0 shadow-[0_0_5px_rgba(59,130,246,0.5)]"></span>}
+                {cat.label}
               </label>
             )}
           </div>
@@ -687,8 +864,24 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                 onDrop={(e) => handleItemDrop(e, key, idx)}
               >
                 {idx !== 0 ? (
-                  <div className="cursor-grab active:cursor-grabbing pt-1.5 text-text-dim hover:text-text-main transition-opacity" onMouseEnter={() => setDragEnabledItemId({ category: key, index: idx })} onMouseLeave={() => setDragEnabledItemId(null)}>
-                    <GripVertical className="w-3.5 h-3.5" />
+                  <div className="flex flex-col gap-2 items-center pt-1.5 shrink-0 w-[18px]">
+                    <input 
+                      type="checkbox"
+                      checked={checkedItems.has(`${key}:${idx}`)}
+                      onChange={(e) => {
+                        const newSet = new Set(checkedItems);
+                        if (e.target.checked) {
+                          newSet.add(`${key}:${idx}`);
+                        } else {
+                          newSet.delete(`${key}:${idx}`);
+                        }
+                        setCheckedItems(newSet);
+                      }}
+                      className="cursor-pointer w-3.5 h-3.5"
+                    />
+                    <div className="cursor-grab active:cursor-grabbing text-text-dim hover:text-text-main transition-opacity" onMouseEnter={() => setDragEnabledItemId({ category: key, index: idx })} onMouseLeave={() => setDragEnabledItemId(null)}>
+                      <GripVertical className="w-3.5 h-3.5" />
+                    </div>
                   </div>
                 ) : (
                   <div className="w-[14px] shrink-0" />
@@ -697,18 +890,18 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                   <input 
                     value={item.label}
                     onChange={(e) => updatePresetItem(key, idx, 'label', e.target.value)}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    
+                    
+                    
                     className={`w-full bg-bg-input border border-border-main rounded px-2 py-1 text-[11px] ${idx === 0 ? 'text-text-dim cursor-not-allowed opacity-70' : 'text-text-main'}`} disabled={idx === 0}
                     placeholder="項目名 (例: Russian)"
                   />
                   <textarea 
                     value={item.value}
                     onChange={(e) => updatePresetItem(key, idx, 'value', e.target.value)}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    
+                    
+                    
                     className={`w-full bg-bg-surface border border-border-main rounded px-2 py-1 text-[11px] font-mono h-[40px] resize-y min-h-[40px] ${idx === 0 ? 'text-text-dim cursor-not-allowed opacity-70' : 'text-text-main'}`} disabled={idx === 0}
                     placeholder="プロンプト (例: 1russian girl, )"
                   />
@@ -732,11 +925,16 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
             </button>
           </div>
         ) : (
-          <div className="flex gap-2 items-start pl-4 w-full min-w-0">
+          <div className="flex gap-2 items-center pl-4 w-full min-w-0 relative">
+            {currentIdx !== 0 && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none" title="選択中">
+                <Check className="w-3.5 h-3.5" />
+              </div>
+            )}
             <select 
               value={currentIdx} 
               onChange={e => setSelections(prev => ({ ...prev, [key]: Number(e.target.value) }))} 
-              className="flex-1 min-w-0 bg-bg-input border border-border-main rounded px-2 py-1.5 text-[13px] text-text-main truncate"
+              className={`flex-1 min-w-0 bg-bg-input border ${currentIdx !== 0 ? 'border-blue-500/50 shadow-[0_0_8px_rgba(59,130,246,0.1)]' : 'border-border-main'} rounded px-2 py-1.5 text-[13px] text-text-main truncate transition-colors`}
             >
               {items.map((o, idx) => <option key={idx} value={idx}>{o.label}</option>)}
             </select>
@@ -774,7 +972,10 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
       setTimeout(() => setSaveSuccessMessage(null), 3000);
   };
 
-  return (    <div className="w-full flex flex-col gap-4 p-4">
+  return (
+    <div className="w-full h-full flex flex-col relative min-h-0 bg-bg-panel">
+      {/* 上部固定領域 */}
+      <div className="shrink-0 p-4 pb-2 flex flex-col border-b border-border-main z-10 shadow-sm">
       <ConfirmModal
         isOpen={confirmResetState}
         message={t('reset_selection_confirm', lang)}
@@ -788,6 +989,13 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
         lang={lang}
       />
       <ConfirmModal
+        isOpen={confirmBulkDeleteState}
+        message={lang === "en" ? "Delete selected items?" : "選択した項目を削除しますか？"}
+        onConfirm={deleteCheckedItems}
+        onCancel={() => setConfirmBulkDeleteState(false)}
+        lang={lang}
+      />
+      <ConfirmModal
         isOpen={confirmResetToDefaultState}
         message={t('reset_mixer_confirm', lang)}
         onConfirm={() => {
@@ -798,7 +1006,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
         lang={lang}
       />
       {/* 組み合わせ保存・ロード領域 */}
-      <div className="flex flex-col gap-2 p-3 bg-bg-surface border border-border-main rounded mb-2 relative">
+      <div className="flex flex-col gap-2 p-3 bg-bg-surface border border-border-main rounded relative shrink-0 shadow-sm">
         {saveSuccessMessage && (
           <div className="absolute -top-3 right-2 z-50 bg-green-600 text-white shadow-lg border border-green-500 px-3 py-1.5 rounded text-[12px] font-bold animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-none flex items-center gap-1.5">
             <Check className="w-3.5 h-3.5" />
@@ -934,9 +1142,49 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
 
       
 
-      <div className="flex flex-col gap-2">
-        {categories.map((c, i) => !c.isNegative && renderCategory(c, i))}
+      {checkedItems.size > 0 && (
+        <div className="bg-bg-panel/90 py-2 mt-3 -mx-4 px-4 flex flex-wrap gap-2 justify-between items-center border-t border-border-main">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-mono font-bold text-blue-500 whitespace-nowrap bg-blue-500/10 px-2 py-0.5 rounded">{checkedItems.size} selected</span>
+          </div>
+          <div className="flex gap-2 items-center flex-1 min-w-0 justify-end">
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  moveCheckedItemsToCategory(e.target.value);
+                  e.target.value = "";
+                }
+              }}
+              className="flex-1 min-w-[100px] bg-bg-input border border-border-main hover:border-border-hover rounded px-2 py-1.5 text-[11px] text-text-main truncate transition-colors appearance-none cursor-pointer"
+              defaultValue=""
+            >
+              <option value="" disabled>Move to...</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.label} へ移動</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setConfirmBulkDeleteState(true)}
+              className="px-2 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded text-[11px] font-bold transition-colors flex items-center gap-1"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> DELETE
+            </button>
+            <button
+              onClick={() => setCheckedItems(new Set())}
+              className="px-3 py-1.5 bg-bg-input hover:bg-border-main border border-border-main rounded text-[11px] font-bold transition-colors text-text-dim hover:text-text-main"
+            >
+              選択解除
+            </button>
+          </div>
+        </div>
+      )}
       </div>
+
+      {/* スクロール領域 */}
+      <div className="flex-1 overflow-y-auto p-4 pt-3 flex flex-col">
+        <div className="flex flex-col gap-2">
+          {categories.map((c, i) => !c.isNegative && renderCategory(c, i))}
+        </div>
       
       <div className="flex gap-2 justify-end mt-2">
         <button
@@ -988,6 +1236,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
           <Check className="w-4 h-4" /> 適用する
         </button>
       </div>
+    </div>
     </div>
   );
 };
