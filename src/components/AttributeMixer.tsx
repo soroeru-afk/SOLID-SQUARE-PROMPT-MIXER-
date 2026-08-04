@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Settings2, Plus, Trash2, Save, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown, Edit2, RotateCcw, GripVertical } from 'lucide-react';
+import { Check, Settings2, Plus, Trash2, Save, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown, Edit2, RotateCcw, GripVertical, ArrowLeftToLine, Copy } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { Language, t } from '../i18n';
+import { VariationPart } from '../types';
 
 type PresetItem = { label: string; value: string };
 type Presets = Record<string, PresetItem[]>;
@@ -232,11 +233,13 @@ const DEFAULT_PRESETS: Presets = {
 
 interface AttributeMixerProps {
   onApply: (pos: string, neg: string, target?: string) => void;
+  onInsertText?: (text: string, isNegative?: boolean) => void;
+  onCopyToParts?: (parts: VariationPart[], categories: { name: string, section: number }[]) => void;
   theme?: string;
   lang?: Language;
 }
 
-export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme = 'default', lang = 'ja' as Language }) => {
+export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInsertText, onCopyToParts, theme = 'default', lang = 'ja' as Language }) => {
   
   
   const [categories, setCategories] = useState<CategoryDef[]>(() => {
@@ -263,6 +266,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(categories));
+    localStorage.setItem('attribute_mixer_categories_updated_at', String(Date.now()));
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
@@ -344,6 +348,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(presets));
+    localStorage.setItem('attribute_mixer_presets_updated_at', String(Date.now()));
   }, [presets]);
 
   const [combinations, setCombinations] = useState<Combination[]>(() => {
@@ -366,6 +371,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(combinations));
+    localStorage.setItem('attribute_mixer_combos_updated_at', String(Date.now()));
   }, [combinations]);
 
   const [selections, setSelections] = useState<Record<string, number>>(() => {
@@ -445,6 +451,35 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
     
     setSaveSuccessMessage(lang === 'en' ? 'Saved as new!' : '新規保存しました！ (Saved!)');
     setTimeout(() => setSaveSuccessMessage(null), 3000);
+  };
+
+
+  const handleCopyToParts = () => {
+    if (!onCopyToParts) return;
+    const newParts: VariationPart[] = [];
+    const newCategories: { name: string, section: number }[] = [];
+    
+    categories.forEach(cat => {
+      newCategories.push({ name: cat.label, section: 1 });
+      const items = presets[cat.id] || DEFAULT_PRESETS[cat.id] || [];
+      items.forEach((item, idx) => {
+        if (item.value.trim() === '') return;
+        newParts.push({
+          id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          section: 1,
+          category: cat.label,
+          name: item.label,
+          content: item.value,
+          isPinned: false,
+          isNegative: cat.isNegative
+        });
+      });
+    });
+    onCopyToParts(newParts, newCategories);
+    
+    // オプションで完了メッセージを表示
+    setSaveSuccessMessage(lang === 'en' ? "Copied to Parts!" : "パーツにコピーしました！");
+    setTimeout(() => setSaveSuccessMessage(null), 2000);
   };
 
   const loadCombination = (id: string) => {
@@ -906,15 +941,26 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
                     placeholder="プロンプト (例: 1russian girl, )"
                   />
                 </div>
-                {(idx !== 0 || (cat.isNegative && items.length > 1)) && (
-                  <button 
-                    onClick={() => removePresetItem(key, idx)}
-                    className="p-1.5 text-red-500 hover:bg-red-500/10 rounded shrink-0"
-                    title="削除"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                <div className="flex flex-col gap-1 shrink-0 pt-1">
+                  {onInsertText && idx !== 0 && (
+                    <button 
+                      onClick={() => onInsertText(item.value, cat.isNegative)}
+                      className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded"
+                      title={lang === 'en' ? "Insert to editor" : "エディタに挿入"}
+                    >
+                      <ArrowLeftToLine className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {(idx !== 0 || (cat.isNegative && items.length > 1)) && (
+                    <button 
+                      onClick={() => removePresetItem(key, idx)}
+                      className="p-1.5 text-red-500 hover:bg-red-500/10 rounded"
+                      title={lang === 'en' ? "Delete" : "削除"}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             <button 
@@ -1023,6 +1069,14 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, theme =
             className="px-2 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded text-[11px] font-bold transition-colors flex items-center gap-1"
           >
             {t('reset_to_default', lang)}
+          </button>
+          <button
+            onClick={handleCopyToParts}
+            className="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/30 rounded text-[11px] font-bold transition-colors flex items-center gap-1 shrink-0"
+            title={lang === 'en' ? "Copy all items to Parts" : "全項目をパーツにコピー"}
+          >
+            <Copy className="w-3 h-3" />
+            {lang === 'en' ? "To Parts" : "パーツへ"}
           </button>
         </div>
         

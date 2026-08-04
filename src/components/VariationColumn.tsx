@@ -24,11 +24,13 @@ interface VariationColumnProps {
   onAddCategory?: (section: number, name: string) => void;
   onRenameCategory?: (section: number, oldName: string, newName: string) => void;
   onDeleteCategory?: (section: number, name: string) => void;
-  onReorderCategory?: (section: number, draggedCat: string, targetCat: string) => void;
+  onReorderCategory?: (draggedSection: number, draggedCat: string, targetSection: number, targetCat?: string) => void;
   onReorder?: (draggedId: string, targetId: string) => void;
   onCopyToMaster?: (part: VariationPart) => void;
   onCopyBulkToMaster?: (items: VariationPart[]) => void;
   onMixAttributes?: (pos: string, neg: string) => void;
+  onInsertText?: (text: string, isNegative?: boolean) => void;
+  onCopyToParts?: (parts: VariationPart[], categories: { name: string, section: number }[]) => void;
   lang: Language;
   theme: string;
   activeTab?: 'parts' | 'mixer' | 'memo';
@@ -37,7 +39,7 @@ interface VariationColumnProps {
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, onMixAttributes, lang, theme, activeTab = 'parts', setActiveTab, children
+  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, onMixAttributes, onInsertText, onCopyToParts, lang, theme, activeTab = 'parts', setActiveTab, children
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -131,6 +133,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   };
   const handleSectionDragOver = (e: React.DragEvent, targetSectionId: number) => {
     e.preventDefault();
+    if (draggedCategory) { e.dataTransfer.dropEffect = 'move'; return; }
     if (draggedSection !== null && draggedSection !== targetSectionId) {
       setSectionOrder(prev => {
         const fromIdx = prev.indexOf(draggedSection);
@@ -162,22 +165,37 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       e.target.style.opacity = '1';
     }
   };
+
+  const handleSectionContainerDrop = (e: React.DragEvent, section: number) => {
+    e.preventDefault();
+    if (!draggedCategory) return;
+    if (draggedCategory.section === section) return;
+    if (onReorderCategory) {
+      onReorderCategory(draggedCategory.section, draggedCategory.name, section);
+    }
+  };
+
   const handleCatDragOver = (e: React.DragEvent, section: number) => {
     e.stopPropagation();
     e.preventDefault();
-    if (draggedCategory?.section === section) {
-      e.dataTransfer.dropEffect = 'move';
-    } else {
-      e.dataTransfer.dropEffect = 'none';
-    }
+    e.dataTransfer.dropEffect = 'move';
   };
   const handleCatDrop = (e: React.DragEvent, targetName: string, section: number) => {
     e.preventDefault();
-    if (!draggedCategory || draggedCategory.section !== section || draggedCategory.name === targetName) return;
+    if (!draggedCategory || (draggedCategory.section === section && draggedCategory.name === targetName)) return;
     if (onReorderCategory) {
-      onReorderCategory(section, draggedCategory.name, targetName);
+      onReorderCategory(draggedCategory.section, draggedCategory.name, section, targetName);
     }
   };
+
+  const handleSectionDrop = (e: React.DragEvent, section: number) => {
+    e.preventDefault();
+    if (!draggedCategory || draggedCategory.section === section) return;
+    if (onReorderCategory) {
+      onReorderCategory(draggedCategory.section, draggedCategory.name, section);
+    }
+  };
+
   const handleDragStart = (e: React.DragEvent, id: string, category: string) => {
     e.stopPropagation();
     setDraggedPart({ id, category });
@@ -404,7 +422,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
               <div 
                 key={secId} 
                 className="space-y-4"
-                onDragOver={(e) => handleSectionDragOver(e, Number(secId))}
+                onDragOver={(e) => handleSectionDragOver(e, Number(secId))} onDrop={(e) => handleSectionContainerDrop(e, Number(secId))}
               >
                 <div draggable={editingId === null && editingCategory === null && editingSectionId === null} onDragStart={(e) => handleSectionDragStart(e, Number(secId))} onDragEnd={handleSectionDragEnd} style={{ cursor: "grab" }} className={`flex items-center justify-between p-2 border-l-4 shadow-sm bg-transparent group text-text-main ${
                   secId === '1' ? 'border-blue-500' : 
@@ -703,7 +721,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       </>
       ) : activeTab === 'mixer' ? (
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          <AttributeMixer onApply={onMixAttributes || (() => {})} theme={theme} lang={lang} />
+          <AttributeMixer onApply={onMixAttributes || (() => {})} onInsertText={onInsertText} onCopyToParts={onCopyToParts} theme={theme} lang={lang} />
         </div>
       ) : (
         children

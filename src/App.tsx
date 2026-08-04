@@ -15,20 +15,31 @@ import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 const STORAGE_KEY = 'prompt_console_data';
 
 
-const mergeMixerData = (parsed: any) => {
+const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
+  const fileTime = parsed.exportDate ? new Date(parsed.exportDate).getTime() : 0;
+
   if (parsed.attributeMixerCategories) {
-    const incoming = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
-    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(incoming));
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_categories_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incoming = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
+      localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(incoming));
+    }
   }
   
   if (parsed.attributeMixerPresets) {
-    const incoming = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
-    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(incoming));
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_presets_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incoming = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
+      localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(incoming));
+    }
   }
 
   if (parsed.attributeMixerCombos) {
-    const incoming = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
-    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(incoming));
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_combos_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incoming = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
+      localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(incoming));
+    }
   }
   
   window.dispatchEvent(new Event('attributeMixerDataImported'));
@@ -124,18 +135,15 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
-    
-    // Update PWA theme-color to match bg-panel of each theme
-    const themeColors: Record<string, string> = {
-      'dark': '#111215',
-      'black': '#050505',
-      'mono': '#f3f4f6',
-      'light': '#e5e7eb',
-      'navy': '#0d1222'
-    };
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', themeColors[theme] || '#111215');
+      let color = '#0A0A0B';
+      if (theme === 'light') color = '#f9fafb';
+      else if (theme === 'black') color = '#000000';
+      else if (theme === 'red') color = '#140505';
+      else if (theme === 'navy') color = '#060913';
+      else if (theme === 'mono') color = '#ffffff';
+      metaThemeColor.setAttribute('content', color);
     }
   }, [theme]);
 
@@ -381,6 +389,17 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+  const showSaveToast = useCallback((msg: string) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    setSaveSuccessMessage(msg);
+    saveTimerRef.current = window.setTimeout(() => {
+      setSaveSuccessMessage(null);
+      saveTimerRef.current = null;
+    }, 2000);
+  }, []);
   const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -420,7 +439,7 @@ export default function App() {
         const parsed = JSON.parse(text);
         if (parsed.masters && parsed.parts) {
           setData(parsed);
-          mergeMixerData(parsed);
+          mergeMixerData(parsed, true);
           setSelectedMasterId(parsed.masters[0]?.id || null);
           setLoadSuccessMessage(`Resumed from ${latestFile.name}`);
           setTimeout(() => setLoadSuccessMessage(null), 3000);
@@ -551,6 +570,43 @@ export default function App() {
       .trim();
   };
 
+
+  const handleCopyToParts = useCallback((newParts: VariationPart[], newCategories: { name: string, section: number }[]) => {
+    setData(prev => {
+      const existingCats = new Set((prev.customCategories || []).map(c => `${c.section}-${c.name}`));
+      prev.parts.forEach(p => existingCats.add(`${p.section}-${p.category}`));
+      
+      const additionalCatsUnique: { name: string, section: number }[] = [];
+      const tempSet = new Set(existingCats);
+      for (const cat of newCategories) {
+        if (!tempSet.has(`${cat.section}-${cat.name}`)) {
+          tempSet.add(`${cat.section}-${cat.name}`);
+          additionalCatsUnique.push({ name: cat.name, section: cat.section as 1 | 2 | 3 | 4 });
+        }
+      }
+
+      // 重複チェック: セクション、カテゴリ、名前、内容がすべて同じものはスキップする
+      const existingPartsSet = new Set(
+        prev.parts.map(p => `${p.section}-${p.category}-${p.name}-${p.content}`)
+      );
+
+      const uniqueNewParts = newParts.filter(p => {
+        const key = `${p.section}-${p.category}-${p.name}-${p.content}`;
+        if (existingPartsSet.has(key)) {
+          return false; // すでに同じものがある場合はスキップ
+        }
+        existingPartsSet.add(key); // newParts同士での重複も防ぐ
+        return true;
+      });
+
+      return {
+        ...prev,
+        parts: [...uniqueNewParts, ...prev.parts],
+        customCategories: [...(prev.customCategories || []), ...additionalCatsUnique]
+      };
+    });
+  }, []);
+
   const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {
     const escapeRegExp = (string: string) => {
       return string.replace(/[.*+?^\$\{\}()|[\]\\]/g, '\\$&');
@@ -600,27 +656,31 @@ export default function App() {
     });
   }, [setEditorText, setNegativeEditorText]);
 
-  const handleTogglePart = (id: string) => {
-    setActivePartId(id);
-    const part = data.parts.find(p => p.id === id);
-    if (!part) return;
-
+  const handleInsertText = useCallback((text: string, isNegative: boolean = false) => {
     const insert = (prev: string, pos: number | null, setPos: (p: number) => void) => {
       const actualPos = pos === null ? prev.length : pos;
       const before = prev.slice(0, actualPos);
       const after = prev.slice(actualPos);
       const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
       const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
-      const insertedStr = prefix + part.content + suffix;
+      const insertedStr = prefix + text + suffix;
       setPos(actualPos + insertedStr.length);
       return cleanString(before + insertedStr + after);
     };
     
-    if (part.isNegative) {
+    if (isNegative) {
       setNegativeEditorText(prev => insert(prev, negativeCursorPos, setNegativeCursorPos as any));
     } else {
       setEditorText(prev => insert(prev, positiveCursorPos, setPositiveCursorPos as any));
     }
+  }, [autoOptimize, positiveCursorPos, negativeCursorPos, setEditorText, setNegativeEditorText]);
+
+  const handleTogglePart = (id: string) => {
+    setActivePartId(id);
+    const part = data.parts.find(p => p.id === id);
+    if (!part) return;
+    
+    handleInsertText(part.content, part.isNegative);
   };
 
   
@@ -686,6 +746,7 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = '', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -716,6 +777,7 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = '') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
+    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -860,37 +922,69 @@ export default function App() {
     }));
   };
 
-  const handleReorderCategory = (section: number, draggedCat: string, targetCat: string) => {
+  const handleReorderCategory = (draggedSection: number, draggedCat: string, targetSection: number, targetCat?: string) => {
+    if (draggedSection === targetSection && draggedCat === targetCat) return;
+
     setData(prev => {
-      let currentOrder = prev.customCategories ? prev.customCategories.filter(c => c.section === section).map(c => c.name) : [];
+      // Update section for all parts in the dragged category
+      const newParts = prev.parts.map(p => 
+        (p.section === draggedSection && p.category === draggedCat)
+          ? { ...p, section: targetSection as 1 | 2 | 3 | 4 }
+          : p
+      );
+
+      // Handle custom categories
+      let allCustomCats = prev.customCategories ? [...prev.customCategories] : [];
       
-      // Add any default categories that are not in customCategories
-      const existingCats = Array.from(new Set(prev.parts.filter(p => p.section === section).map(p => p.category)));
+      // Ensure dragged category exists in custom categories
+      if (!allCustomCats.find(c => c.section === draggedSection && c.name === draggedCat)) {
+        allCustomCats.push({ name: draggedCat, section: draggedSection as 1 | 2 | 3 | 4 });
+      }
+
+      // Update its section
+      const catObj = allCustomCats.find(c => c.section === draggedSection && c.name === draggedCat);
+      if (catObj) {
+        catObj.section = targetSection as 1 | 2 | 3 | 4;
+      }
+      
+      // Now handle ordering within the target section
+      let targetSectionOrder = allCustomCats.filter(c => c.section === targetSection).map(c => c.name);
+      
+      // Add existing parts cats that might not be in customCategories
+      const existingCats = Array.from(new Set(newParts.filter(p => p.section === targetSection).map(p => p.category)));
       for (const cat of existingCats) {
-        if (!currentOrder.includes(cat)) currentOrder.push(cat);
+        if (!targetSectionOrder.includes(cat)) targetSectionOrder.push(cat);
+      }
+
+      const draggedIdx = targetSectionOrder.indexOf(draggedCat);
+      if (draggedIdx !== -1) {
+        targetSectionOrder.splice(draggedIdx, 1);
       }
       
-      const draggedIdx = currentOrder.indexOf(draggedCat);
-      const targetIdx = currentOrder.indexOf(targetCat);
-      
-      if (draggedIdx !== -1 && targetIdx !== -1) {
-        currentOrder.splice(draggedIdx, 1);
-        currentOrder.splice(targetIdx, 0, draggedCat);
+      let targetIdx = targetSectionOrder.length;
+      if (targetCat) {
+         targetIdx = targetSectionOrder.indexOf(targetCat);
+         if (targetIdx === -1) targetIdx = targetSectionOrder.length;
       }
       
-      const otherSections = (prev.customCategories || []).filter(c => c.section !== section);
+      targetSectionOrder.splice(targetIdx, 0, draggedCat);
+      
+      const otherSections = allCustomCats.filter(c => c.section !== targetSection);
       const newCustomCategories = [
         ...otherSections,
-        ...currentOrder.map(name => ({ name, section: section as 1 | 2 | 3 | 4 }))
+        ...targetSectionOrder.map(name => ({ name, section: targetSection as 1 | 2 | 3 | 4 }))
       ];
-      
-      return { ...prev, customCategories: newCustomCategories };
+
+      return { ...prev, parts: newParts, customCategories: newCustomCategories };
     });
   };
+
+
 
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = '') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -1025,6 +1119,7 @@ export default function App() {
           setData(parsed);
           mergeMixerData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
+          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }
@@ -1253,6 +1348,8 @@ export default function App() {
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               onMixAttributes={handleMixAttributes}
+              onInsertText={handleInsertText}
+              onCopyToParts={handleCopyToParts}
               lang={lang}
               theme={theme}
               activeTab={activeVariationTab}
@@ -1541,6 +1638,8 @@ export default function App() {
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               onMixAttributes={handleMixAttributes}
+              onInsertText={handleInsertText}
+              onCopyToParts={handleCopyToParts}
               lang={lang}
               theme={theme}
               activeTab={activeVariationTab}
