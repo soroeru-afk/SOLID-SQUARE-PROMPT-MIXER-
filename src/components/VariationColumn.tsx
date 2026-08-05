@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { VariationPart } from '../types';
 import { Accordion } from './Accordion';
 import { ConfirmModal } from './ConfirmModal';
@@ -249,6 +249,17 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
     const saved = localStorage.getItem('variation_section_order');
     return saved ? JSON.parse(saved) : [1, 2, 3, 4];
   });
+  
+  useEffect(() => {
+    const handleImport = () => {
+      const saved = localStorage.getItem('variation_section_order');
+      if (saved) {
+        try { setSectionOrder(JSON.parse(saved)); } catch (e) {}
+      }
+    };
+    window.addEventListener('attributeMixerDataImported', handleImport);
+    return () => window.removeEventListener('attributeMixerDataImported', handleImport);
+  }, []);
   
   const moveSection = (secId: number, direction: 'up' | 'down') => {
     setSectionOrder(prev => {

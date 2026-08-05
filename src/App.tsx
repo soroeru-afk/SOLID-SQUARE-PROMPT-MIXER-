@@ -31,6 +31,15 @@ const mergeMixerData = (parsed: any) => {
     localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(incoming));
   }
   
+  
+  if (parsed.uiEditorTabs) {
+    const incoming = typeof parsed.uiEditorTabs === 'string' ? JSON.parse(parsed.uiEditorTabs) : parsed.uiEditorTabs;
+    localStorage.setItem('ui_editor_tabs', JSON.stringify(incoming));
+  }
+  if (parsed.variationSectionOrder) {
+    const incoming = typeof parsed.variationSectionOrder === 'string' ? JSON.parse(parsed.variationSectionOrder) : parsed.variationSectionOrder;
+    localStorage.setItem('variation_section_order', JSON.stringify(incoming));
+  }
   window.dispatchEvent(new Event('attributeMixerDataImported'));
 };
 
@@ -52,11 +61,10 @@ export default function App() {
   });
   const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
   const [data, setData] = useState<AppData>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem('prompt_console_data');
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as AppData;
-        // Migration: If no parts with section 2 exist, merge them from initialData
         if (!parsed.parts.some(p => p.section === 2)) {
           const newPoses = initialData.parts.filter(p => p.section === 2);
           parsed.parts = [...parsed.parts, ...newPoses];
@@ -124,7 +132,7 @@ export default function App() {
 
   const [mixerCategories, setMixerCategories] = useState<{id: string, label: string}[]>([]);
   useEffect(() => {
-    const loadCats = () => {
+    const loadCats = (isEvent = false) => {
       let finalCats = [
         { id: 'race', label: '人種 (Race)' },
         { id: 'age', label: '年齢 (Age)' },
@@ -136,28 +144,39 @@ export default function App() {
         { id: 'hair', label: 'ヘア・髪型 (Hair)' },
         { id: 'bodyHair', label: 'アンダーヘア・脇毛 (Body Hair)' },
         { id: 'accessories', label: 'アクセサリー (Accessories)' },
-        { id: 'makeup', label: 'メイク (Makeup)' },
-        { id: 'breasts', label: '胸 (Breasts)' },
+        { id: 'angle', label: 'アングル (Angle)' },
+        { id: 'location', label: '場所・背景 (Location)' },
+        { id: 'situation', label: 'シチュエーション・状況 (Situation)' },
+        { id: 'freeText1', label: '自由・フリー設定 1 (Free Text 1)' },
+        { id: 'freeText2', label: '自由・フリー設定 2 (Free Text 2)' },
+        { id: 'partner', label: '男 (Partner)' },
+        { id: 'weather', label: '天候 (Weather)' },
+        { id: 'emptyLocation', label: '無人の場所 (Empty Location)' },
+        { id: 'bodyWet', label: '濡れ表現 (Wet Body)' },
+        { id: 'lighting', label: '光の表現 (Lighting)' },
+        { id: 'lens', label: 'レンズ・フィルター (Lens/Filter)' },
         { id: 'background', label: '背景 (Background)' },
         { id: 'environment', label: '環境・照明 (Environment/Lighting)' },
         { id: 'artStyle', label: '画風・スタイル (Art Style)' },
         { id: 'camera', label: 'カメラ・アングル (Camera/Angle)' }
       ];
-      const saved = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
-      if (saved) {
-        try {
-          finalCats = JSON.parse(saved);
-        } catch(e) {}
+      
+      if (isEvent) {
+        const saved = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
+        if (saved) {
+          try { finalCats = JSON.parse(saved); } catch(e) {}
+        }
       }
+      
       setMixerCategories(finalCats);
     };
     loadCats();
-    window.addEventListener('attributeMixerDataImported', loadCats);
-    // Add custom event listener for local updates
-    window.addEventListener('mixer_presets_updated', loadCats);
+    const handleCatsUpdate = () => loadCats(true);
+    window.addEventListener('attributeMixerDataImported', handleCatsUpdate);
+    window.addEventListener('mixer_presets_updated', handleCatsUpdate);
     return () => {
-      window.removeEventListener('attributeMixerDataImported', loadCats);
-      window.removeEventListener('mixer_presets_updated', loadCats);
+      window.removeEventListener('attributeMixerDataImported', handleCatsUpdate);
+      window.removeEventListener('mixer_presets_updated', handleCatsUpdate);
     }
   }, []);
 
@@ -427,16 +446,6 @@ export default function App() {
     getFileHandle('export_directory').then(async handle => {
       if (handle && handle.name) {
         setExportDirectoryName(handle.name);
-        try {
-          if ('queryPermission' in handle) {
-            const permission = await handle.queryPermission({ mode: 'read' });
-            if (permission === 'granted') {
-              await loadLatestFileFromDir(handle);
-            }
-          }
-        } catch (e) {
-          console.error('Error auto-resuming on load', e);
-        }
       }
     });
   }, []);
@@ -1100,7 +1109,9 @@ export default function App() {
       ...cleanedData,
       attributeMixerPresets: presetsStr ? JSON.parse(presetsStr) : undefined,
       attributeMixerCombos: combosStr ? JSON.parse(combosStr) : undefined,
-      attributeMixerCategories: catsStr ? JSON.parse(catsStr) : undefined
+      attributeMixerCategories: catsStr ? JSON.parse(catsStr) : undefined,
+      uiEditorTabs: localStorage.getItem('ui_editor_tabs') ? JSON.parse(localStorage.getItem('ui_editor_tabs')!) : undefined,
+      variationSectionOrder: localStorage.getItem('variation_section_order') ? JSON.parse(localStorage.getItem('variation_section_order')!) : undefined
     };
 
     const jsonString = JSON.stringify(exportData, null, 2);

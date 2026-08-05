@@ -244,23 +244,11 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   
   const [categories, setCategories] = useState<CategoryDef[]>(() => {
     let finalCats = [...DEFAULT_CATEGORIES];
-    const keys = ['attribute_mixer_categories_v2', 'attribute_mixer_categories_v1', 'attribute_mixer_categories'];
-    for (const k of keys) {
+    const saved = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
+    if (saved) {
       try {
-        const saved = localStorage.getItem(k);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          const map = new Map();
-          parsed.forEach((c: any) => map.set(c.id, c));
-          finalCats.forEach(c => {
-            if (!map.has(c.id)) {
-              map.set(c.id, c);
-            }
-          });
-          finalCats = Array.from(map.values());
-          break; // only load the latest available
-        }
-      } catch (e) {}
+        finalCats = JSON.parse(saved);
+      } catch(e) {}
     }
     return finalCats;
   });
@@ -270,23 +258,18 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
 
   const [presets, setPresets] = useState<Presets>(() => {
     let finalPresets = { ...DEFAULT_PRESETS };
-    const keys = ['attribute_mixer_custom_presets_v7', 'attribute_mixer_custom_presets_v6', 'attribute_mixer_custom_presets_v5', 'attribute_mixer_custom_presets_v4', 'attribute_mixer_custom_presets_v3', 'attribute_mixer_custom_presets_v2', 'attribute_mixer_custom_presets_v1', 'attribute_mixer_custom_presets'];
-    for (const k of keys) {
+    const saved = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
+    if (saved) {
       try {
-        const saved = localStorage.getItem(k);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          const result = { ...parsed };
-          // For any missing categories, fill with default
-          for (const key of Object.keys(DEFAULT_PRESETS)) {
-            if (!result[key]) {
-              result[key] = DEFAULT_PRESETS[key];
-            }
+        const parsed = JSON.parse(saved);
+        const result = { ...parsed };
+        for (const key of Object.keys(DEFAULT_PRESETS)) {
+          if (!result[key]) {
+            result[key] = DEFAULT_PRESETS[key];
           }
-          finalPresets = result;
-          if (parsed.location) finalPresets.location = parsed.location;
-          break; // only load latest
         }
+        if (parsed.location) result.location = parsed.location;
+        finalPresets = result;
       } catch (e) {}
     }
     return finalPresets;
@@ -320,7 +303,9 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   const [selections, setSelections] = useState<Record<string, number>>(() => {
     const saved = localStorage.getItem('attribute_mixer_selections_v1');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
     }
     return Object.fromEntries(DEFAULT_CATEGORIES.map(c => [c.id, 0]));
   });
@@ -330,6 +315,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
 
   useEffect(() => {
     const handleImported = () => {
+      
       const savedPresets = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
       if (savedPresets) {
         try {
@@ -638,139 +624,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
 
     setCheckedItems(new Set());
     setSelections(prev => {
-      const next = { ...prev };
-      checkedItems.forEach(id => {
-        const [catId] = id.split(':');
-        next[catId] = 0;
-      });
-      return next;
-    });
-
-    setCheckedItems(new Set());
-    setConfirmBulkDeleteState(false);
-  };
-
-  const moveCheckedItemsToCategory = (targetCatId: string) => {
-    if (checkedItems.size === 0) return;
-    
-    setPresets(prev => {
-      const newState = { ...prev };
-      
-      const itemsToMove: { fromCat: string, index: number, item: any }[] = [];
-      
-      checkedItems.forEach(id => {
-        const [catId, idxStr] = id.split(':');
-        const idx = parseInt(idxStr, 10);
-        if (catId && !isNaN(idx) && prev[catId] && prev[catId][idx]) {
-          itemsToMove.push({ fromCat: catId, index: idx, item: prev[catId][idx] });
-        }
-      });
-      
-      if (itemsToMove.length === 0) return prev;
-      
-      const fromCats = Array.from(new Set(itemsToMove.map(i => i.fromCat)));
-      fromCats.forEach(fromCat => {
-        const indicesToRemove = itemsToMove.filter(i => i.fromCat === fromCat).map(i => i.index).sort((a, b) => b - a);
-        const newList = [...(newState[fromCat] || [])];
-        indicesToRemove.forEach(idx => {
-          newList.splice(idx, 1);
-        });
-        newState[fromCat] = newList;
-      });
-      
-      const targetList = [...(newState[targetCatId] || [{ label: '指定なし / None', value: '' }])];
-      itemsToMove.forEach(i => {
-        targetList.push(i.item);
-      });
-      newState[targetCatId] = targetList;
-      
-      return newState;
-    });
-    
-    setSelections(prev => {
-      const next = { ...prev };
-      checkedItems.forEach(id => {
-        const [catId, idxStr] = id.split(':');
-        next[catId] = 0; 
-      });
-      return next;
-    });
-
-    setCheckedItems(new Set());
-  };
-
-  const movePresetItemToCategory = (fromCategory: string, index: number, toCategory: string) => {
-    if (index === 0) return;
-    setPresets(prev => {
-      const fromList = [...(prev[fromCategory] || DEFAULT_PRESETS[fromCategory] || [{ label: '指定なし / None', value: '' }])];
-      const itemToMove = fromList[index];
-      if (!itemToMove) return prev;
-      
-      fromList.splice(index, 1);
-      
-      const toList = [...(prev[toCategory] || [{ label: '指定なし / None', value: '' }])];
-      toList.push(itemToMove);
-      
-      return { ...prev, [fromCategory]: fromList, [toCategory]: toList };
-    });
-    
-    setCheckedItems(new Set());
-    if (selections[fromCategory] === index) {
-      setSelections(prev => ({ ...prev, [fromCategory]: 0 }));
-    } else if (selections[fromCategory] > index) {
-      setSelections(prev => ({ ...prev, [fromCategory]: prev[fromCategory] - 1 }));
-    }
-  };
-
-  const moveCategory = (id: string, direction: 'up' | 'down' | 'top' | 'bottom') => {
-    setCategories(prev => {
-      const idx = prev.findIndex(c => c.id === id);
-      if (idx === -1) return prev;
-      const newCats = [...prev];
-      const [item] = newCats.splice(idx, 1);
-      if (direction === 'up') newCats.splice(Math.max(0, idx - 1), 0, item);
-      else if (direction === 'down') newCats.splice(Math.min(newCats.length, idx + 1), 0, item);
-      else if (direction === 'top') newCats.unshift(item);
-      else if (direction === 'bottom') newCats.push(item);
-      return newCats;
-    });
-  };
-
-  
-  const handleItemDragStart = (e: React.DragEvent, category: string, index: number) => {
-    e.stopPropagation();
-    e.dataTransfer.effectAllowed = 'move';
-    setDraggedItemId({ category, index });
-    e.dataTransfer.setData('text/plain', `item:${category}:${index}`);
-  };
-
-  const handleItemDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleItemDrop = (e: React.DragEvent, targetCategory: string, targetIndex: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!draggedItemId || draggedItemId.category !== targetCategory) {
-      setDraggedItemId(null);
-      return;
-    }
-    const draggedIdx = draggedItemId.index;
-    if (draggedIdx === targetIndex || draggedIdx === 0 || targetIndex === 0) {
-      setDraggedItemId(null);
-      return;
-    }
-
-    setPresets(prev => {
-      const newCategory = [...(prev[targetCategory] || DEFAULT_PRESETS[targetCategory] || [{ label: '指定なし / None', value: '' }])];
-      const [item] = newCategory.splice(draggedIdx, 1);
-      newCategory.splice(targetIndex, 0, item);
-      return { ...prev, [targetCategory]: newCategory };
-    });
-
-    setSelections(prev => {
       const currentSel = prev[targetCategory] || 0;
       let newSel = currentSel;
       
@@ -782,6 +635,28 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
         newSel = currentSel + 1;
       }
       return { ...prev, [targetCategory]: newSel };
+    });
+
+    setCheckedItems(prev => {
+      const newSet = new Set(prev);
+      const isDraggedChecked = prev.has(`${targetCategory}:${draggedIdx}`);
+      
+      if (draggedIdx < targetIndex) {
+        for (let i = draggedIdx; i < targetIndex; i++) {
+          if (prev.has(`${targetCategory}:${i + 1}`)) newSet.add(`${targetCategory}:${i}`);
+          else newSet.delete(`${targetCategory}:${i}`);
+        }
+      } else {
+        for (let i = draggedIdx; i > targetIndex; i--) {
+          if (prev.has(`${targetCategory}:${i - 1}`)) newSet.add(`${targetCategory}:${i}`);
+          else newSet.delete(`${targetCategory}:${i}`);
+        }
+      }
+      
+      if (isDraggedChecked) newSet.add(`${targetCategory}:${targetIndex}`);
+      else newSet.delete(`${targetCategory}:${targetIndex}`);
+      
+      return newSet;
     });
     setDraggedItemId(null);
   };
@@ -824,7 +699,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       <div 
         className={`flex flex-col gap-1.5 p-2 rounded border border-border-main bg-bg-surface transition-colors min-w-0 ${draggedCatId === key ? 'opacity-50' : 'hover:bg-bg-panel/30'}`}
         key={key}
-        draggable={!isRenaming && !isEditing && dragEnabledCatId === key}
+        draggable={!isRenaming && !isEditing && (dragEnabledCatId === key || draggedCatId === key)}
         onDragStart={(e) => {
           if (isRenaming || isEditing) { e.preventDefault(); e.stopPropagation(); return; }
           handleDragStart(e, key);
@@ -920,7 +795,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
               <div 
                 key={idx} 
                 className={`flex gap-1 items-start ${draggedItemId?.category === key && draggedItemId?.index === idx ? 'opacity-50' : ''}`}
-                draggable={idx !== 0 && dragEnabledItemId?.category === key && dragEnabledItemId?.index === idx}
+                draggable={idx !== 0 && ((dragEnabledItemId?.category === key && dragEnabledItemId?.index === idx) || (draggedItemId?.category === key && draggedItemId?.index === idx))}
                 onDragStart={(e) => {
                   if (idx !== 0) handleItemDragStart(e, key, idx);
                 }}
