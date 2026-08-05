@@ -15,31 +15,20 @@ import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 const STORAGE_KEY = 'prompt_console_data';
 
 
-const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
-  const fileTime = parsed.exportDate ? new Date(parsed.exportDate).getTime() : 0;
-
+const mergeMixerData = (parsed: any) => {
   if (parsed.attributeMixerCategories) {
-    const localUpdated = Number(localStorage.getItem('attribute_mixer_categories_updated_at') || 0);
-    if (!isAutoLoad || localUpdated <= fileTime) {
-      const incoming = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
-      localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(incoming));
-    }
+    const incoming = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
+    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(incoming));
   }
   
   if (parsed.attributeMixerPresets) {
-    const localUpdated = Number(localStorage.getItem('attribute_mixer_presets_updated_at') || 0);
-    if (!isAutoLoad || localUpdated <= fileTime) {
-      const incoming = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
-      localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(incoming));
-    }
+    const incoming = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
+    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(incoming));
   }
 
   if (parsed.attributeMixerCombos) {
-    const localUpdated = Number(localStorage.getItem('attribute_mixer_combos_updated_at') || 0);
-    if (!isAutoLoad || localUpdated <= fileTime) {
-      const incoming = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
-      localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(incoming));
-    }
+    const incoming = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
+    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(incoming));
   }
   
   window.dispatchEvent(new Event('attributeMixerDataImported'));
@@ -133,17 +122,60 @@ export default function App() {
   const [savePartFromMasterData, setSavePartFromMasterData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
   const [saveMasterFromPartData, setSaveMasterFromPartData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
 
+  const [mixerCategories, setMixerCategories] = useState<{id: string, label: string}[]>([]);
+  useEffect(() => {
+    const loadCats = () => {
+      let finalCats = [
+        { id: 'race', label: '人種 (Race)' },
+        { id: 'age', label: '年齢 (Age)' },
+        { id: 'physique', label: '体型 (Physique)' },
+        { id: 'pose', label: '体位・ポーズ (Pose)' },
+        { id: 'characteristics', label: '特徴・個性 (Characteristics)' },
+        { id: 'expression', label: '表情・気持ち (Expression)' },
+        { id: 'clothing', label: '衣類・コスチューム (Clothing)' },
+        { id: 'hair', label: 'ヘア・髪型 (Hair)' },
+        { id: 'bodyHair', label: 'アンダーヘア・脇毛 (Body Hair)' },
+        { id: 'accessories', label: 'アクセサリー (Accessories)' },
+        { id: 'makeup', label: 'メイク (Makeup)' },
+        { id: 'breasts', label: '胸 (Breasts)' },
+        { id: 'background', label: '背景 (Background)' },
+        { id: 'environment', label: '環境・照明 (Environment/Lighting)' },
+        { id: 'artStyle', label: '画風・スタイル (Art Style)' },
+        { id: 'camera', label: 'カメラ・アングル (Camera/Angle)' }
+      ];
+      const saved = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
+      if (saved) {
+        try {
+          finalCats = JSON.parse(saved);
+        } catch(e) {}
+      }
+      setMixerCategories(finalCats);
+    };
+    loadCats();
+    window.addEventListener('attributeMixerDataImported', loadCats);
+    // Add custom event listener for local updates
+    window.addEventListener('mixer_presets_updated', loadCats);
+    return () => {
+      window.removeEventListener('attributeMixerDataImported', loadCats);
+      window.removeEventListener('mixer_presets_updated', loadCats);
+    }
+  }, []);
+
+
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
+    
+    // Update PWA theme-color to match bg-panel of each theme
+    const themeColors: Record<string, string> = {
+      'dark': '#111215',
+      'black': '#050505',
+      'mono': '#f3f4f6',
+      'light': '#e5e7eb',
+      'navy': '#0d1222'
+    };
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      let color = '#0A0A0B';
-      if (theme === 'light') color = '#f9fafb';
-      else if (theme === 'black') color = '#000000';
-      else if (theme === 'red') color = '#140505';
-      else if (theme === 'navy') color = '#060913';
-      else if (theme === 'mono') color = '#ffffff';
-      metaThemeColor.setAttribute('content', color);
+      metaThemeColor.setAttribute('content', themeColors[theme] || '#111215');
     }
   }, [theme]);
 
@@ -389,17 +421,6 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
-  const saveTimerRef = useRef<number | null>(null);
-  const showSaveToast = useCallback((msg: string) => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-    setSaveSuccessMessage(msg);
-    saveTimerRef.current = window.setTimeout(() => {
-      setSaveSuccessMessage(null);
-      saveTimerRef.current = null;
-    }, 2000);
-  }, []);
   const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -439,7 +460,7 @@ export default function App() {
         const parsed = JSON.parse(text);
         if (parsed.masters && parsed.parts) {
           setData(parsed);
-          mergeMixerData(parsed, true);
+          mergeMixerData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
           setLoadSuccessMessage(`Resumed from ${latestFile.name}`);
           setTimeout(() => setLoadSuccessMessage(null), 3000);
@@ -746,7 +767,6 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = '', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -777,7 +797,6 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = '') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
-    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -788,6 +807,52 @@ export default function App() {
     }
     return Array.from(cats.entries());
   }, [data.parts, data.customCategories]);
+
+
+  const handleCopyToMixer = (categoryId: string, title: string, content: string, items?: {name: string, content: string}[]) => {
+    const savedPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
+    
+    let currentPresets: any = {};
+    if (savedPresetsStr) {
+      try {
+        currentPresets = JSON.parse(savedPresetsStr);
+      } catch(e) {}
+    }
+    
+    if (!currentPresets[categoryId]) {
+      currentPresets[categoryId] = [{ label: 'Select...', value: '' }];
+    }
+    
+    let addedCount = 0;
+    if (items && items.length > 0) {
+      items.forEach(item => {
+        if (item.name && item.content) {
+          // Check if it already exists
+          const exists = currentPresets[categoryId].some((p: any) => p.label === item.name && p.value === item.content);
+          if (!exists) {
+            currentPresets[categoryId].push({ label: item.name, value: item.content });
+            addedCount++;
+          }
+        }
+      });
+    } else if (title && content) {
+      const exists = currentPresets[categoryId].some((p: any) => p.label === title && p.value === content);
+      if (!exists) {
+        currentPresets[categoryId].push({ label: title, value: content });
+        addedCount++;
+      }
+    }
+    
+    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(currentPresets));
+    window.dispatchEvent(new Event('mixer_presets_updated')); // Re-render AttributeMixer if it's listening
+    setSaveMasterFromPartData(null); // Close modal
+    
+    if (addedCount > 0) {
+      alert(lang === 'en' ? `${addedCount} items copied to Prompt Mixer` : `プロンプトミキサーに${addedCount}件コピーしました`);
+    } else {
+      alert(lang === 'en' ? `Items already exist in Prompt Mixer` : `すでにプロンプトミキサーに存在します`);
+    }
+  };
 
   const handleSaveAsMaster = (name: string, content: string, isNegative: boolean, negativeContent?: string, isUpdate?: boolean) => {
     if (isUpdate) {
@@ -984,7 +1049,6 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = '') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -1119,7 +1183,6 @@ export default function App() {
           setData(parsed);
           mergeMixerData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
-          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }
@@ -1564,6 +1627,8 @@ export default function App() {
           }}
           onCancel={() => setSaveMasterFromPartData(null)}
           lang={lang}
+          mixerCategories={mixerCategories}
+          onCopyToMixer={handleCopyToMixer}
         />
 
         <button 

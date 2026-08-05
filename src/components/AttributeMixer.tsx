@@ -266,7 +266,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(categories));
-    localStorage.setItem('attribute_mixer_categories_updated_at', String(Date.now()));
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
@@ -348,7 +347,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(presets));
-    localStorage.setItem('attribute_mixer_presets_updated_at', String(Date.now()));
   }, [presets]);
 
   const [combinations, setCombinations] = useState<Combination[]>(() => {
@@ -371,7 +369,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(combinations));
-    localStorage.setItem('attribute_mixer_combos_updated_at', String(Date.now()));
   }, [combinations]);
 
   const [selections, setSelections] = useState<Record<string, number>>(() => {
@@ -403,12 +400,21 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       const savedCats = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
       if (savedCats) {
         try {
-          setCategories(JSON.parse(savedCats));
+          const parsed = JSON.parse(savedCats);
+          const finalCats = [...DEFAULT_CATEGORIES];
+          const map = new Map();
+          parsed.forEach((c: any) => map.set(c.id, c));
+          finalCats.forEach(c => {
+            if (!map.has(c.id)) {
+              parsed.push(c);
+            }
+          });
+          setCategories(parsed);
         } catch(e) {}
       }
     };
-    window.addEventListener('attributeMixerDataImported', handleImported);
-    return () => window.removeEventListener('attributeMixerDataImported', handleImported);
+    window.addEventListener('attributeMixerDataImported', handleImported); window.addEventListener('mixer_presets_updated', handleImported);
+    return () => { window.removeEventListener('attributeMixerDataImported', handleImported); window.removeEventListener('mixer_presets_updated', handleImported); };
   }, []);
 
   const [editModes, setEditModes] = useState<Record<string, boolean>>({});
@@ -550,7 +556,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   const updatePresetItem = (category: string, index: number, field: 'label' | 'value', newValue: string) => {
     if (index === 0) return;
     setPresets(prev => {
-      const newCategory = [...(prev[category] || [])];
+      const newCategory = [...(prev[category] || DEFAULT_PRESETS[category] || [{ label: '指定なし / None', value: '' }])];
       newCategory[index] = { ...newCategory[index], [field]: newValue };
       return { ...prev, [category]: newCategory };
     });
@@ -559,7 +565,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   const addPresetItem = (category: string) => {
     setPresets(prev => ({
       ...prev,
-      [category]: [...(prev[category] || []), { label: 'New Item', value: '' }]
+      [category]: [...(prev[category] || DEFAULT_PRESETS[category] || [{ label: '指定なし / None', value: '' }]), { label: 'New Item', value: '' }]
     }));
     setEditModes(prev => ({ ...prev, [category]: true }));
   };
@@ -567,7 +573,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   const removePresetItem = (category: string, index: number) => {
     if (index === 0) return;
     setPresets(prev => {
-      const newCategory = [...(prev[category] || [])];
+      const newCategory = [...(prev[category] || DEFAULT_PRESETS[category] || [{ label: '指定なし / None', value: '' }])];
       newCategory.splice(index, 1);
       return { ...prev, [category]: newCategory };
     });
@@ -577,11 +583,28 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     } else if (selections[category] > index) {
       setSelections(prev => ({ ...prev, [category]: prev[category] - 1 }));
     }
+    
+    setCheckedItems(prev => {
+      const next = new Set(prev);
+      const toAdd = new Set<string>();
+      for (const id of Array.from(next)) {
+        const [catId, idxStr] = id.split(':');
+        if (catId === category) {
+          const checkedIdx = parseInt(idxStr, 10);
+          if (checkedIdx === index) {
+            next.delete(id);
+          } else if (checkedIdx > index) {
+            next.delete(id);
+            toAdd.add(`${category}:${checkedIdx - 1}`);
+          }
+        }
+      }
+      toAdd.forEach(id => next.add(id));
+      return next;
+    });
   };
 
-  
-  
-    const deleteCheckedItems = () => {
+  const deleteCheckedItems = () => {
     if (checkedItems.size === 0) return;
     
     setPresets(prev => {
@@ -599,7 +622,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       const catIds = Array.from(new Set(itemsToDelete.map(i => i.catId)));
       catIds.forEach(catId => {
         const indicesToRemove = itemsToDelete.filter(i => i.catId === catId).map(i => i.idx).sort((a, b) => b - a);
-        const newList = [...(newState[catId] || [])];
+        const newList = [...(newState[catId] || DEFAULT_PRESETS[catId] || [{ label: '指定なし / None', value: '' }])];
         indicesToRemove.forEach(idx => {
           newList.splice(idx, 1);
         });
@@ -609,6 +632,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       return newState;
     });
 
+    setCheckedItems(new Set());
     setSelections(prev => {
       const next = { ...prev };
       checkedItems.forEach(id => {
@@ -674,7 +698,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   const movePresetItemToCategory = (fromCategory: string, index: number, toCategory: string) => {
     if (index === 0) return;
     setPresets(prev => {
-      const fromList = [...(prev[fromCategory] || [])];
+      const fromList = [...(prev[fromCategory] || DEFAULT_PRESETS[fromCategory] || [{ label: '指定なし / None', value: '' }])];
       const itemToMove = fromList[index];
       if (!itemToMove) return prev;
       
@@ -686,6 +710,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       return { ...prev, [fromCategory]: fromList, [toCategory]: toList };
     });
     
+    setCheckedItems(new Set());
     if (selections[fromCategory] === index) {
       setSelections(prev => ({ ...prev, [fromCategory]: 0 }));
     } else if (selections[fromCategory] > index) {
@@ -735,7 +760,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     }
 
     setPresets(prev => {
-      const newCategory = [...(prev[targetCategory] || [])];
+      const newCategory = [...(prev[targetCategory] || DEFAULT_PRESETS[targetCategory] || [{ label: '指定なし / None', value: '' }])];
       const [item] = newCategory.splice(draggedIdx, 1);
       newCategory.splice(targetIndex, 0, item);
       return { ...prev, [targetCategory]: newCategory };
