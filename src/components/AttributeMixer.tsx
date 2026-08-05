@@ -599,7 +599,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     
     setPresets(prev => {
       const newState = { ...prev };
-      const itemsToDelete = [];
+      const itemsToDelete: {catId: string, idx: number}[] = [];
       
       checkedItems.forEach(id => {
         const [catId, idxStr] = id.split(':');
@@ -623,6 +623,42 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     });
 
     setCheckedItems(new Set());
+    setConfirmBulkDeleteState(false);
+  };
+
+  const handleItemDragStart = (e: React.DragEvent, category: string, index: number) => {
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedItemId({ category, index });
+    e.dataTransfer.setData('text/plain', `item:${category}:${index}`);
+  };
+
+  const handleItemDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleItemDrop = (e: React.DragEvent, targetCategory: string, targetIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedItemId || draggedItemId.category !== targetCategory) {
+      setDraggedItemId(null);
+      return;
+    }
+    const draggedIdx = draggedItemId.index;
+    if (draggedIdx === targetIndex || draggedIdx === 0 || targetIndex === 0) {
+      setDraggedItemId(null);
+      return;
+    }
+
+    setPresets(prev => {
+      const newCategory = [...(prev[targetCategory] || DEFAULT_PRESETS[targetCategory] || [{ label: '指定なし / None', value: '' }])];
+      const [item] = newCategory.splice(draggedIdx, 1);
+      newCategory.splice(targetIndex, 0, item);
+      return { ...prev, [targetCategory]: newCategory };
+    });
+
     setSelections(prev => {
       const currentSel = prev[targetCategory] || 0;
       let newSel = currentSel;
