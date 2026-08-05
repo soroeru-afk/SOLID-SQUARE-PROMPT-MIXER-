@@ -269,79 +269,25 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
-    const mergePresets = (target: any, source: any) => {
-      if (!source) return target;
-      const result = { ...target };
-      for (const key of Object.keys(source)) {
-        if (!result[key]) {
-          result[key] = source[key];
-        } else if (Array.isArray(result[key]) && Array.isArray(source[key])) {
-          const map = new Map();
-          result[key].forEach((item: any) => {
-            map.set(item.label, item);
-          });
-          source[key].forEach((item: any) => {
-            const clean = item.label;
-            const existing = map.get(clean);
-            if (existing) {
-              map.set(clean, { label: item.label, value: item.value });
-            } else {
-              // Also check if value matches to prevent duplicates if only label changed
-              const existingByVal = Array.from(map.entries()).find(([k, v]) => v.value === item.value && item.value !== '');
-              if (existingByVal) {
-                map.delete(existingByVal[0]);
-                map.set(clean, item);
-              } else {
-                map.set(clean, item);
-              }
-            }
-          });
-          result[key] = Array.from(map.values());
-        } else {
-          result[key] = source[key];
-        }
-      }
-      return result;
-    };
-
     let finalPresets = { ...DEFAULT_PRESETS };
-    const keys = [
-      'attribute_mixer_custom_presets_v7',
-      'attribute_mixer_custom_presets_v6',
-      'attribute_mixer_custom_presets_v5',
-      'attribute_mixer_custom_presets_v4',
-      'attribute_mixer_custom_presets_v3',
-      'attribute_mixer_custom_presets_v2',
-      'attribute_mixer_custom_presets_v1',
-      'attribute_mixer_custom_presets'
-    ];
-    
+    const keys = ['attribute_mixer_custom_presets_v7', 'attribute_mixer_custom_presets_v6', 'attribute_mixer_custom_presets_v5', 'attribute_mixer_custom_presets_v4', 'attribute_mixer_custom_presets_v3', 'attribute_mixer_custom_presets_v2', 'attribute_mixer_custom_presets_v1', 'attribute_mixer_custom_presets'];
     for (const k of keys) {
       try {
         const saved = localStorage.getItem(k);
         if (saved) {
           const parsed = JSON.parse(saved);
-          finalPresets = mergePresets(finalPresets, parsed);
-          break; // only load the latest available
+          const result = { ...parsed };
+          // For any missing categories, fill with default
+          for (const key of Object.keys(DEFAULT_PRESETS)) {
+            if (!result[key]) {
+              result[key] = DEFAULT_PRESETS[key];
+            }
+          }
+          finalPresets = result;
+          if (parsed.location) finalPresets.location = parsed.location;
+          break; // only load latest
         }
       } catch (e) {}
-    }
-
-    if (finalPresets.race) {
-      finalPresets.race = finalPresets.race.map(r => ({ ...r, value: r.value.replace(/1(japanese|russian|british|american|german|caucasian|dark skin|latina) girl/g, '1$1 woman') }));
-    }
-
-    // Ensure index 0 is always '指定なし / None'
-    for (const catKey of Object.keys(finalPresets)) {
-      const arr = finalPresets[catKey];
-      if (arr && arr.length > 0) {
-        if (arr[0].label !== '指定なし / None' || arr[0].value !== '') {
-          const filtered = arr.filter(a => a.label !== '指定なし / None' || a.value !== '');
-          finalPresets[catKey] = [{ label: '指定なし / None', value: '' }, ...filtered];
-        }
-      } else {
-        finalPresets[catKey] = [{ label: '指定なし / None', value: '' }];
-      }
     }
     return finalPresets;
   });
@@ -388,7 +334,14 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       if (savedPresets) {
         try {
           const parsed = JSON.parse(savedPresets);
-          setPresets({ ...DEFAULT_PRESETS, ...parsed, location: parsed.location || DEFAULT_PRESETS.location });
+          const result = { ...parsed };
+          for (const key of Object.keys(DEFAULT_PRESETS)) {
+            if (!result[key]) {
+              result[key] = DEFAULT_PRESETS[key];
+            }
+          }
+          if (parsed.location) result.location = parsed.location;
+          setPresets(result);
         } catch (e) {}
       }
       const savedCombos = localStorage.getItem('attribute_mixer_combinations_v1');
@@ -401,14 +354,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       if (savedCats) {
         try {
           const parsed = JSON.parse(savedCats);
-          const finalCats = [...DEFAULT_CATEGORIES];
-          const map = new Map();
-          parsed.forEach((c: any) => map.set(c.id, c));
-          finalCats.forEach(c => {
-            if (!map.has(c.id)) {
-              parsed.push(c);
-            }
-          });
           setCategories(parsed);
         } catch(e) {}
       }
@@ -416,6 +361,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     window.addEventListener('attributeMixerDataImported', handleImported); window.addEventListener('mixer_presets_updated', handleImported);
     return () => { window.removeEventListener('attributeMixerDataImported', handleImported); window.removeEventListener('mixer_presets_updated', handleImported); };
   }, []);
+
+  
 
   const [editModes, setEditModes] = useState<Record<string, boolean>>({});
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
@@ -433,6 +380,63 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   const [editingCombName, setEditingCombName] = useState<string>('');
 
   const [negativePrompt, setNegativePrompt] = useState('');
+
+  useEffect(() => {
+    const handleRestore = (e: any) => {
+      const { positive, negative } = e.detail;
+      const next = { ...selections };
+      let remainingNeg = negative || '';
+      let hasChanges = false;
+      
+      categories.forEach(c => {
+        const items = presets[c.id] || DEFAULT_PRESETS[c.id] || [{ label: '指定なし / None', value: '' }];
+        const targetStr = c.isNegative ? negative : positive;
+        
+        if (!targetStr) return;
+        
+        let bestMatchIdx = 0;
+        let bestMatchLen = 0;
+        let bestMatchVal = '';
+        
+        for (let i = 1; i < items.length; i++) {
+          const val = items[i].value;
+          if (val && targetStr.includes(val)) {
+            if (val.length > bestMatchLen) {
+              bestMatchLen = val.length;
+              bestMatchIdx = i;
+              bestMatchVal = val;
+            }
+          }
+        }
+        
+        if (bestMatchIdx !== 0 && next[c.id] !== bestMatchIdx) {
+          next[c.id] = bestMatchIdx;
+          hasChanges = true;
+        }
+        
+        if (c.isNegative && bestMatchIdx !== 0) {
+          remainingNeg = remainingNeg.replace(bestMatchVal, '');
+        }
+      });
+      
+      if (hasChanges) {
+        setSelections(next);
+      }
+      
+      remainingNeg = remainingNeg.split(',').map((s: string) => s.trim()).filter((s: string) => s).join(', ');
+      if (remainingNeg !== negativePrompt) {
+        setNegativePrompt(remainingNeg);
+      }
+      
+      if (hasChanges || remainingNeg !== negativePrompt) {
+        setSaveSuccessMessage(lang === 'en' ? 'Restored from Image!' : '画像からプロンプトを復元しました！');
+        setTimeout(() => setSaveSuccessMessage(null), 3000);
+      }
+    };
+
+    window.addEventListener('restore_mixer_from_prompt', handleRestore);
+    return () => window.removeEventListener('restore_mixer_from_prompt', handleRestore);
+  }, [categories, presets, selections, negativePrompt, lang]);
   const [confirmDeleteCatId, setConfirmDeleteCatId] = useState<string | null>(null);
   const [confirmDeleteCombId, setConfirmDeleteCombId] = useState<string | null>(null);
   const [confirmResetState, setConfirmResetState] = useState(false);
@@ -448,7 +452,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       negativePrompt
     };
     
-    setCombinations(prev => [...prev, newComb]);
+    setCombinations(prev => [newComb, ...prev]);
     setActiveCombinationId(newComb.id);
     
     setIsSavedListOpen(true);
