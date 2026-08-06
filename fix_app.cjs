@@ -1,65 +1,22 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/App.tsx', 'utf8');
+let content = fs.readFileSync('src/App.tsx', 'utf8');
 
-// Remove import
-code = code.replace("import { ALL_KNOWN_POS_STRINGS, ALL_KNOWN_NEG_STRINGS } from './components/AttributeMixer';", "");
+// Replace AppData initial load
+const dataRegex = /const \[data, setData\] = useState<AppData>\(\(\) => \{[\s\S]*?return initialData;\n\s*\}\);/;
+if (content.match(dataRegex)) {
+  content = content.replace(dataRegex, 'const [data, setData] = useState<AppData>(initialData);');
+  console.log('App data useState patched');
+} else {
+  console.log('App data useState NOT MATCHED');
+}
 
-// Rewrite handleMixAttributes
-const mixRegex = /const handleMixAttributes = useCallback\(\(posStr: string, negStr: string, targetToReplace\?: string\) => \{[\s\S]*?\}, \[setEditorText, setNegativeEditorText\]\);/;
+// Replace tabs initial load
+const tabsRegex = /const \[tabs, setTabs\] = useState<\{id: string, name: string, pos: string, neg: string\}\[\]>\(\(\) => \{[\s\S]*?return \[\{\s*id: 'tab-1',\s*name: 'TAB 01',\s*pos: localStorage\.getItem\('ui_editor_text'\) \|\| '',\s*neg: localStorage\.getItem\('ui_negative_editor_text'\) \|\| ''\s*\}\];\n\s*\}\);/;
+if (content.match(tabsRegex)) {
+  content = content.replace(tabsRegex, "const [tabs, setTabs] = useState<{id: string, name: string, pos: string, neg: string}[]>([{ id: 'tab-1', name: 'TAB 01', pos: '', neg: '' }]);");
+  console.log('App tabs useState patched');
+} else {
+  console.log('App tabs useState NOT MATCHED');
+}
 
-const newMixLogic = `const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {
-    const escapeRegExp = (string: string) => {
-      return string.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
-    };
-
-    setEditorText(prev => {
-      let result = prev;
-      let replaced = false;
-      
-      if (targetToReplace) {
-        const targetRegex = new RegExp(escapeRegExp(targetToReplace), 'gi');
-        const originalResult = result;
-        result = result.replace(targetRegex, posStr);
-        if (result !== originalResult) {
-          replaced = true;
-        }
-      } 
-      
-      if (!replaced && posStr) {
-        result = posStr + (posStr.endsWith(' ') || posStr.endsWith(',') ? '' : ', ') + result;
-      }
-      
-      result = result.replace(/,\\s*,/g, ',');
-      result = result.replace(/^,\\s*/, '');
-      return result.trim();
-    });
-
-    setNegativeEditorText(prev => {
-      let result = prev;
-      let replaced = false;
-      
-      // If we are placing negStr based on targetToReplace... wait, the user's targetToReplace is only in pos text?
-      // For simplicity, we just prepend negStr if not replaced or always.
-      if (targetToReplace) {
-        // Typically targetToReplace is for positive prompt. If it was found there, maybe we just prepend negStr to negative?
-        // Let's just prepend negStr to negative always if target is given, unless they put target in negative.
-        const targetRegex = new RegExp(escapeRegExp(targetToReplace), 'gi');
-        if (result.match(targetRegex)) {
-            result = result.replace(targetRegex, negStr);
-            replaced = true;
-        }
-      }
-      
-      if (!replaced && negStr) {
-        result = negStr + (negStr.endsWith(' ') || negStr.endsWith(',') ? '' : ', ') + result;
-      }
-      
-      result = result.replace(/,\\s*,/g, ',');
-      result = result.replace(/^,\\s*/, '');
-      return result.trim();
-    });
-  }, [setEditorText, setNegativeEditorText]);`;
-
-code = code.replace(mixRegex, newMixLogic);
-fs.writeFileSync('src/App.tsx', code);
-console.log("Updated handleMixAttributes in App.tsx");
+fs.writeFileSync('src/App.tsx', content);

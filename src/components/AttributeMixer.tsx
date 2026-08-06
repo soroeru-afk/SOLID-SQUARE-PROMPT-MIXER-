@@ -254,6 +254,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(categories));
+    localStorage.setItem('attribute_mixer_categories_updated_at', String(Date.now()));
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
@@ -276,6 +277,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(presets));
+    localStorage.setItem('attribute_mixer_presets_updated_at', String(Date.now()));
   }, [presets]);
 
   const [combinations, setCombinations] = useState<Combination[]>(() => {
@@ -298,6 +300,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(combinations));
+    localStorage.setItem('attribute_mixer_combos_updated_at', String(Date.now()));
   }, [combinations]);
 
   const [selections, setSelections] = useState<Record<string, number>>(() => {
@@ -578,7 +581,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       const next = new Set(prev);
       const toAdd = new Set<string>();
       for (const id of Array.from(next)) {
-        const [catId, idxStr] = id.split(':');
+        const [catId, idxStr] = (id as string).split(':');
         if (catId === category) {
           const checkedIdx = parseInt(idxStr, 10);
           if (checkedIdx === index) {
@@ -594,7 +597,83 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     });
   };
 
-  const deleteCheckedItems = () => {
+  
+  const moveCategory = (catId: string, direction: 'top' | 'bottom') => {
+    setCategories(prev => {
+      const idx = prev.findIndex(c => c.id === catId);
+      if (idx === -1) return prev;
+      const newCats = [...prev];
+      const [item] = newCats.splice(idx, 1);
+      
+      const firstNegIdx = newCats.findIndex(c => c.isNegative);
+      const isNeg = item.isNegative;
+      
+      if (direction === 'top') {
+        if (isNeg) {
+           newCats.splice(firstNegIdx === -1 ? newCats.length : firstNegIdx, 0, item);
+        } else {
+           newCats.unshift(item);
+        }
+      } else {
+        if (isNeg) {
+           newCats.push(item);
+        } else {
+           if (firstNegIdx === -1) newCats.push(item);
+           else newCats.splice(firstNegIdx, 0, item);
+        }
+      }
+      return newCats;
+    });
+  };
+
+  const moveCheckedItemsToCategory = (targetCatId: string) => {
+    if (checkedItems.size === 0) return;
+    
+    setPresets(prev => {
+      const newState = { ...prev };
+      const itemsToMove: {catId: string, idx: number}[] = [];
+      
+      checkedItems.forEach(id => {
+        const [catId, idxStr] = (id as string).split(':');
+        const idx = parseInt(idxStr, 10);
+        if (catId && !isNaN(idx) && catId !== targetCatId) {
+          itemsToMove.push({ catId, idx });
+        }
+      });
+      
+      if (itemsToMove.length === 0) return prev;
+
+      const targetList = [...(newState[targetCatId] || DEFAULT_PRESETS[targetCatId] || [{ label: '指定なし / None', value: '' }])];
+      
+      const catIds = Array.from(new Set(itemsToMove.map(i => i.catId)));
+      catIds.forEach(catId => {
+        const indicesToRemove = itemsToMove.filter(i => i.catId === catId).map(i => i.idx).sort((a, b) => b - a);
+        const newList = [...(newState[catId] || DEFAULT_PRESETS[catId] || [{ label: '指定なし / None', value: '' }])];
+        indicesToRemove.forEach(idx => {
+          const [item] = newList.splice(idx, 1);
+          targetList.push(item);
+        });
+        newState[catId] = newList;
+      });
+      
+      newState[targetCatId] = targetList;
+      return newState;
+    });
+    
+    // Uncheck and reset selections if they were pointing to moved items
+    setCheckedItems(new Set());
+    setSelections(prev => {
+      const newSel = { ...prev };
+      checkedItems.forEach(id => {
+         const [catId, idxStr] = (id as string).split(':');
+         if (newSel[catId] === parseInt(idxStr, 10)) {
+           newSel[catId] = 0;
+         }
+      });
+      return newSel;
+    });
+  };
+const deleteCheckedItems = () => {
     if (checkedItems.size === 0) return;
     
     setPresets(prev => {
@@ -602,7 +681,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       const itemsToDelete: {catId: string, idx: number}[] = [];
       
       checkedItems.forEach(id => {
-        const [catId, idxStr] = id.split(':');
+        const [catId, idxStr] = (id as string).split(':');
         const idx = parseInt(idxStr, 10);
         if (catId && !isNaN(idx)) {
           itemsToDelete.push({ catId, idx });
@@ -623,11 +702,23 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     });
 
     setCheckedItems(new Set());
-    setConfirmBulkDeleteState(false);
+    
+    // Also we need to fix selections if the selected item was deleted, but for simplicity let's just reset them to 0 if they are out of bounds, 
+    // actually, let's just let them be, the UI will fall back to 0 if out of bounds or we can fix it.
+    // I will just reset to 0 for deleted categories to avoid complexity right now.
+    setSelections(prev => {
+      const newSel = { ...prev };
+      checkedItems.forEach(id => {
+         const [catId, idxStr] = (id as string).split(':');
+         if (newSel[catId] === parseInt(idxStr, 10)) {
+           newSel[catId] = 0;
+         }
+      });
+      return newSel;
+    });
   };
 
   const handleItemDragStart = (e: React.DragEvent, category: string, index: number) => {
-    e.stopPropagation();
     e.dataTransfer.effectAllowed = 'move';
     setDraggedItemId({ category, index });
     e.dataTransfer.setData('text/plain', `item:${category}:${index}`);
@@ -694,6 +785,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       
       return newSet;
     });
+
     setDraggedItemId(null);
   };
 
@@ -726,7 +818,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
 
   const renderCategory = (cat: CategoryDef, index: number) => {
     const key = cat.id;
-    const items = presets[key] || DEFAULT_PRESETS[key] || [{ label: '指定なし / None', value: '' }];
+    const items = Array.isArray(presets[key]) ? presets[key] : (DEFAULT_PRESETS[key] || [{ label: '指定なし / None', value: '' }]);
     const currentIdx = selections[key] ?? 0;
     const isEditing = editModes[key] || false;
     const isRenaming = editingCatName === key;
@@ -827,7 +919,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
         
         {isEditing ? (
           <div className="flex flex-col gap-2 p-2 border border-blue-500/30 rounded bg-blue-500/5">
-            {items.map((item, idx) => idx === 0 && items.length > 1 ? null : (
+            {items.map((item, idx) => (!item || (idx === 0 && items.length > 1)) ? null : (
               <div 
                 key={idx} 
                 className={`flex gap-1 items-start ${draggedItemId?.category === key && draggedItemId?.index === idx ? 'opacity-50' : ''}`}
@@ -863,7 +955,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
                 )}
                 <div className="flex flex-col gap-1 flex-1">
                   <input 
-                    value={item.label}
+                    value={item?.label || ''}
                     onChange={(e) => updatePresetItem(key, idx, 'label', e.target.value)}
                     
                     
@@ -872,7 +964,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
                     placeholder="項目名 (例: Russian)"
                   />
                   <textarea 
-                    value={item.value}
+                    value={item?.value || ''}
                     onChange={(e) => updatePresetItem(key, idx, 'value', e.target.value)}
                     
                     

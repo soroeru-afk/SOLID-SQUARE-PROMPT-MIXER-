@@ -15,23 +15,33 @@ import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 const STORAGE_KEY = 'prompt_console_data';
 
 
-const mergeMixerData = (parsed: any) => {
+const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
+  const fileTime = parsed.exportDate ? new Date(parsed.exportDate).getTime() : 0;
+
   if (parsed.attributeMixerCategories) {
-    const incoming = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
-    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(incoming));
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_categories_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incoming = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
+      localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(incoming));
+    }
   }
   
   if (parsed.attributeMixerPresets) {
-    const incoming = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
-    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(incoming));
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_presets_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incoming = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
+      localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(incoming));
+    }
   }
 
   if (parsed.attributeMixerCombos) {
-    const incoming = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
-    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(incoming));
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_combos_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incoming = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
+      localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(incoming));
+    }
   }
-  
-  
+
   if (parsed.uiEditorTabs) {
     const incoming = typeof parsed.uiEditorTabs === 'string' ? JSON.parse(parsed.uiEditorTabs) : parsed.uiEditorTabs;
     localStorage.setItem('ui_editor_tabs', JSON.stringify(incoming));
@@ -183,18 +193,15 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
-    
-    // Update PWA theme-color to match bg-panel of each theme
-    const themeColors: Record<string, string> = {
-      'dark': '#111215',
-      'black': '#050505',
-      'mono': '#f3f4f6',
-      'light': '#e5e7eb',
-      'navy': '#0d1222'
-    };
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', themeColors[theme] || '#111215');
+      let color = '#0A0A0B';
+      if (theme === 'light') color = '#f9fafb';
+      else if (theme === 'black') color = '#000000';
+      else if (theme === 'red') color = '#140505';
+      else if (theme === 'navy') color = '#060913';
+      else if (theme === 'mono') color = '#ffffff';
+      metaThemeColor.setAttribute('content', color);
     }
   }, [theme]);
 
@@ -440,6 +447,17 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+  const showSaveToast = useCallback((msg: string) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    setSaveSuccessMessage(msg);
+    saveTimerRef.current = window.setTimeout(() => {
+      setSaveSuccessMessage(null);
+      saveTimerRef.current = null;
+    }, 2000);
+  }, []);
   const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -469,7 +487,7 @@ export default function App() {
         const parsed = JSON.parse(text);
         if (parsed.masters && parsed.parts) {
           setData(parsed);
-          mergeMixerData(parsed);
+          mergeMixerData(parsed, true);
           setSelectedMasterId(parsed.masters[0]?.id || null);
           setLoadSuccessMessage(`Resumed from ${latestFile.name}`);
           setTimeout(() => setLoadSuccessMessage(null), 3000);
@@ -776,6 +794,7 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = '', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -806,6 +825,7 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = '') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
+    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -1058,6 +1078,7 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = '') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -1194,6 +1215,7 @@ export default function App() {
           setData(parsed);
           mergeMixerData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
+          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format.');
         }

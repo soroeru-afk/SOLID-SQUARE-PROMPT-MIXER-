@@ -100,7 +100,7 @@ export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, conten
                     disabled={!isBulk && !title.trim()}
                     className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-[11px] font-mono font-bold rounded transition-colors disabled:opacity-50"
                   >
-                    {t('copy', lang)}
+                    コピー (Copy)
                   </button>
                 </div>
               </div>

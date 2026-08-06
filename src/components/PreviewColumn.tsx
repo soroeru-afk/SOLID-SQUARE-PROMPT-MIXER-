@@ -913,14 +913,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     localStorage.setItem('editorFontFamily', editorFontFamily);
   }, [editorFontFamily]);
   
-  const [negativeHeight, setNegativeHeight] = useState(() => {
-    const saved = localStorage.getItem('ui_negative_height');
-    return saved ? parseInt(saved, 10) : 120;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('ui_negative_height', negativeHeight.toString());
-  }, [negativeHeight]);
+  const [negativeHeight, setNegativeHeight] = useState(120);
   const [isNegativeOpen, setIsNegativeOpen] = useState(true);
   const [isPositiveOpen, setIsPositiveOpen] = useState(true);
   const dragStartY = useRef(0);
@@ -1738,7 +1731,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
       </AnimatePresence>
             <div 
               ref={positiveHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 whitespace-pre-wrap break-words overflow-y-auto pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-all overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
               aria-hidden="true"
             >
@@ -1767,7 +1760,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 }
               }}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} overflow-y-auto whitespace-pre-wrap break-words selection:bg-blue-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-all overflow-y-auto block tracking-normal focus:ring-0 shadow-none ${editorFontFamily} selection:bg-blue-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
@@ -1870,7 +1863,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 whitespace-pre-wrap break-words overflow-y-auto pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-all overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
               aria-hidden="true"
             >
@@ -1899,7 +1892,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 }
               }}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 ${editorFontFamily} overflow-y-auto whitespace-pre-wrap break-words selection:bg-red-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-all overflow-y-auto block tracking-normal focus:ring-0 shadow-none ${editorFontFamily} selection:bg-red-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
