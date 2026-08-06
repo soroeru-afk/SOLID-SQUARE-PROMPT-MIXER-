@@ -17,8 +17,8 @@ export const translations = {
   not_set: { en: 'Not set (Click to set)', ja: '未設定 (設定するにはクリック)' },
 
   app_title: { en: 'SOLID SQUARE PROMPT MIXER', ja: 'SOLID SQUARE PROMPT MIXER' },
-  import_json: { en: 'IMPORT_JSON', ja: 'JSON読込' },
-  export_config: { en: 'EXPORT_CONFIG', ja: '設定書出' },
+  import_json: { en: 'IMPORT', ja: 'インポート' },
+  export_config: { en: 'EXPORT', ja: 'エクスポート' },
   master_presets: { en: 'MASTER_PRESETS', ja: 'マスター設定' },
   master_prompts: { en: 'MASTER PROMPTS', ja: 'マスタープロンプト設定' },
   negative_prompts: { en: 'NEGATIVE PROMPTS', ja: 'ネガティブプロンプト設定' },

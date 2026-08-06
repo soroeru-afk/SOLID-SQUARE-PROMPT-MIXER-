@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Language, t } from '../i18n';
 
@@ -11,10 +12,11 @@ interface ConfirmModalProps {
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, message, onConfirm, onCancel, lang }) => {
-  return (
+  const modalContent = (
     <AnimatePresence>
+
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -39,6 +41,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, message, onC
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+        </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };

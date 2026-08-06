@@ -30,7 +30,7 @@ interface VariationColumnProps {
   onCopyBulkToMaster?: (items: VariationPart[]) => void;
   onMixAttributes?: (pos: string, neg: string) => void;
   onInsertText?: (text: string, isNegative?: boolean) => void;
-  onCopyToParts?: (parts: VariationPart[], categories: { name: string, section: number }[]) => void;
+  onCopyToParts?: (parts: VariationPart[], categories: { name: string, section: number }[]) => { added: number, skipped: number };
   lang: Language;
   theme: string;
   activeTab?: 'parts' | 'mixer' | 'memo';

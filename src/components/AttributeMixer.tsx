@@ -20,6 +20,7 @@ type Combination = {
 };
 
 const DEFAULT_CATEGORIES: CategoryDef[] = [
+  { id: 'genderAndPeople', label: '性別と人数 (Gender & People)' },
   { id: 'race', label: '人種 (Race)' },
   { id: 'age', label: '年齢 (Age)' },
   { id: 'physique', label: '体型 (Physique)' },
@@ -45,6 +46,14 @@ const DEFAULT_CATEGORIES: CategoryDef[] = [
 ];
 
 const DEFAULT_PRESETS: Presets = {
+  genderAndPeople: [
+    { label: '指定なし / None', value: '' },
+    { label: '女性のみ (Female only)', value: '1girl, solo, ' },
+    { label: '男性のみ (Male only)', value: '1boy, solo, ' },
+    { label: '男女ペア (Male and Female pair)', value: '1girl, 1boy, couple, ' },
+    { label: '女性複数 (Multiple females)', value: 'multiple girls, ' },
+    { label: '男性複数 (Multiple males)', value: 'multiple boys, ' }
+  ],
   weather: [
     { label: '指定なし / None', value: '' },
     { label: '快晴（雲一つない青空）', value: 'crystal clear sky, ' },
@@ -234,7 +243,7 @@ const DEFAULT_PRESETS: Presets = {
 interface AttributeMixerProps {
   onApply: (pos: string, neg: string, target?: string) => void;
   onInsertText?: (text: string, isNegative?: boolean) => void;
-  onCopyToParts?: (parts: VariationPart[], categories: { name: string, section: number }[]) => void;
+  onCopyToParts?: (parts: VariationPart[], categories: { name: string, section: number }[]) => { added: number, skipped: number };
   theme?: string;
   lang?: Language;
 }
@@ -247,7 +256,13 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     const saved = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
     if (saved) {
       try {
-        finalCats = JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Merge missing defaults (like genderAndPeople) at the beginning if they are missing
+          const existingIds = new Set(parsed.map(c => c.id));
+          const missingDefaults = DEFAULT_CATEGORIES.filter(c => !existingIds.has(c.id));
+          finalCats = [...missingDefaults, ...parsed];
+        }
       } catch(e) {}
     }
     return finalCats;
@@ -263,15 +278,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const result = { ...parsed };
-        for (const key of Object.keys(DEFAULT_PRESETS)) {
-          if (!result[key]) {
-            result[key] = DEFAULT_PRESETS[key];
-          }
-        }
-        if (parsed.location) result.location = parsed.location;
-        finalPresets = result;
-      } catch (e) {}
+        finalPresets = { ...DEFAULT_PRESETS, ...parsed }; // Ensure new defaults are merged
+      } catch(e) {}
     }
     return finalPresets;
   });
@@ -343,7 +351,11 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       if (savedCats) {
         try {
           const parsed = JSON.parse(savedCats);
-          setCategories(parsed);
+          if (Array.isArray(parsed)) {
+            const existingIds = new Set(parsed.map((c: any) => c.id));
+            const missingDefaults = DEFAULT_CATEGORIES.filter(c => !existingIds.has(c.id));
+            setCategories([...missingDefaults, ...parsed]);
+          }
         } catch(e) {}
       }
     };
@@ -364,6 +376,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
 
   const [activeCombinationId, setActiveCombinationId] = useState<string>('');
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const [showCopyConfirm, setShowCopyConfirm] = useState(false);
   const [isSavedListOpen, setIsSavedListOpen] = useState(false);
   const [editingCombId, setEditingCombId] = useState<string | null>(null);
   const [editingCombName, setEditingCombName] = useState<string>('');
@@ -455,6 +468,8 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
 
   const handleCopyToParts = () => {
     if (!onCopyToParts) return;
+    setShowCopyConfirm(false);
+
     const newParts: VariationPart[] = [];
     const newCategories: { name: string, section: number }[] = [];
     
@@ -474,10 +489,14 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
         });
       });
     });
-    onCopyToParts(newParts, newCategories);
+    const result = onCopyToParts(newParts, newCategories);
     
     // オプションで完了メッセージを表示
-    setSaveSuccessMessage(lang === 'en' ? "Copied to Parts!" : "パーツにコピーしました！");
+    if (result) {
+      setSaveSuccessMessage(lang === 'en' ? `${result.added} added, ${result.skipped} skipped` : `${result.added}件追加 (${result.skipped}件スキップ)`);
+    } else {
+      setSaveSuccessMessage(lang === 'en' ? "Copied to Parts!" : "パーツにコピーしました！");
+    }
     setTimeout(() => setSaveSuccessMessage(null), 2000);
   };
 
@@ -1103,13 +1122,24 @@ const deleteCheckedItems = () => {
             {t('reset_to_default', lang)}
           </button>
           <button
-            onClick={handleCopyToParts}
+            onClick={() => setShowCopyConfirm(true)}
             className="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/30 rounded text-[11px] font-bold transition-colors flex items-center gap-1 shrink-0"
             title={lang === 'en' ? "Copy all items to Parts" : "全項目をパーツにコピー"}
           >
             <Copy className="w-3 h-3" />
             {lang === 'en' ? "To Parts" : "パーツへ"}
           </button>
+          
+          <ConfirmModal
+            isOpen={showCopyConfirm}
+            message={lang === 'en' ? 'Copy new items to Parts?' : '差分（新規）をパーツへコピーしますか？'}
+            onConfirm={() => {
+              setShowCopyConfirm(false);
+              handleCopyToParts();
+            }}
+            onCancel={() => setShowCopyConfirm(false)}
+            lang={lang}
+          />
         </div>
         
         <div className="flex gap-2 items-center min-w-0">

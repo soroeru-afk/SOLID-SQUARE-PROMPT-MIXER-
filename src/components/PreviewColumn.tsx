@@ -897,9 +897,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     const saved = localStorage.getItem('editorLineHeight');
     return saved ? parseFloat(saved) : 1.625;
   });
-  const [editorFontFamily, setEditorFontFamily] = useState(() => {
-    return localStorage.getItem('editorFontFamily') || 'font-mono';
-  });
+  
 
   useEffect(() => {
     localStorage.setItem('editorFontSize', editorFontSize.toString());
@@ -909,9 +907,16 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     localStorage.setItem('editorLineHeight', editorLineHeight.toString());
   }, [editorLineHeight]);
 
+  const [editorFontWeight, setEditorFontWeight] = useState(() => {
+    return localStorage.getItem('editorFontWeight') || '400';
+  });
+
   useEffect(() => {
-    localStorage.setItem('editorFontFamily', editorFontFamily);
-  }, [editorFontFamily]);
+    localStorage.setItem('editorFontWeight', editorFontWeight);
+  }, [editorFontWeight]);
+
+
+  
   
   const [negativeHeight, setNegativeHeight] = useState(120);
   const [isNegativeOpen, setIsNegativeOpen] = useState(true);
@@ -1373,6 +1378,18 @@ const handleResizeStart = (e: React.MouseEvent) => {
             +0.1
           </button>
         </div>
+        <div className="flex items-center space-x-1 ml-1">
+          <select 
+            value={editorFontWeight}
+            onChange={e => setEditorFontWeight(e.target.value)}
+            className={`border border-border-main text-[10px] font-mono rounded px-1 py-1 outline-none cursor-pointer uppercase tracking-wider transition-colors shrink-0 ${theme === 'mono' ? 'bg-bg-input text-text-main hover:bg-gray-500 hover:text-white' : 'bg-bg-input text-text-main hover:bg-border-main'}`}
+          >
+            <option value="400">{t('font_normal', lang as Language)}</option>
+            <option value="700">{t('font_bold', lang as Language)}</option>
+          </select>
+        </div>
+
+        
         <button 
           onClick={handleOptimizeSyntax}
           className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
@@ -1535,16 +1552,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
             className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
           >A+</button>
         </div>
-        <select 
-          value={editorFontFamily}
-          onChange={e => setEditorFontFamily(e.target.value)}
-          className={`border border-border-main text-[10px] font-mono rounded px-2 py-1.5 outline-none cursor-pointer uppercase font-bold tracking-wider transition-colors shrink-0 ${theme === 'mono' ? 'bg-bg-input text-text-main hover:bg-gray-500 hover:text-white' : 'bg-bg-input text-text-main hover:bg-border-main'}`}
-        >
-          <option value="font-mono">Mono</option>
-          <option value="font-sans">Sans</option>
-          <option value="font-serif">Serif</option>
-          <option value="font-[Meiryo,sans-serif]">Meiryo</option>
-        </select>
+        
         <button 
           onClick={() => {            setEditorText('');            setNegativeEditorText('');          }}
           className={`ml-auto px-3 py-1.5 border rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
@@ -1729,10 +1737,10 @@ const handleResizeStart = (e: React.MouseEvent) => {
           </motion.div>
         )}
       </AnimatePresence>
-            <div 
+                        <div 
               ref={positiveHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
-              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
               aria-hidden="true"
             >
               {editorText ? <>{renderHighlightedText(editorText)}{editorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">{t('placeholder', lang)}</span>}
@@ -1759,8 +1767,9 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   positiveHighlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
                 }
               }}
-              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none ${editorFontFamily} selection:bg-blue-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              
+              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono selection:bg-blue-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
@@ -1863,8 +1872,8 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none ${editorFontFamily} ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
-              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
               aria-hidden="true"
             >
               {negativeEditorText ? <>{renderHighlightedText(negativeEditorText)}{negativeEditorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">Negative prompt...</span>}
@@ -1891,8 +1900,9 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   negativeHighlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
                 }
               }}
-              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none ${editorFontFamily} selection:bg-red-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              
+              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono selection:bg-red-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
