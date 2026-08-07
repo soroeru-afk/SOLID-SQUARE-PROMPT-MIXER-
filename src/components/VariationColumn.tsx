@@ -3,7 +3,7 @@ import { VariationPart } from '../types';
 import { Accordion } from './Accordion';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { User, Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine, Copy } from 'lucide-react';
+import { User, Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine, ArrowRightToLine, Copy } from 'lucide-react';
 import { Language, t } from '../i18n';
 import { AttributeMixer } from './AttributeMixer';
 
@@ -27,7 +27,9 @@ interface VariationColumnProps {
   onReorderCategory?: (draggedSection: number, draggedCat: string, targetSection: number, targetCat?: string) => void;
   onReorder?: (draggedId: string, targetId: string) => void;
   onCopyToMaster?: (part: VariationPart) => void;
+  onCopyToMixer?: (part: VariationPart) => void;
   onCopyBulkToMaster?: (items: VariationPart[]) => void;
+  onCopyBulkToMixer?: (items: VariationPart[]) => void;
   onMixAttributes?: (pos: string, neg: string) => void;
   onInsertText?: (text: string, isNegative?: boolean) => void;
   onCopyToParts?: (parts: VariationPart[], categories: { name: string, section: number }[]) => { added: number, skipped: number };
@@ -39,7 +41,7 @@ interface VariationColumnProps {
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyBulkToMaster, onMixAttributes, onInsertText, onCopyToParts, lang, theme, activeTab = 'parts', setActiveTab, children
+  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyToMixer, onCopyBulkToMaster, onCopyBulkToMixer, onMixAttributes, onInsertText, onCopyToParts, lang, theme, activeTab = 'parts', setActiveTab, children
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -78,6 +80,16 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       if (onCopyBulkToMaster) {
         const itemsToCopy = parts.filter(p => bulkSelectedIds.has(p.id));
         onCopyBulkToMaster(itemsToCopy);
+      }
+      setBulkSelectedIds(new Set());
+      e.target.value = ''; // reset
+      return;
+    }
+    
+    if (val === 'copy_to_mixer') {
+      if (onCopyBulkToMixer) {
+        const itemsToCopy = parts.filter(p => bulkSelectedIds.has(p.id));
+        onCopyBulkToMixer(itemsToCopy);
       }
       setBulkSelectedIds(new Set());
       e.target.value = ''; // reset
@@ -369,6 +381,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
           >
             <option value="" disabled className="bg-bg-panel text-text-dim">Move to...</option>
             <option value="copy_to_master" className="bg-bg-panel text-text-main">{t('copy_to_master_prompts', lang)}</option>
+            <option value="copy_to_mixer" className="bg-bg-panel text-text-main">➡ {lang === 'en' ? 'Copy to Prompt Mixer' : 'プロンプトミキサーへコピー'}</option>
             <option disabled className="bg-bg-panel text-text-dim">──────────</option>
             {uniqueCategories.map(([cat, sec]) => (
               <option key={`${sec}:${cat}`} value={`${sec}:${cat}`} className="bg-bg-panel text-text-main">
@@ -634,6 +647,13 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                     title="Copy to Master Prompts"
                                   >
                                     <ArrowLeftToLine className="w-3 h-3" />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onCopyToMixer) onCopyToMixer(part); }}
+                                    className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-blue-400 transition-opacity p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                                    title="Copy to Prompt Mixer"
+                                  >
+                                    <ArrowLeftToLine className="w-3 h-3" style={{ transform: 'rotate(180deg)' }} />
                                   </button>
                                   <button 
                                     onClick={(e) => { 

@@ -285,6 +285,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(categories));
+    localStorage.setItem('attribute_mixer_categories_updated_at', String(Date.now()));
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
@@ -300,6 +301,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(presets));
+    localStorage.setItem('attribute_mixer_presets_updated_at', String(Date.now()));
   }, [presets]);
 
   const [combinations, setCombinations] = useState<Combination[]>(() => {
@@ -322,6 +324,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(combinations));
+    localStorage.setItem('attribute_mixer_combos_updated_at', String(Date.now()));
   }, [combinations]);
 
   const [selections, setSelections] = useState<Record<string, number>>(() => {
@@ -454,6 +457,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     return () => window.removeEventListener('restore_mixer_from_prompt', handleRestore);
   }, [categories, presets, selections, negativePrompt, lang]);
   const [confirmDeleteCatId, setConfirmDeleteCatId] = useState<string | null>(null);
+  const [confirmDeleteItem, setConfirmDeleteItem] = useState<string | null>(null);
   const [confirmDeleteCombId, setConfirmDeleteCombId] = useState<string | null>(null);
   const [confirmResetState, setConfirmResetState] = useState(false);
   const [confirmResetToDefaultState, setConfirmResetToDefaultState] = useState(false);
@@ -1060,9 +1064,18 @@ const deleteCheckedItems = () => {
                   )}
                   {(idx !== 0 || (cat.isNegative && items.length > 1)) && (
                     <button 
-                      onClick={() => removePresetItem(key, idx)}
-                      className="p-1.5 text-red-500 hover:bg-red-500/10 rounded"
-                      title={lang === 'en' ? "Delete" : "削除"}
+                      onClick={() => {
+                        const id = `${key}:${idx}`;
+                        if (confirmDeleteItem === id) {
+                          removePresetItem(key, idx);
+                          setConfirmDeleteItem(null);
+                        } else {
+                          setConfirmDeleteItem(id);
+                          setTimeout(() => setConfirmDeleteItem(null), 3000);
+                        }
+                      }}
+                      className={`p-1.5 rounded transition-colors ${confirmDeleteItem === `${key}:${idx}` ? 'text-red-500 bg-red-500/20' : 'text-red-500 hover:bg-red-500/10'}`}
+                      title={confirmDeleteItem === `${key}:${idx}` ? (lang === 'en' ? "Click to confirm delete" : "クリックして削除") : (lang === 'en' ? "Delete" : "削除")}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1185,7 +1198,7 @@ const deleteCheckedItems = () => {
               : (lang === 'en' ? "Copy current prompt selections to Parts" : "現在ドロップダウンで選択中のプロンプトをパーツへコピー")}
           >
             <Copy className="w-3 h-3" />
-            {lang === 'en' ? "To Parts" : "パーツへ"}
+            {lang === 'en' ? "Copy to Parts" : "パーツへコピー"}
           </button>
           
           <ConfirmModal

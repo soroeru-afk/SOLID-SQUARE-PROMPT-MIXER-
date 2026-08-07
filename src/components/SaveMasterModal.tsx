@@ -15,23 +15,19 @@ interface SaveMasterModalProps {
   onConfirm: (title: string, content: string, isNegative: boolean, items?: {name: string, content: string}[], negativeContent?: string, isUpdate?: boolean) => void;
   onCancel: () => void;
   lang: Language;
-  mixerCategories?: {id: string, label: string}[];
-  onCopyToMixer?: (categoryId: string, title: string, content: string, items?: {name: string, content: string}[]) => void;
+  
 }
 
-export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, content, negativeContent, defaultTitle, items, isNegative, selectedId, selectedName, onConfirm, onCancel, lang, mixerCategories, onCopyToMixer }) => {
+export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, content, negativeContent, defaultTitle, items, isNegative, selectedId, selectedName, onConfirm, onCancel, lang,  }) => {
   const [title, setTitle] = useState('');
-  const [selectedMixerCat, setSelectedMixerCat] = useState('');
-  const isBulk = items && items.length > 0;
+    const isBulk = items && items.length > 0;
 
   useEffect(() => {
     if (isOpen) {
       setTitle(defaultTitle || '');
-      if (mixerCategories && mixerCategories.length > 0) {
-        setSelectedMixerCat(mixerCategories[0].id);
-      }
+      
     }
-  }, [isOpen, defaultTitle, mixerCategories]);
+  }, [isOpen, defaultTitle]);
 
   
   const modalContent = (
@@ -79,33 +75,8 @@ export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, conten
             )}
 
 
-            {mixerCategories && mixerCategories.length > 0 && onCopyToMixer && (
-              <div className="mt-4 pt-4 border-t border-border-main">
-                <label className="block text-[10px] font-mono text-text-dim mb-1">Copy to Prompt Mixer (プロンプトミキサーへコピー)</label>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedMixerCat}
-                    onChange={(e) => setSelectedMixerCat(e.target.value)}
-                    className="flex-1 bg-bg-input border border-border-main text-text-main text-xs font-mono p-2 rounded focus:outline-none focus:border-blue-500"
-                  >
-                    {mixerCategories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.label}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => {
-                      if (selectedMixerCat) {
-                        onCopyToMixer(selectedMixerCat, title.trim() || defaultTitle || '', content || '', items);
-                      }
-                    }}
-                    disabled={!isBulk && !title.trim()}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-[11px] font-mono font-bold rounded transition-colors disabled:opacity-50"
-                  >
-                    コピー (Copy)
-                  </button>
-                </div>
-              </div>
-            )}
+            
+                    
 
             <div className="flex justify-end space-x-3 mt-4">
               <button

@@ -6,6 +6,8 @@ import { PreviewColumn } from './components/PreviewColumn';
 import { MemoColumn } from './components/MemoColumn';
 import { SavePartModal } from './components/SavePartModal';
 import { SaveMasterModal } from './components/SaveMasterModal';
+import { SaveMixerModal } from './components/SaveMixerModal';
+import { Toast } from './components/Toast';
 import { ImportModal } from './components/ImportModal';
 import { initialData } from './data';
 import { AppData, MasterPrompt, VariationPart } from './types';
@@ -16,78 +18,89 @@ import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 const STORAGE_KEY = 'prompt_console_data';
 
 
-const mergeMixerData = (parsed: any) => {
+const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
+  const fileTime = parsed.exportDate ? new Date(parsed.exportDate).getTime() : 0;
+
   // Categories
   if (parsed.attributeMixerCategories) {
-    const incomingCats = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
-    
-    // Get existing
-    const existingCatsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
-    let existingCats = [];
-    if (existingCatsStr) {
-      try { existingCats = JSON.parse(existingCatsStr); } catch(e) {}
-    }
-    
-    // Merge
-    const mergedCats = [...existingCats];
-    const existingIds = new Set(existingCats.map((c: any) => c.id));
-    for (const cat of incomingCats) {
-      if (!existingIds.has(cat.id)) {
-        mergedCats.push(cat);
-        existingIds.add(cat.id);
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_categories_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incomingCats = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
+      
+      // Get existing
+      const existingCatsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
+      let existingCats = [];
+      if (existingCatsStr) {
+        try { existingCats = JSON.parse(existingCatsStr); } catch(e) {}
       }
+      
+      // Merge
+      const mergedCats = [...existingCats];
+      const existingIds = new Set(existingCats.map((c: any) => c.id));
+      for (const cat of incomingCats) {
+        if (!existingIds.has(cat.id)) {
+          mergedCats.push(cat);
+          existingIds.add(cat.id);
+        }
+      }
+      
+      localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(mergedCats));
     }
-    
-    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(mergedCats));
   }
   
   // Presets
   if (parsed.attributeMixerPresets) {
-    const incomingPresets = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
-    
-    const existingPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
-    let existingPresets: any = {};
-    if (existingPresetsStr) {
-      try { existingPresets = JSON.parse(existingPresetsStr); } catch(e) {}
-    }
-    
-    const mergedPresets = { ...existingPresets };
-    for (const catId in incomingPresets) {
-      if (!mergedPresets[catId]) {
-        mergedPresets[catId] = incomingPresets[catId];
-      } else {
-        const existingValues = new Set(mergedPresets[catId].map((i: any) => i.value));
-        const newItems = incomingPresets[catId].filter((i: any) => !existingValues.has(i.value));
-        mergedPresets[catId] = [...mergedPresets[catId], ...newItems];
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_presets_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incomingPresets = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
+      
+      const existingPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
+      let existingPresets: any = {};
+      if (existingPresetsStr) {
+        try { existingPresets = JSON.parse(existingPresetsStr); } catch(e) {}
       }
+      
+      const mergedPresets = { ...existingPresets };
+      for (const catId in incomingPresets) {
+        if (!mergedPresets[catId]) {
+          mergedPresets[catId] = incomingPresets[catId];
+        } else {
+          const existingValues = new Set(mergedPresets[catId].map((i: any) => i.value));
+          const newItems = incomingPresets[catId].filter((i: any) => !existingValues.has(i.value));
+          mergedPresets[catId] = [...mergedPresets[catId], ...newItems];
+        }
+      }
+      localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(mergedPresets));
     }
-    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(mergedPresets));
   }
 
   // Combos
   if (parsed.attributeMixerCombos) {
-    const incomingCombos = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
-    
-    const existingCombosStr = localStorage.getItem('attribute_mixer_combinations_v1') || localStorage.getItem('attribute_mixer_combinations');
-    let existingCombos = [];
-    if (existingCombosStr) {
-      try { existingCombos = JSON.parse(existingCombosStr); } catch(e) {}
-    }
-    
-    const mergedCombos = [...existingCombos];
-    const existingComboIds = new Set(existingCombos.map((c: any) => c.id));
-    for (const combo of incomingCombos) {
-      if (!existingComboIds.has(combo.id)) {
-        mergedCombos.push(combo);
-        existingComboIds.add(combo.id);
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_combos_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incomingCombos = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
+      
+      const existingCombosStr = localStorage.getItem('attribute_mixer_combinations_v1') || localStorage.getItem('attribute_mixer_combinations');
+      let existingCombos = [];
+      if (existingCombosStr) {
+        try { existingCombos = JSON.parse(existingCombosStr); } catch(e) {}
       }
+      
+      const mergedCombos = [...existingCombos];
+      const existingComboIds = new Set(existingCombos.map((c: any) => c.id));
+      for (const combo of incomingCombos) {
+        if (!existingComboIds.has(combo.id)) {
+          mergedCombos.push(combo);
+          existingComboIds.add(combo.id);
+        }
+      }
+      localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(mergedCombos));
     }
-    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(mergedCombos));
   }
   
   if (parsed.uiEditorTabs) {
     const incomingTabs = typeof parsed.uiEditorTabs === 'string' ? JSON.parse(parsed.uiEditorTabs) : parsed.uiEditorTabs;
-    localStorage.setItem('ui_editor_tabs', JSON.stringify(incomingTabs)); // Tabs might be okay to overwrite
+    localStorage.setItem('ui_editor_tabs', JSON.stringify(incomingTabs));
   }
   if (parsed.variationSectionOrder) {
     const incomingOrder = typeof parsed.variationSectionOrder === 'string' ? JSON.parse(parsed.variationSectionOrder) : parsed.variationSectionOrder;
@@ -182,6 +195,12 @@ export default function App() {
 
   const [savePartFromMasterData, setSavePartFromMasterData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
   const [saveMasterFromPartData, setSaveMasterFromPartData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
+  const [saveMixerFromPartData, setSaveMixerFromPartData] = useState<{name?: string, content?: string, items?: {name: string, content: string}[]} | null>(null);
+  const [toastMessage, setToastMessage] = useState<{msg: string, id: number} | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage({ msg, id: Date.now() });
+  }, []);
 
   const [mixerCategories, setMixerCategories] = useState<{id: string, label: string}[]>([]);
   useEffect(() => {
@@ -244,6 +263,16 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      let color = '#0A0A0B';
+      if (theme === 'light') color = '#f9fafb';
+      else if (theme === 'black') color = '#000000';
+      else if (theme === 'red') color = '#140505';
+      else if (theme === 'navy') color = '#060913';
+      else if (theme === 'mono') color = '#ffffff';
+      metaThemeColor.setAttribute('content', color);
+    }
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
@@ -488,6 +517,17 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+  const showSaveToast = useCallback((msg: string) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    setSaveSuccessMessage(msg);
+    saveTimerRef.current = window.setTimeout(() => {
+      setSaveSuccessMessage(null);
+      saveTimerRef.current = null;
+    }, 2000);
+  }, []);
   const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
   const [importPendingData, setImportPendingData] = useState<any>(null);
 
@@ -518,7 +558,7 @@ export default function App() {
         const parsed = JSON.parse(text);
         if (parsed.masters && parsed.parts) {
           setData(parsed);
-          mergeMixerData(parsed);
+          mergeMixerData(parsed, true);
           setSelectedMasterId(parsed.masters[0]?.id || null);
           setLoadSuccessMessage(`Resumed from ${latestFile.name}`);
           setTimeout(() => setLoadSuccessMessage(null), 3000);
@@ -693,7 +733,8 @@ export default function App() {
     });
 
     window.dispatchEvent(new CustomEvent('PARTS_COPIED', { detail: { added, skipped } }));
-  }, [data.parts, data.customCategories]);
+    showToast(lang === 'en' ? 'Copied to Parts' : 'パーツへコピーしました');
+  }, [data.parts, data.customCategories, showToast, lang]);
 
   const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {
     const escapeRegExp = (string: string) => {
@@ -845,6 +886,7 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = '', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -875,6 +917,7 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = '') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
+    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -888,6 +931,7 @@ export default function App() {
 
 
   const handleCopyToMixer = (categoryId: string, title: string, content: string, items?: {name: string, content: string}[]) => {
+    showToast(lang === 'en' ? 'Copied to Prompt Mixer' : 'プロンプトミキサーへコピーしました');
     const savedPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
     
     let currentPresets: any = {};
@@ -933,6 +977,7 @@ export default function App() {
   };
 
   const handleSaveAsMaster = (name: string, content: string, isNegative: boolean, negativeContent?: string, isUpdate?: boolean) => {
+    showToast(lang === 'en' ? 'Copied to Master Prompts' : 'マスタープロンプトへコピーしました');
     if (isUpdate) {
       if (isNegative && selectedNegativeId) {
         handleUpdateNegative(selectedNegativeId, { name, content });
@@ -1127,6 +1172,7 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = '') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4 | 5, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -1326,8 +1372,7 @@ export default function App() {
     
     setSelectedMasterId(parsed.masters[0]?.id || null);
     setImportPendingData(null);
-    setLoadSuccessMessage(lang === 'en' ? 'Import completed!' : 'インポートが完了しました！');
-    setTimeout(() => setLoadSuccessMessage(null), 3000);
+    showSaveToast("インポート完了！");
   };
 
   const handleSelectMasterId = (id: string | null, insert: boolean = true) => {
@@ -1545,7 +1590,9 @@ export default function App() {
               onDeleteAll={handleDeleteAllParts}
               onReorder={handleReorderParts}
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
+              onCopyToMixer={(part) => setSaveMixerFromPartData({ items: [{name: part.name, content: part.content}] })}
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
+              onCopyBulkToMixer={(items) => setSaveMixerFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               onMixAttributes={handleMixAttributes}
               onInsertText={handleInsertText}
               onCopyToParts={handleCopyToParts}
@@ -1765,8 +1812,17 @@ export default function App() {
           }}
           onCancel={() => setSaveMasterFromPartData(null)}
           lang={lang}
+          />
+        <SaveMixerModal
+          isOpen={saveMixerFromPartData !== null}
+          items={saveMixerFromPartData?.items}
+          onConfirm={(categoryId, items) => {
+            handleCopyToMixer(categoryId, '', '', items);
+            setSaveMixerFromPartData(null);
+          }}
+          onCancel={() => setSaveMixerFromPartData(null)}
+          lang={lang}
           mixerCategories={mixerCategories}
-          onCopyToMixer={handleCopyToMixer}
         />
 
         <button 
@@ -1839,7 +1895,9 @@ export default function App() {
               onDeleteAll={handleDeleteAllParts}
               onReorder={handleReorderParts}
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
+              onCopyToMixer={(part) => setSaveMixerFromPartData({ items: [{name: part.name, content: part.content}] })}
               onCopyBulkToMaster={(items) => setSaveMasterFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
+              onCopyBulkToMixer={(items) => setSaveMixerFromPartData({ items: items.map(i => ({name: i.name, content: i.content})) })}
               onMixAttributes={handleMixAttributes}
               onInsertText={handleInsertText}
               onCopyToParts={handleCopyToParts}
@@ -1908,13 +1966,21 @@ export default function App() {
           </div>
         </div>
       )}
-      <ImportModal
-        isOpen={importPendingData !== null}
-        onMerge={() => executeImport(true)}
-        onOverwrite={() => executeImport(false)}
-        onCancel={() => setImportPendingData(null)}
-        lang={lang}
-      />
+      
+        <ImportModal
+          isOpen={importPendingData !== null}
+          onMerge={() => { executeImport(true); setImportPendingData(null); }}
+          onOverwrite={() => { executeImport(false); setImportPendingData(null); }}
+          onCancel={() => setImportPendingData(null)}
+          lang={lang}
+        />
+        
+        <Toast 
+          message={toastMessage?.msg || ''} 
+          isVisible={toastMessage !== null} 
+          onClose={() => setToastMessage(null)} 
+        />
+
     </div>
   );
 }
