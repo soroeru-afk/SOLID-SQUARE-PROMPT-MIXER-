@@ -244,16 +244,6 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      let color = '#0A0A0B';
-      if (theme === 'light') color = '#f9fafb';
-      else if (theme === 'black') color = '#000000';
-      else if (theme === 'red') color = '#140505';
-      else if (theme === 'navy') color = '#060913';
-      else if (theme === 'mono') color = '#ffffff';
-      metaThemeColor.setAttribute('content', color);
-    }
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
@@ -498,17 +488,6 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
-  const saveTimerRef = useRef<number | null>(null);
-  const showSaveToast = useCallback((msg: string) => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-    setSaveSuccessMessage(msg);
-    saveTimerRef.current = window.setTimeout(() => {
-      setSaveSuccessMessage(null);
-      saveTimerRef.current = null;
-    }, 2000);
-  }, []);
   const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
   const [importPendingData, setImportPendingData] = useState<any>(null);
 
@@ -683,7 +662,7 @@ export default function App() {
       for (const cat of newCategories) {
         if (!tempSet.has(`${cat.section}-${cat.name}`)) {
           tempSet.add(`${cat.section}-${cat.name}`);
-          additionalCatsUnique.push({ name: cat.name, section: cat.section as 1 | 2 | 3 | 4 });
+          additionalCatsUnique.push({ name: cat.name, section: cat.section as 1 | 2 | 3 | 4 | 5 });
         }
       }
 
@@ -762,24 +741,35 @@ export default function App() {
     });
   }, [setEditorText, setNegativeEditorText]);
 
-  const handleInsertText = useCallback((text: string, isNegative: boolean = false) => {
-    const insert = (prev: string, pos: number | null, setPos: (p: number) => void) => {
-      const actualPos = pos === null ? prev.length : pos;
-      const before = prev.slice(0, actualPos);
-      const after = prev.slice(actualPos);
-      const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-      const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
-      const insertedStr = prefix + text + suffix;
-      setPos(actualPos + insertedStr.length);
-      return cleanString(before + insertedStr + after);
-    };
+  const handleInsertText = useCallback((text: string, forceNegative?: boolean) => {
+    const isNegative = forceNegative !== undefined ? forceNegative : activeEditor === 'negative';
     
     if (isNegative) {
-      setNegativeEditorText(prev => insert(prev, negativeCursorPos, setNegativeCursorPos as any));
+      setNegativeEditorText(prev => {
+        const safePrev = prev || '';
+        const actualPos = negativeCursorPos === null ? safePrev.length : negativeCursorPos;
+        const before = safePrev.slice(0, actualPos);
+        const after = safePrev.slice(actualPos);
+        const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+        const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+        const insertedStr = prefix + text + suffix;
+        setNegativeCursorPos(actualPos + insertedStr.length);
+        return cleanString(before + insertedStr + after);
+      });
     } else {
-      setEditorText(prev => insert(prev, positiveCursorPos, setPositiveCursorPos as any));
+      setEditorText(prev => {
+        const safePrev = prev || '';
+        const actualPos = positiveCursorPos === null ? safePrev.length : positiveCursorPos;
+        const before = safePrev.slice(0, actualPos);
+        const after = safePrev.slice(actualPos);
+        const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+        const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+        const insertedStr = prefix + text + suffix;
+        setPositiveCursorPos(actualPos + insertedStr.length);
+        return cleanString(before + insertedStr + after);
+      });
     }
-  }, [autoOptimize, positiveCursorPos, negativeCursorPos, setEditorText, setNegativeEditorText]);
+  }, [autoOptimize, positiveCursorPos, negativeCursorPos, activeEditor, setEditorText, setNegativeEditorText]);
 
   const handleTogglePart = (id: string) => {
     setActivePartId(id);
@@ -852,7 +842,6 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = '', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -883,7 +872,6 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = '') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
-    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -1036,7 +1024,7 @@ export default function App() {
   const handleAddCategory = (section: number, name: string) => {
     setData(prev => ({
       ...prev,
-      customCategories: [...(prev.customCategories || []), { name, section: section as 1 | 2 | 3 | 4 }]
+      customCategories: [...(prev.customCategories || []), { name, section: section as 1 | 2 | 3 | 4 | 5 }]
     }));
   };
 
@@ -1050,7 +1038,7 @@ export default function App() {
       if (existingIdx !== -1) {
         newCustomCategories[existingIdx] = { ...newCustomCategories[existingIdx], name: newName };
       } else {
-        newCustomCategories.push({ name: newName, section: section as 1 | 2 | 3 | 4 });
+        newCustomCategories.push({ name: newName, section: section as 1 | 2 | 3 | 4 | 5 });
       }
       return { ...prev, parts: newParts, customCategories: newCustomCategories };
     });
@@ -1081,7 +1069,7 @@ export default function App() {
       // Update section for all parts in the dragged category
       const newParts = prev.parts.map(p => 
         (p.section === draggedSection && p.category === draggedCat)
-          ? { ...p, section: targetSection as 1 | 2 | 3 | 4 }
+          ? { ...p, section: targetSection as 1 | 2 | 3 | 4 | 5 }
           : p
       );
 
@@ -1090,13 +1078,13 @@ export default function App() {
       
       // Ensure dragged category exists in custom categories
       if (!allCustomCats.find(c => c.section === draggedSection && c.name === draggedCat)) {
-        allCustomCats.push({ name: draggedCat, section: draggedSection as 1 | 2 | 3 | 4 });
+        allCustomCats.push({ name: draggedCat, section: draggedSection as 1 | 2 | 3 | 4 | 5 });
       }
 
       // Update its section
       const catObj = allCustomCats.find(c => c.section === draggedSection && c.name === draggedCat);
       if (catObj) {
-        catObj.section = targetSection as 1 | 2 | 3 | 4;
+        catObj.section = targetSection as 1 | 2 | 3 | 4 | 5;
       }
       
       // Now handle ordering within the target section
@@ -1124,7 +1112,7 @@ export default function App() {
       const otherSections = allCustomCats.filter(c => c.section !== targetSection);
       const newCustomCategories = [
         ...otherSections,
-        ...targetSectionOrder.map(name => ({ name, section: targetSection as 1 | 2 | 3 | 4 }))
+        ...targetSectionOrder.map(name => ({ name, section: targetSection as 1 | 2 | 3 | 4 | 5 }))
       ];
 
       return { ...prev, parts: newParts, customCategories: newCustomCategories };
@@ -1134,9 +1122,8 @@ export default function App() {
 
 
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = '') => {
-    const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4, isPinned: false };
+    const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4 | 5, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -1315,6 +1302,7 @@ export default function App() {
           masters: mergeArray(prev.masters, parsed.masters),
           parts: mergeArray(prev.parts, parsed.parts),
           memos: mergeArray(prev.memos || [], parsed.memos || []),
+          negatives: mergeArray(prev.negatives || [], parsed.negatives || []),
           customCategories: mergeCategories(prev.customCategories || [], parsed.customCategories || [])
         };
       });
@@ -1335,7 +1323,8 @@ export default function App() {
     
     setSelectedMasterId(parsed.masters[0]?.id || null);
     setImportPendingData(null);
-    showSaveToast("インポート完了！");
+    setLoadSuccessMessage(lang === 'en' ? 'Import completed!' : 'インポートが完了しました！');
+    setTimeout(() => setLoadSuccessMessage(null), 3000);
   };
 
   const handleSelectMasterId = (id: string | null, insert: boolean = true) => {
@@ -1344,38 +1333,39 @@ export default function App() {
       if (newMaster) {
         if (newMaster.negativeContent !== undefined) {
           setEditorText(prev => {
-            const actualPos = positiveCursorPos === null ? prev.length : positiveCursorPos;
-            const before = prev.slice(0, actualPos);
-            const after = prev.slice(actualPos);
+            const safePrev = prev || '';
+            const actualPos = positiveCursorPos === null ? safePrev.length : positiveCursorPos;
+            const before = safePrev.slice(0, actualPos);
+            const after = safePrev.slice(actualPos);
             const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
             const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
             const insertedStr = prefix + newMaster.content + suffix;
-            setTimeout(() => setPositiveCursorPos(actualPos + insertedStr.length), 0);
+            setPositiveCursorPos(actualPos + insertedStr.length);
             return cleanString(before + insertedStr + after);
           });
           setNegativeEditorText(prev => {
-            const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
-            const before = prev.slice(0, actualPos);
-            const after = prev.slice(actualPos);
+            const safePrev = prev || '';
+            const actualPos = negativeCursorPos === null ? safePrev.length : negativeCursorPos;
+            const before = safePrev.slice(0, actualPos);
+            const after = safePrev.slice(actualPos);
             const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
             const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
-            const insertedStr = prefix + newMaster.negativeContent + suffix;
-            setTimeout(() => setNegativeCursorPos(actualPos + insertedStr.length), 0);
+            const insertedStr = prefix + newMaster.negativeContent! + suffix;
+            setNegativeCursorPos(actualPos + insertedStr.length);
             return cleanString(before + insertedStr + after);
           });
         } else {
-          let newPos = 0;
           setEditorText(prev => {
-            const actualPos = positiveCursorPos === null ? prev.length : positiveCursorPos;
-            const before = prev.slice(0, actualPos);
-            const after = prev.slice(actualPos);
+            const safePrev = prev || '';
+            const actualPos = positiveCursorPos === null ? safePrev.length : positiveCursorPos;
+            const before = safePrev.slice(0, actualPos);
+            const after = safePrev.slice(actualPos);
             const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
             const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
             const insertedStr = prefix + newMaster.content + suffix;
-            newPos = actualPos + insertedStr.length;
+            setPositiveCursorPos(actualPos + insertedStr.length);
             return cleanString(before + insertedStr + after);
           });
-          setTimeout(() => setPositiveCursorPos(newPos), 0);
         }
       }
     }
@@ -1387,18 +1377,17 @@ export default function App() {
     if (id && insert) {
       const newNeg = data.negatives?.find(m => m.id === id);
       if (newNeg) {
-        let newPos = 0;
         setNegativeEditorText(prev => {
-          const actualPos = negativeCursorPos === null ? prev.length : negativeCursorPos;
-          const before = prev.slice(0, actualPos);
-          const after = prev.slice(actualPos);
+          const safePrev = prev || '';
+          const actualPos = negativeCursorPos === null ? safePrev.length : negativeCursorPos;
+          const before = safePrev.slice(0, actualPos);
+          const after = safePrev.slice(actualPos);
           const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
           const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
           const insertedStr = prefix + newNeg.content + suffix;
-          newPos = actualPos + insertedStr.length;
+          setNegativeCursorPos(actualPos + insertedStr.length);
           return cleanString(before + insertedStr + after);
         });
-        setTimeout(() => setNegativeCursorPos(newPos), 0);
       }
     }
     setSelectedNegativeId(id);
@@ -1683,6 +1672,8 @@ export default function App() {
             setNegativeEditorText={setNegativeEditorText}
             activeEditor={activeEditor}
             setActiveEditor={setActiveEditor}
+            positiveCursorPos={positiveCursorPos}
+            negativeCursorPos={negativeCursorPos}
             setPositiveCursorPos={setPositiveCursorPos}
             setNegativeCursorPos={setNegativeCursorPos}
             onSaveAsMaster={handleSaveAsMaster}
@@ -1694,7 +1685,7 @@ export default function App() {
                     name: item.name,
                     content: item.content,
                     category,
-                    section: section as 1 | 2 | 3 | 4,
+                    section: section as 1 | 2 | 3 | 4 | 5,
                     isPinned: false
                   }));
                   return { ...prev, parts: [...newParts, ...prev.parts] };
@@ -1702,7 +1693,7 @@ export default function App() {
               } else {
                 const selectedPartId = selectedPartIds.size === 1 ? Array.from<string>(selectedPartIds)[0] : null;
                 if (isUpdate && selectedPartId) {
-                  handleUpdatePart(selectedPartId, { name, content, category, section: section as 1|2|3|4 });
+                  handleUpdatePart(selectedPartId, { name, content, category, section: section as 1|2|3|4|5 });
                 } else {
                   handleAddPart(category, section, name, content);
                 }

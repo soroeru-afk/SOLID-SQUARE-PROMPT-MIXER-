@@ -89,7 +89,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
     const section = Number(sectionStr);
     
     bulkSelectedIds.forEach(id => {
-      onUpdate(id, { category, section: section as 1|2|3|4 });
+      onUpdate(id, { category, section: section as 1|2|3|4|5 });
     });
     setBulkSelectedIds(new Set());
     e.target.value = ''; // reset
@@ -247,14 +247,20 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   const [isAllExpanded, setIsAllExpanded] = useState(false);
   const [sectionOrder, setSectionOrder] = useState<number[]>(() => {
     const saved = localStorage.getItem('variation_section_order');
-    return saved ? JSON.parse(saved) : [1, 2, 3, 4];
+    let parsed = saved ? JSON.parse(saved) : [1, 2, 3, 4, 5];
+    if (!parsed.includes(5)) parsed.push(5);
+    return parsed;
   });
   
   useEffect(() => {
     const handleImport = () => {
       const saved = localStorage.getItem('variation_section_order');
       if (saved) {
-        try { setSectionOrder(JSON.parse(saved)); } catch (e) {}
+        try { 
+          let parsed = JSON.parse(saved); 
+          if (!parsed.includes(5)) parsed.push(5);
+          setSectionOrder(parsed); 
+        } catch (e) {}
       }
     };
     window.addEventListener('attributeMixerDataImported', handleImport);
@@ -284,17 +290,18 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       2: { name: customSectionNames[2] || t('sec_pose' as any, lang), categories: {} as Record<string, VariationPart[]> },
       3: { name: customSectionNames[3] || t('sec_details' as any, lang), categories: {} as Record<string, VariationPart[]> },
       4: { name: customSectionNames[4] || t('sec_context' as any, lang), categories: {} as Record<string, VariationPart[]> },
+      5: { name: customSectionNames[5] || t('sec_others' as any, lang), categories: {} as Record<string, VariationPart[]> },
     };
 
     customCategories.forEach(cat => {
-      const sec = sections[cat.section as 1 | 2 | 3 | 4];
+      const sec = sections[cat.section as 1 | 2 | 3 | 4 | 5];
       if (sec && !sec.categories[cat.name]) {
         sec.categories[cat.name] = [];
       }
     });
 
     filteredParts.forEach((part) => {
-      const sec = sections[part.section as 1 | 2 | 3 | 4] || sections[3]; // Fallback to 3 if somehow invalid
+      const sec = sections[part.section as 1 | 2 | 3 | 4 | 5] || sections[5]; // Fallback to 5 (Others)
       if (!sec) return;
       if (!sec.categories[part.category]) {
         sec.categories[part.category] = [];
@@ -322,18 +329,18 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
   return (
     <>
-      <div className="flex bg-bg-panel border-b border-border-main text-[10px] font-mono uppercase tracking-widest shrink-0 overflow-x-auto h-[41px]">
-        <div className="flex items-center h-full w-full">
+      <div className="p-2 bg-bg-panel border-b border-border-main shrink-0 overflow-x-auto">
+        <div className="flex items-center gap-1 w-full bg-bg-base border border-border-main p-1.5 text-[10px] font-mono uppercase tracking-widest">
           <button 
             onClick={() => setActiveTab?.('parts')}
-            className={`flex-1 flex justify-center items-center gap-1 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'parts' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
+            className={`flex-1 flex justify-center items-center gap-1 py-1.5 px-2 border whitespace-nowrap transition-colors ${activeTab === 'parts' ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') : 'border-transparent text-text-dim hover:text-text-main'}`}
           >
             {t('variation_parts', lang)}
           </button>
           {setActiveTab && (
             <button 
               onClick={() => setActiveTab('mixer')}
-              className={`flex-1 flex justify-center items-center gap-1 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'mixer' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
+              className={`flex-1 flex justify-center items-center gap-1 py-1.5 px-2 border whitespace-nowrap transition-colors ${activeTab === 'mixer' ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') : 'border-transparent text-text-dim hover:text-text-main'}`}
             >
               <User size={12} /> {t('prompt_mixer', lang)}
             </button>
@@ -341,7 +348,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
           {setActiveTab && (
             <button 
               onClick={() => setActiveTab('memo')}
-              className={`flex-1 flex justify-center items-center gap-1 border-r border-border-main whitespace-nowrap h-full transition-colors ${activeTab === 'memo' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
+              className={`flex-1 flex justify-center items-center gap-1 py-1.5 px-2 border whitespace-nowrap transition-colors ${activeTab === 'memo' ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') : 'border-transparent text-text-dim hover:text-text-main'}`}
             >
               {t('prompt_memo', lang)}
             </button>
@@ -439,7 +446,8 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                   secId === '1' ? 'border-blue-500' : 
                   secId === '2' ? 'border-orange-500' : 
                   secId === '3' ? 'border-green-500' : 
-                  'border-purple-500'
+                  secId === '4' ? 'border-purple-500' :
+                  'border-gray-500'
                 }`}>
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col">

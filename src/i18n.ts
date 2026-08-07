@@ -2,6 +2,8 @@ export type Language = 'en' | 'ja';
 
 export const translations = {
 
+  font_normal: { en: 'Normal', ja: '文字標準' },
+  font_bold: { en: 'Bold', ja: '文字太字' },
   drive_destination: { en: '08 DRIVE DESTINATION', ja: '08 DRIVE 保存先' },
   change: { en: 'CHANGE', ja: '変更' },
   save_and_load_settings: { en: 'SAVE & LOAD SETTINGS', ja: '設定の保存と呼び出し' },
@@ -101,6 +103,7 @@ export const translations = {
   sec_pose: { en: 'POSE', ja: 'ポージング' },
   sec_details: { en: 'DETAILS', ja: 'ディテール' },
   sec_context: { en: 'CONTEXT', ja: 'コンテキスト' },
+  sec_others: { en: 'OTHERS', ja: 'その他' },
   Composition: { en: 'Character', ja: 'キャラクター' },
   Pose: { en: 'Pose', ja: 'ポージング' },
   Pair: { en: 'Pair / Couple', ja: 'ペア・カップル' },

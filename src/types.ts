@@ -1,4 +1,4 @@
-export type SectionType = 1 | 2 | 3 | 4;
+export type SectionType = 1 | 2 | 3 | 4 | 5;
 
 export interface MasterPrompt {
   id: string;

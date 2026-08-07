@@ -1600,7 +1600,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   key={tab.id}
                   className={`group flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono border rounded cursor-pointer whitespace-nowrap transition-all ${
                     activeTabId === tab.id 
-                      ? ((theme === 'light' || theme === 'mono') ? 'bg-gray-700 border-gray-700 text-white font-bold shadow-sm' : 'bg-white border-white text-gray-900 font-bold shadow-sm') 
+                      ? ((theme === 'light' || theme === 'mono') ? 'bg-gray-700 border-gray-700 text-white shadow-sm' : 'bg-white border-white text-gray-900 shadow-sm') 
                       : 'bg-bg-base border-border-main text-text-dim hover:bg-bg-input hover:text-text-main hover:border-border-hover'
                   }`}
                   onClick={() => onTabChange(tab.id)}
@@ -1691,7 +1691,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 onClick={() => handleSaveMasterClick(false, activeMasterTab === 'negative')}
                 className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
               >
-                <Save className="w-3 h-3" /> {activeMasterTab === 'negative' ? t('save_to_negative', lang) : t('save_as_master', lang)}
+                <Save className="w-3 h-3" /> {t('save_as_master', lang)}
               </button>
               <button 
                 onClick={() => handleSavePartClick(false)}

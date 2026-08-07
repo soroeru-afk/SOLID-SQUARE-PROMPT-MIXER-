@@ -124,19 +124,21 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
 
   return (
     <>
-      <div className="flex bg-bg-panel border-b border-border-main text-[10px] font-mono uppercase tracking-widest shrink-0 overflow-x-auto">
-        <button 
-          onClick={() => setActiveTab('master')} 
-          className={`flex-1 py-3 px-2 border-r border-border-main transition-colors whitespace-nowrap ${activeTab === 'master' ? 'bg-bg-surface text-text-main border-b-2 border-b-blue-500' : 'text-text-dim hover:bg-bg-input'}`}
-        >
-          {t('master_prompts', lang)}
-        </button>
-        <button 
-          onClick={() => setActiveTab('negative')} 
-          className={`flex-1 py-3 px-2 transition-colors whitespace-nowrap ${activeTab === 'negative' ? 'bg-bg-surface text-text-main border-b-2 border-b-red-500' : 'text-text-dim hover:bg-bg-input'}`}
-        >
-          {t('negative_prompts', lang)}
-        </button>
+      <div className="p-2 bg-bg-panel border-b border-border-main shrink-0 overflow-x-auto">
+        <div className="flex w-full gap-1 bg-bg-base border border-border-main p-1.5 text-[10px] font-mono uppercase tracking-widest">
+          <button 
+            onClick={() => setActiveTab('master')} 
+            className={`flex-1 py-1.5 px-2 border transition-colors whitespace-nowrap ${activeTab === 'master' ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') : 'border-transparent text-text-dim hover:text-text-main'}`}
+          >
+            {t('master_prompts', lang)}
+          </button>
+          <button 
+            onClick={() => setActiveTab('negative')} 
+            className={`flex-1 py-1.5 px-2 border transition-colors whitespace-nowrap ${activeTab === 'negative' ? (theme === 'mono' ? 'bg-red-900 text-white border-red-900' : 'bg-bg-surface text-red-500 border-red-500') : 'border-transparent text-text-dim hover:text-red-500'}`}
+          >
+            {t('negative_prompts', lang)}
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between px-3 py-2 bg-bg-panel border-b border-border-main shrink-0">

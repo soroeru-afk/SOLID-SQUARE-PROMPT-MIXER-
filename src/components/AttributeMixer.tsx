@@ -269,7 +269,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(categories));
-    localStorage.setItem('attribute_mixer_categories_updated_at', String(Date.now()));
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {
@@ -285,7 +284,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(presets));
-    localStorage.setItem('attribute_mixer_presets_updated_at', String(Date.now()));
   }, [presets]);
 
   const [combinations, setCombinations] = useState<Combination[]>(() => {
@@ -308,7 +306,6 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   });
   useEffect(() => {
     localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(combinations));
-    localStorage.setItem('attribute_mixer_combos_updated_at', String(Date.now()));
   }, [combinations]);
 
   const [selections, setSelections] = useState<Record<string, number>>(() => {
@@ -473,14 +470,28 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     const newParts: VariationPart[] = [];
     const newCategories: { name: string, section: number }[] = [];
     
+    const getSectionForCategory = (catId: string): number => {
+      const sec1 = ['angle', 'camera', 'lens'];
+      const sec2 = ['genderAndPeople', 'race', 'age', 'physique', 'pose', 'expression', 'clothing', 'hair', 'bodyHair', 'partner', 'bodyWet'];
+      const sec3 = ['characteristics', 'accessories', 'artStyle', 'skinDetail', 'showerScene'];
+      const sec4 = ['location', 'situation', 'weather', 'emptyLocation', 'lighting', 'background', 'environment'];
+      
+      if (sec1.includes(catId)) return 1;
+      if (sec2.includes(catId)) return 2;
+      if (sec3.includes(catId)) return 3;
+      if (sec4.includes(catId)) return 4;
+      return 5; // Others
+    };
+
     categories.forEach(cat => {
-      newCategories.push({ name: cat.label, section: 1 });
+      const sectionId = getSectionForCategory(cat.id);
+      newCategories.push({ name: cat.label, section: sectionId });
       const items = presets[cat.id] || DEFAULT_PRESETS[cat.id] || [];
       items.forEach((item, idx) => {
         if (item.value.trim() === '') return;
         newParts.push({
           id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          section: 1,
+          section: sectionId as 1|2|3|4|5,
           category: cat.label,
           name: item.label,
           content: item.value,
