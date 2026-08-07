@@ -9,9 +9,10 @@ interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   lang: Language;
+  children?: React.ReactNode;
 }
 
-export const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, message, onConfirm, onCancel, lang }) => {
+export const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, message, onConfirm, onCancel, lang, children }) => {
   const modalContent = (
     <AnimatePresence>
 
@@ -23,7 +24,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, message, onC
             exit={{ opacity: 0, scale: 0.9 }}
             className="bg-bg-panel border border-border-main rounded-lg shadow-xl p-6 w-full max-w-sm m-4"
           >
-            <p className="text-text-main text-sm font-mono mb-6">{message}</p>
+            <p className="text-text-main text-sm font-mono mb-4">{message}</p>
+            {children && <div className="mb-6">{children}</div>}
             <div className="flex justify-end space-x-3">
               <button
                 onClick={onCancel}

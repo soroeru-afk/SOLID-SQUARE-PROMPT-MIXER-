@@ -653,6 +653,23 @@ export default function App() {
   const handleCopyToParts = useCallback((newParts: VariationPart[], newCategories: { name: string, section: number }[]) => {
     let added = 0;
     let skipped = 0;
+    
+    // We can access 'data' directly to calculate skipped/added here before updating state
+    const existingPartsSet = new Set(
+      data.parts.map(p => `${p.section}-${p.category}-${p.name}-${p.content}`)
+    );
+    
+    const uniqueNewParts = newParts.filter(p => {
+      const key = `${p.section}-${p.category}-${p.name}-${p.content}`;
+      if (existingPartsSet.has(key)) {
+        skipped++;
+        return false;
+      }
+      existingPartsSet.add(key);
+      added++;
+      return true;
+    });
+
     setData(prev => {
       const existingCats = new Set((prev.customCategories || []).map(c => `${c.section}-${c.name}`));
       prev.parts.forEach(p => existingCats.add(`${p.section}-${p.category}`));
@@ -666,22 +683,7 @@ export default function App() {
         }
       }
 
-      // 重複チェック: セクション、カテゴリ、名前、内容がすべて同じものはスキップする
-      console.log("Adding new parts", newParts.length); console.log("Existing parts", prev.parts.length);
-      const existingPartsSet = new Set(
-        prev.parts.map(p => `${p.section}-${p.category}-${p.name}-${p.content}`)
-      );
-
-      const uniqueNewParts = newParts.filter(p => {
-        const key = `${p.section}-${p.category}-${p.name}-${p.content}`;
-        if (existingPartsSet.has(key)) {
-          skipped++;
-          return false; // すでに同じものがある場合はスキップ
-        }
-        console.log("Adding new:", key);
-        existingPartsSet.add(key);
-        return true;
-      });
+      if (uniqueNewParts.length === 0 && additionalCatsUnique.length === 0) return prev;
 
       return {
         ...prev,
@@ -689,8 +691,9 @@ export default function App() {
         customCategories: [...(prev.customCategories || []), ...additionalCatsUnique]
       };
     });
-    return { added, skipped };
-  }, []);
+
+    window.dispatchEvent(new CustomEvent('PARTS_COPIED', { detail: { added, skipped } }));
+  }, [data.parts, data.customCategories]);
 
   const handleMixAttributes = useCallback((posStr: string, negStr: string, targetToReplace?: string) => {
     const escapeRegExp = (string: string) => {

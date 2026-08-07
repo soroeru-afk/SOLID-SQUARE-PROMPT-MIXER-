@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Settings2, Plus, Trash2, Save, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown, Edit2, RotateCcw, GripVertical, ArrowLeftToLine, Copy } from 'lucide-react';
+import { Check, Settings2, Pencil, Plus, Trash2, Save, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown, Edit2, RotateCcw, GripVertical, ArrowLeftToLine, Copy } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { Language, t } from '../i18n';
 import { VariationPart } from '../types';
@@ -10,6 +10,19 @@ export type CategoryDef = {
   id: string;
   label: string;
   isNegative?: boolean;
+};
+
+export const getDefaultSectionForCategory = (catId: string): number => {
+  const sec1 = ['angle', 'camera', 'lens'];
+  const sec2 = ['genderAndPeople', 'race', 'age', 'physique', 'pose', 'expression', 'clothing', 'hair', 'bodyHair', 'partner', 'bodyWet'];
+  const sec3 = ['characteristics', 'accessories', 'artStyle', 'skinDetail', 'showerScene'];
+  const sec4 = ['location', 'situation', 'weather', 'emptyLocation', 'lighting', 'background', 'environment'];
+  
+  if (sec1.includes(catId)) return 1;
+  if (sec2.includes(catId)) return 2;
+  if (sec3.includes(catId)) return 3;
+  if (sec4.includes(catId)) return 4;
+  return 5; // Others
 };
 
 type Combination = {
@@ -246,9 +259,12 @@ interface AttributeMixerProps {
   onCopyToParts?: (parts: VariationPart[], categories: { name: string, section: number }[]) => { added: number, skipped: number };
   theme?: string;
   lang?: Language;
+  existingParts?: VariationPart[];
+  customSectionNames?: Record<number, string>;
+  customCategories?: { name: string, section: number }[];
 }
 
-export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInsertText, onCopyToParts, theme = 'default', lang = 'ja' as Language }) => {
+export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInsertText, onCopyToParts, theme = 'default', lang = 'ja' as Language, existingParts = [], customSectionNames = {}, customCategories = [] }) => {
   
   
   const [categories, setCategories] = useState<CategoryDef[]>(() => {
@@ -374,6 +390,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   const [activeCombinationId, setActiveCombinationId] = useState<string>('');
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [showCopyConfirm, setShowCopyConfirm] = useState(false);
+  const [showCheckedCopyConfirm, setShowCheckedCopyConfirm] = useState(false);
   const [isSavedListOpen, setIsSavedListOpen] = useState(false);
   const [editingCombId, setEditingCombId] = useState<string | null>(null);
   const [editingCombName, setEditingCombName] = useState<string>('');
@@ -463,6 +480,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   };
 
 
+
   const handleCopyToParts = () => {
     if (!onCopyToParts) return;
     setShowCopyConfirm(false);
@@ -470,45 +488,63 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
     const newParts: VariationPart[] = [];
     const newCategories: { name: string, section: number }[] = [];
     
-    const getSectionForCategory = (catId: string): number => {
-      const sec1 = ['angle', 'camera', 'lens'];
-      const sec2 = ['genderAndPeople', 'race', 'age', 'physique', 'pose', 'expression', 'clothing', 'hair', 'bodyHair', 'partner', 'bodyWet'];
-      const sec3 = ['characteristics', 'accessories', 'artStyle', 'skinDetail', 'showerScene'];
-      const sec4 = ['location', 'situation', 'weather', 'emptyLocation', 'lighting', 'background', 'environment'];
-      
-      if (sec1.includes(catId)) return 1;
-      if (sec2.includes(catId)) return 2;
-      if (sec3.includes(catId)) return 3;
-      if (sec4.includes(catId)) return 4;
-      return 5; // Others
-    };
+    const targetSectionId = 5;
+    const targetCategoryName = lang === 'en' ? 'Parts from Mixer' : 'プロンプトミキサーからのパーツ';
+    
+    newCategories.push({ name: targetCategoryName, section: targetSectionId });
 
-    categories.forEach(cat => {
-      const sectionId = getSectionForCategory(cat.id);
-      newCategories.push({ name: cat.label, section: sectionId });
-      const items = presets[cat.id] || DEFAULT_PRESETS[cat.id] || [];
-      items.forEach((item, idx) => {
-        if (item.value.trim() === '') return;
+    if (checkedItems.size > 0) {
+      checkedItems.forEach(id => {
+         const [catId, idxStr] = (id as string).split(':');
+         const idx = parseInt(idxStr, 10);
+         const cat = categories.find(c => c.id === catId);
+         if (cat && !isNaN(idx)) {
+           const items = presets[catId] || DEFAULT_PRESETS[catId] || [];
+           const item = items[idx];
+           if (item && item.value.trim() !== '') {
+             newParts.push({
+               id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+               section: targetSectionId,
+               category: targetCategoryName,
+               name: item.label,
+               content: item.value,
+               isPinned: false,
+               isNegative: cat.isNegative
+             });
+           }
+         }
+      });
+      setCheckedItems(new Set());
+    } else {
+      categories.forEach(cat => {
+        const selectedIdx = selections[cat.id] ?? 0;
+        if (selectedIdx === 0) return;
+
+        const items = presets[cat.id] || DEFAULT_PRESETS[cat.id] || [];
+        const selectedItem = items[selectedIdx];
+        if (!selectedItem || selectedItem.value.trim() === '') return;
+
         newParts.push({
           id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          section: sectionId as 1|2|3|4|5,
-          category: cat.label,
-          name: item.label,
-          content: item.value,
+          section: targetSectionId,
+          category: targetCategoryName,
+          name: selectedItem.label,
+          content: selectedItem.value,
           isPinned: false,
           isNegative: cat.isNegative
         });
       });
-    });
-    const result = onCopyToParts(newParts, newCategories);
-    
-    // オプションで完了メッセージを表示
-    if (result) {
-      setSaveSuccessMessage(lang === 'en' ? `${result.added} added, ${result.skipped} skipped` : `${result.added}件追加 (${result.skipped}件スキップ)`);
-    } else {
-      setSaveSuccessMessage(lang === 'en' ? "Copied to Parts!" : "パーツにコピーしました！");
     }
-    setTimeout(() => setSaveSuccessMessage(null), 2000);
+
+    const handlePartsCopied = (e: any) => {
+      const { added, skipped } = e.detail;
+      setSaveSuccessMessage(lang === 'en' ? `${added} added, ${skipped} skipped` : `${added}件追加 (${skipped}件スキップ)`);
+      setTimeout(() => setSaveSuccessMessage(null), 2000);
+      window.removeEventListener('PARTS_COPIED', handlePartsCopied);
+    };
+    window.addEventListener('PARTS_COPIED', handlePartsCopied);
+
+    onCopyToParts(newParts, newCategories);
   };
 
   const loadCombination = (id: string) => {
@@ -857,18 +893,24 @@ const deleteCheckedItems = () => {
       <div 
         className={`flex flex-col gap-1.5 p-2 rounded border border-border-main bg-bg-surface transition-colors min-w-0 ${draggedCatId === key ? 'opacity-50' : 'hover:bg-bg-panel/30'}`}
         key={key}
-        draggable={!isRenaming && !isEditing && (dragEnabledCatId === key || draggedCatId === key)}
-        onDragStart={(e) => {
-          if (isRenaming || isEditing) { e.preventDefault(); e.stopPropagation(); return; }
-          handleDragStart(e, key);
-        }}
+        
         onDragOver={handleDragOver}
         onDrop={(e) => handleDrop(e, key)}
       >
-        <div className="flex items-center justify-between group">
+        <div className="flex items-center justify-between group cursor-pointer" onClick={() => { if (!isRenaming) setEditModes(prev => ({ ...prev, [key]: !prev[key] })); }}>
           <div className="flex items-center gap-1 flex-1 min-w-0">
-            <div className="cursor-grab active:cursor-grabbing p-1 text-text-main hover:text-blue-500 transition-opacity" onMouseEnter={() => setDragEnabledCatId(key)} onMouseLeave={() => setDragEnabledCatId(null)}>
-              <GripVertical className="w-3 h-3" />
+            <div 
+              className="cursor-grab active:cursor-grabbing p-1 text-text-main hover:text-blue-500 transition-opacity" 
+              draggable={!isRenaming && !isEditing}
+              onDragStart={(e) => {
+                if (isRenaming || isEditing) { e.preventDefault(); e.stopPropagation(); return; }
+                handleDragStart(e, key);
+              }}
+              onDragEnd={() => {
+                setDraggedCatId(null);
+              }}
+            >
+              <GripVertical className="w-3 h-3" style={{ pointerEvents: 'none' }} />
             </div>
             {isRenaming ? (
               <input 
@@ -896,8 +938,7 @@ const deleteCheckedItems = () => {
             ) : (
               <label 
                 className={`text-[13px] font-mono cursor-pointer hover:text-blue-500 truncate flex items-center gap-1.5 ${currentIdx !== 0 ? 'text-blue-500 font-bold' : 'text-text-main'}`}
-                onDoubleClick={() => setEditingCatName(key)}
-                title="ダブルクリックで名前を変更"
+                title={lang === 'en' ? "Click to expand/collapse" : "クリックして開閉"}
               >
                 {cat.isNegative && "⛔ "}
                 {currentIdx !== 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block shrink-0 shadow-[0_0_5px_rgba(59,130,246,0.5)]"></span>}
@@ -906,7 +947,10 @@ const deleteCheckedItems = () => {
             )}
           </div>
           
-          <div className="flex items-center gap-1 transition-opacity mr-2">
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mr-2">
+            <button onClick={(e) => { e.stopPropagation(); setEditingCatName(key); }} className="p-0.5 text-text-dim hover:text-blue-500 transition-colors" title={lang === 'en' ? "Rename" : "名前を変更"}>
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
             <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'top'); }} className="p-0.5 text-text-main hover:text-blue-500" title="一番上へ"><ChevronsUp className="w-3 h-3" /></button>
             <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); moveCategory(key, 'bottom'); }} className="p-0.5 text-text-main hover:text-blue-500" title="一番下へ"><ChevronsDown className="w-3 h-3" /></button>
             {!DEFAULT_CATEGORIES.some(c => c.id === key) && (
@@ -931,32 +975,24 @@ const deleteCheckedItems = () => {
             )}
           </div>
 
-          <button
-            onClick={() => setEditModes(prev => ({ ...prev, [key]: !prev[key] }))}
-            className={`w-[64px] justify-center px-2 py-0.5 rounded text-[10px] font-bold transition-colors shrink-0 flex items-center gap-1 border ${
-              isEditing 
-                ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-600' 
-                : 'bg-bg-surface hover:bg-bg-input text-text-main border-border-main'
-            }`}
-          >
-            {isEditing ? (
-              <><Check className="w-2.5 h-2.5" /> 適用</>
-            ) : (
-              <><Settings2 className="w-2.5 h-2.5" /> 編集</>
-            )}
-          </button>
+          
         </div>
         
         {isEditing ? (
           <div className="flex flex-col gap-2 p-2 border border-blue-500/30 rounded bg-blue-500/5">
+            <div className="flex justify-end mb-1">
+              <button 
+                onClick={() => { setSaveSuccessMessage(lang === 'en' ? 'Saved' : '保存しました'); setTimeout(() => setSaveSuccessMessage(null), 2000); }}
+                className="flex items-center gap-1.5 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-bold transition-colors shadow-sm"
+              >
+                <Check className="w-3.5 h-3.5" /> {lang === 'en' ? 'Save Edit' : '編集保存'}
+              </button>
+            </div>
             {items.map((item, idx) => (!item || (idx === 0 && items.length > 1)) ? null : (
               <div 
                 key={idx} 
                 className={`flex gap-1 items-start ${draggedItemId?.category === key && draggedItemId?.index === idx ? 'opacity-50' : ''}`}
-                draggable={idx !== 0 && ((dragEnabledItemId?.category === key && dragEnabledItemId?.index === idx) || (draggedItemId?.category === key && draggedItemId?.index === idx))}
-                onDragStart={(e) => {
-                  if (idx !== 0) handleItemDragStart(e, key, idx);
-                }}
+                
                 onDragOver={handleItemDragOver}
                 onDrop={(e) => handleItemDrop(e, key, idx)}
               >
@@ -976,8 +1012,17 @@ const deleteCheckedItems = () => {
                       }}
                       className="cursor-pointer w-3.5 h-3.5"
                     />
-                    <div className="cursor-grab active:cursor-grabbing text-text-dim hover:text-text-main transition-opacity" onMouseEnter={() => setDragEnabledItemId({ category: key, index: idx })} onMouseLeave={() => setDragEnabledItemId(null)}>
-                      <GripVertical className="w-3.5 h-3.5" />
+                    <div 
+                      className="cursor-grab active:cursor-grabbing text-text-dim hover:text-text-main transition-opacity" 
+                      draggable={idx !== 0}
+                      onDragStart={(e) => {
+                        if (idx !== 0) handleItemDragStart(e, key, idx);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedItemId(null);
+                      }}
+                    >
+                      <GripVertical className="w-3.5 h-3.5" style={{ pointerEvents: 'none' }} />
                     </div>
                   </div>
                 ) : (
@@ -1116,8 +1161,8 @@ const deleteCheckedItems = () => {
       {/* 組み合わせ保存・ロード領域 */}
       <div className="flex flex-col gap-2 p-3 bg-bg-surface border border-border-main rounded relative shrink-0 shadow-sm">
         {saveSuccessMessage && (
-          <div className="absolute -top-3 right-2 z-50 bg-green-600 text-white shadow-lg border border-green-500 px-3 py-1.5 rounded text-[12px] font-bold animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-none flex items-center gap-1.5">
-            <Check className="w-3.5 h-3.5" />
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[999] bg-green-600 text-white shadow-lg border border-green-500 px-4 py-2 rounded text-[13px] font-bold animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-none flex items-center gap-1.5">
+            <Check className="w-4 h-4" />
             {saveSuccessMessage}
           </div>
         )}
@@ -1135,7 +1180,9 @@ const deleteCheckedItems = () => {
           <button
             onClick={() => setShowCopyConfirm(true)}
             className="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/30 rounded text-[11px] font-bold transition-colors flex items-center gap-1 shrink-0"
-            title={lang === 'en' ? "Copy all items to Parts" : "全項目をパーツにコピー"}
+            title={checkedItems.size > 0 
+              ? (lang === 'en' ? "Copy checked items to Parts" : "選択した項目をパーツへコピー")
+              : (lang === 'en' ? "Copy current prompt selections to Parts" : "現在ドロップダウンで選択中のプロンプトをパーツへコピー")}
           >
             <Copy className="w-3 h-3" />
             {lang === 'en' ? "To Parts" : "パーツへ"}
@@ -1143,7 +1190,9 @@ const deleteCheckedItems = () => {
           
           <ConfirmModal
             isOpen={showCopyConfirm}
-            message={lang === 'en' ? 'Copy new items to Parts?' : '差分（新規）をパーツへコピーしますか？'}
+            message={checkedItems.size > 0 
+              ? (lang === 'en' ? 'Copy checked items to "Others > Parts from Mixer"?' : 'チェックした項目を「その他」＞「プロンプトミキサーからのパーツ」へコピーしますか？')
+              : (lang === 'en' ? 'Copy current prompt selections to "Others > Parts from Mixer"?' : '現在ドロップダウンで選択中のプロンプトを「その他」＞「プロンプトミキサーからのパーツ」へコピーしますか？')}
             onConfirm={() => {
               setShowCopyConfirm(false);
               handleCopyToParts();
@@ -1151,6 +1200,7 @@ const deleteCheckedItems = () => {
             onCancel={() => setShowCopyConfirm(false)}
             lang={lang}
           />
+      
         </div>
         
         <div className="flex gap-2 items-center min-w-0">
@@ -1282,7 +1332,7 @@ const deleteCheckedItems = () => {
                   e.target.value = "";
                 }
               }}
-              className="flex-1 min-w-[100px] bg-bg-input border border-border-main hover:border-border-hover rounded px-2 py-1.5 text-[11px] text-text-main truncate transition-colors appearance-none cursor-pointer"
+              className="flex-1 min-w-[100px] bg-bg-input border border-border-main hover:border-border-hover rounded px-2 py-1.5 text-[13px] text-text-main truncate transition-colors appearance-none cursor-pointer"
               defaultValue=""
             >
               <option value="" disabled>Move to...</option>
@@ -1305,6 +1355,25 @@ const deleteCheckedItems = () => {
           </div>
         </div>
       )}
+      </div>
+
+      <div className="flex justify-end px-4 pt-2 shrink-0">
+        <button
+          onClick={() => {
+            const isAllExpanded = categories.length > 0 && categories.every(c => editModes[c.id]);
+            if (isAllExpanded) {
+              setEditModes({});
+            } else {
+              const next = {};
+              categories.forEach(c => next[c.id] = true);
+              setEditModes(next);
+            }
+          }}
+          className="px-2 py-1 bg-bg-surface hover:bg-bg-input border border-border-main rounded text-[11px] font-bold flex items-center gap-1 transition-colors text-text-main shadow-sm"
+        >
+          {categories.length > 0 && categories.every(c => editModes[c.id]) ? <ChevronsUp className="w-3.5 h-3.5" /> : <ChevronsDown className="w-3.5 h-3.5" />}
+          {categories.length > 0 && categories.every(c => editModes[c.id]) ? t('collapse_all', lang) : t('expand_all', lang)}
+        </button>
       </div>
 
       {/* スクロール領域 */}

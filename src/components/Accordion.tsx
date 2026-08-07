@@ -74,8 +74,8 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 flex-1">
-            <span className="text-[10px] font-mono text-text-dim uppercase tracking-widest truncate">{title}</span>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-xs font-mono font-bold text-text-main uppercase truncate">{title}</span>
             {badge !== undefined && badge > 0 && (
               <span className="badge-count text-white text-[10px] font-bold px-1.5 py-0.5 rounded leading-none min-w-[20px] text-center shadow-sm">
                 {badge}

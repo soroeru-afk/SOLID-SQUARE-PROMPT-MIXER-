@@ -365,7 +365,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
             onChange={handleBulkMove}
             value=""
             disabled={bulkSelectedIds.size === 0}
-            className="flex-1 min-w-[70px] bg-bg-input hover:bg-text-main hover:text-bg-base border border-border-main text-text-main text-[10px] font-mono px-2 py-1 rounded outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:hover:bg-bg-input disabled:hover:text-text-main"
+            className="flex-1 min-w-[70px] bg-bg-input hover:bg-text-main hover:text-bg-base border border-border-main text-text-main text-[13px] font-mono px-2 py-1.5 rounded outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:hover:bg-bg-input disabled:hover:text-text-main"
           >
             <option value="" disabled className="bg-bg-panel text-text-dim">Move to...</option>
             <option value="copy_to_master" className="bg-bg-panel text-text-main">{t('copy_to_master_prompts', lang)}</option>
@@ -740,7 +740,16 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       </>
       ) : activeTab === 'mixer' ? (
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          <AttributeMixer onApply={onMixAttributes || (() => {})} onInsertText={onInsertText} onCopyToParts={onCopyToParts} theme={theme} lang={lang} />
+          <AttributeMixer 
+            onApply={onMixAttributes || (() => {})} 
+            onInsertText={onInsertText} 
+            onCopyToParts={onCopyToParts} 
+            theme={theme} 
+            lang={lang} 
+            existingParts={parts} 
+            customSectionNames={customSectionNames} 
+            customCategories={customCategories} 
+          />
         </div>
       ) : (
         children
