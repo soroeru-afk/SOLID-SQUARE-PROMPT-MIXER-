@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trash2, ChevronDown, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, RotateCcw, ArrowDown, ArrowUp, Copy, Plus, X } from 'lucide-react';
+import { Trash2, ChevronDown, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, RotateCcw, ArrowDown, ArrowUp, Copy, Plus, X, List } from 'lucide-react';
 import { Language, t } from '../i18n';
 import { SavePartModal } from './SavePartModal';
 import { SaveMasterModal } from './SaveMasterModal';
@@ -491,6 +491,36 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       newWeight = Math.max(0.1, Math.round(newWeight * 100) / 100);
       return `(${text}:${newWeight})`;
     });
+  };
+
+  const handleFormatVertical = () => {
+    const activeText = activeEditor === 'positive' ? editorText : negativeEditorText;
+    const isCurrentlyVertical = activeText && activeText.includes('\n');
+    const toVertical = !isCurrentlyVertical;
+
+    const toggle = (text: string) => {
+      if (!text || !text.trim()) return text;
+      
+      // Clean up common typos: commas inside weights or at the end of parentheses
+      let cleanedText = text.replace(/,\s*(:\d+(\.\d+)?\))/g, '$1'); // (..., :1.5) -> (...:1.5)
+      cleanedText = cleanedText.replace(/,\s*\)/g, ')'); // (..., ) -> (...)
+      cleanedText = cleanedText.replace(/,\s*\]/g, ']'); // [..., ] -> [...]
+      
+      // Fix missing commas around parentheses/brackets
+      cleanedText = cleanedText.replace(/(\)|\])\s*([^,\])\s])/g, '$1, $2'); // after ) or ]
+      cleanedText = cleanedText.replace(/([^,\[(\s])\s*(\(|\[)/g, '$1, $2'); // before ( or [
+
+      const items = cleanedText.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0);
+      
+      if (!toVertical) {
+        return items.join(', ') + (cleanedText.trim().endsWith(',') ? ',' : '');
+      } else {
+        return items.join(',\n') + (cleanedText.trim().endsWith(',') ? ',' : '');
+      }
+    };
+    
+    setEditorText(prev => toggle(prev));
+    setNegativeEditorText(prev => toggle(prev));
   };
 
   const handleFormatComma = () => {
@@ -1391,13 +1421,6 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
         
         <button 
-          onClick={handleOptimizeSyntax}
-          className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
-          title="Optimize prompt weights syntax"
-        >
-          {t('optimize_syntax', lang)}
-        </button>
-        <button 
           onClick={handleCleanText}
           className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
           title="Clean spaces and commas"
@@ -1405,9 +1428,23 @@ const handleResizeStart = (e: React.MouseEvent) => {
           {t('clean_text', lang)}
         </button>
         <div className="w-px h-6 bg-border-main mx-1"></div>
+                {(() => {
+          const text = activeEditor === 'positive' ? editorText : negativeEditorText;
+          const isVertical = text && text.includes('\n');
+          return (
+            <button 
+              onClick={handleFormatVertical}
+              className={`w-[124px] h-[28px] px-3 text-[10px] whitespace-nowrap font-bold font-mono border-2 ${theme === 'light' || theme === 'mono' ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400' : 'border-white text-white bg-bg-input hover:bg-white hover:text-black'} rounded transition-colors flex items-center justify-center gap-1.5`}
+              title={lang === 'en' ? "Toggle vertical/horizontal list" : "縦/横リストの切り替え"}
+            >
+              <List size={14} className={`${theme === 'light' || theme === 'mono' ? 'text-black' : ''}`} />
+              {lang === 'en' ? (isVertical ? 'To Horizontal' : 'To Vertical') : (isVertical ? '横並びに戻す' : '縦リストに変換')}
+            </button>
+          );
+        })()}
         <button 
           onClick={handleFormatComma}
-          className={`px-3 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5`}
+          className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5`}
           title="Toggle periods and commas"
         >
           <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
@@ -1416,7 +1453,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
         </button>
         <button 
           onClick={handleFormatHyphen}
-          className={`px-3 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5`}
+          className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-1.5`}
           title="Toggle periods and hyphens"
         >
           <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>

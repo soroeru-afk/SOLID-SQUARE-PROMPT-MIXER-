@@ -131,10 +131,6 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as AppData;
-        if (!parsed.parts.some(p => p.section === 2)) {
-          const newPoses = initialData.parts.filter(p => p.section === 2);
-          parsed.parts = [...parsed.parts, ...newPoses];
-        }
         return parsed;
       } catch (e) {
         console.error('Failed to parse saved data', e);

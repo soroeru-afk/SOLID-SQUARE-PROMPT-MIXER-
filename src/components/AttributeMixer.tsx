@@ -607,9 +607,16 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
       }
     });
 
-    const pos = posParts.join('');
-    const neg = negParts.join('');
-    onApply(pos, negativePrompt + (negativePrompt && neg ? ', ' : '') + neg, '');
+    const cleanAndJoinList = (parts: string[]) => {
+      const combined = parts.join('');
+      if (!combined.trim()) return '';
+      const items = combined.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0);
+      return items.join(',\n') + (items.length > 0 ? ',' : '');
+    };
+
+    const pos = cleanAndJoinList(posParts);
+    const neg = cleanAndJoinList([negativePrompt, ...negParts]);
+    onApply(pos, neg, '');
   };
 
   const handleReset = () => {
