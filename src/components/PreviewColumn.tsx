@@ -853,6 +853,69 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   };
 
   
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, isNegative: boolean) => {
+    const textarea = e.currentTarget;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const hasSelection = start !== end;
+
+    if (e.key === 'Enter' && hasSelection) {
+      e.preventDefault();
+      textarea.setSelectionRange(end, end);
+      return;
+    }
+    
+    // Alt + Up/Down OR (Selection exists and Up/Down without Shift)
+    const isMoveUp = e.key === 'ArrowUp' && (e.altKey || (!e.shiftKey && hasSelection));
+    const isMoveDown = e.key === 'ArrowDown' && (e.altKey || (!e.shiftKey && hasSelection));
+
+    if (isMoveUp || isMoveDown) {
+      e.preventDefault();
+      const text = isNegative ? negativeEditorText : editorText;
+
+      let lineStart = text.lastIndexOf('\n', start - 1) + 1;
+      let lineEnd = text.indexOf('\n', end);
+      if (lineEnd === -1) lineEnd = text.length;
+
+      const selectedLines = text.substring(lineStart, lineEnd);
+      
+      if (isMoveUp && lineStart > 0) {
+        const prevLineStart = text.lastIndexOf('\n', lineStart - 2) + 1;
+        const prevLine = text.substring(prevLineStart, lineStart - 1);
+        const newText = text.substring(0, prevLineStart) + selectedLines + '\n' + prevLine + text.substring(lineEnd);
+        const newSelectionStart = prevLineStart;
+        const newSelectionEnd = prevLineStart + selectedLines.length;
+
+        if (isNegative) {
+          setNegativeEditorText(newText);
+        } else {
+          setEditorText(newText);
+        }
+        
+        setTimeout(() => {
+          textarea.setSelectionRange(newSelectionStart, newSelectionEnd);
+        }, 0);
+      } else if (isMoveDown && lineEnd < text.length) {
+        let nextLineEnd = text.indexOf('\n', lineEnd + 1);
+        if (nextLineEnd === -1) nextLineEnd = text.length;
+        const nextLine = text.substring(lineEnd + 1, nextLineEnd);
+        const newText = text.substring(0, lineStart) + nextLine + '\n' + selectedLines + text.substring(nextLineEnd);
+        const newSelectionStart = lineStart + nextLine.length + 1;
+        const newSelectionEnd = newSelectionStart + selectedLines.length;
+        
+        if (isNegative) {
+          setNegativeEditorText(newText);
+        } else {
+          setEditorText(newText);
+        }
+
+        setTimeout(() => {
+          textarea.setSelectionRange(newSelectionStart, newSelectionEnd);
+        }, 0);
+      }
+    }
+  };
+
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>, isNegative: boolean) => {
     const html = e.clipboardData.getData("text/html");
     if (html) {
@@ -1783,6 +1846,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               {editorText ? <>{renderHighlightedText(editorText)}{editorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">{t('placeholder', lang)}</span>}
             </div>
             <textarea
+              onKeyDown={(e) => handleKeyDown(e, false)}
               onPaste={(e) => handlePaste(e, false)}
               ref={positiveTextRef}
               value={editorText}
@@ -1916,6 +1980,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               {negativeEditorText ? <>{renderHighlightedText(negativeEditorText)}{negativeEditorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">Negative prompt...</span>}
             </div>
             <textarea
+              onKeyDown={(e) => handleKeyDown(e, true)}
               onPaste={(e) => handlePaste(e, true)}
               ref={negativeTextRef}
               value={negativeEditorText}
