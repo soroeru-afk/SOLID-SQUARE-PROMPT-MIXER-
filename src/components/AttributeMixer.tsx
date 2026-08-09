@@ -286,6 +286,7 @@ export const AttributeMixer: React.FC<AttributeMixerProps> = ({ onApply, onInser
   useEffect(() => {
     localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(categories));
     localStorage.setItem('attribute_mixer_categories_updated_at', String(Date.now()));
+    window.dispatchEvent(new Event('mixer_categories_updated'));
   }, [categories]);
 
   const [presets, setPresets] = useState<Presets>(() => {

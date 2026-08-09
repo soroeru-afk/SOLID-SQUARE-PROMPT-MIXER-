@@ -230,8 +230,7 @@ export default function App() {
         { id: 'camera', label: 'カメラ・アングル (Camera/Angle)' }
       ];
       
-      if (isEvent) {
-        const saved = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
+      const saved = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
         if (saved) {
           try { 
             const parsed = JSON.parse(saved); 
@@ -242,7 +241,6 @@ export default function App() {
             }
           } catch(e) {}
         }
-      }
       
       setMixerCategories(finalCats);
     };
@@ -250,9 +248,11 @@ export default function App() {
     const handleCatsUpdate = () => loadCats(true);
     window.addEventListener('attributeMixerDataImported', handleCatsUpdate);
     window.addEventListener('mixer_presets_updated', handleCatsUpdate);
+    window.addEventListener('mixer_categories_updated', handleCatsUpdate);
     return () => {
       window.removeEventListener('attributeMixerDataImported', handleCatsUpdate);
       window.removeEventListener('mixer_presets_updated', handleCatsUpdate);
+      window.removeEventListener('mixer_categories_updated', handleCatsUpdate);
     }
   }, []);
 
