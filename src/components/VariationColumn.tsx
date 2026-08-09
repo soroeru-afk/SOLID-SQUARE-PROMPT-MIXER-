@@ -6,6 +6,8 @@ import { AddModal } from './AddModal';
 import { User, Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine, ArrowRightToLine, Copy } from 'lucide-react';
 import { Language, t } from '../i18n';
 import { AttributeMixer } from './AttributeMixer';
+import { DuplicateSearchModal } from './DuplicateSearchModal';
+import { Search, Combine } from 'lucide-react';
 
 interface VariationColumnProps {
   parts: VariationPart[];
@@ -20,6 +22,7 @@ interface VariationColumnProps {
   onUpdate: (id: string, updates: Partial<VariationPart>) => void;
   onDuplicate?: (id: string) => void;
   onDelete: (id: string) => void;
+  onDeleteBulk?: (ids: string[]) => void;
   onDeleteAll?: () => void;
   onAddCategory?: (section: number, name: string) => void;
   onRenameCategory?: (section: number, oldName: string, newName: string) => void;
@@ -41,9 +44,10 @@ interface VariationColumnProps {
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyToMixer, onCopyBulkToMaster, onCopyBulkToMixer, onMixAttributes, onInsertText, onCopyToParts, lang, theme, activeTab = 'parts', setActiveTab, children
+  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteBulk, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyToMixer, onCopyBulkToMaster, onCopyBulkToMixer, onMixAttributes, onInsertText, onCopyToParts, lang, theme, activeTab = 'parts', setActiveTab, children
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<number | null>(null);
@@ -62,6 +66,8 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
   const [confirmDeleteCategoryData, setConfirmDeleteCategoryData] = useState<{ section: number, name: string } | null>(null);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [confirmDeleteAllState, setConfirmDeleteAllState] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{message: string, action: () => void} | null>(null);
 
   const uniqueCategories = useMemo(() => {
     const cats = new Map<string, number>(); // category -> section
@@ -418,7 +424,15 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
               <span className="absolute left-2.5 top-2.5 opacity-30 font-mono text-[10px] text-text-main">/</span>
             </div>
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            
+            <button 
+              onClick={() => setIsDuplicateModalOpen(true)}
+              className="px-2 py-1 text-[10px] border border-border-hover bg-bg-input hover:bg-border-main rounded transition-colors text-text-dim flex items-center justify-center gap-1 shrink-0"
+            >
+              <Search size={12} />
+              {lang === 'en' ? 'Find Duplicates' : '重複サーチ'}
+            </button>
             <button 
               onClick={() => {
                 if (isAllExpanded) {
@@ -832,6 +846,20 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
         }}
         onCancel={() => setConfirmDeleteAllState(false)}
         lang={lang}
+      />
+<DuplicateSearchModal 
+        isOpen={isDuplicateModalOpen}
+        onClose={() => setIsDuplicateModalOpen(false)}
+        parts={parts}
+        onDeleteBulk={(ids) => {
+          if (onDeleteBulk) { onDeleteBulk(ids); } else { ids.forEach(id => onDelete(id)); }
+        }}
+        onMerge={(idsToMerge, mergedName, mergedContent, section, category) => {
+          onAdd(category, section, mergedName, mergedContent);
+          if (onDeleteBulk) { onDeleteBulk(idsToMerge); } else { idsToMerge.forEach(id => onDelete(id)); }
+        }}
+        lang={lang}
+        theme={theme}
       />
     </>
   );

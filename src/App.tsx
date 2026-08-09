@@ -1060,6 +1060,11 @@ export default function App() {
     if (selectedPartIds.has(id)) handleTogglePart(id);
   };
 
+  const handleDeleteBulkParts = (ids: string[]) => {
+    setData(prev => ({ ...prev, parts: prev.parts.filter(p => !ids.includes(p.id)) }));
+    if (activePartId && ids.includes(activePartId)) setActivePartId(null);
+  };
+
   const handleDeleteAllParts = () => {
     setData(prev => ({ ...prev, parts: [] }));
     setActivePartId(null);
@@ -1583,6 +1588,7 @@ export default function App() {
               onUpdate={handleUpdatePart}
               onDuplicate={handleDuplicatePart}
               onDelete={handleDeletePart}
+              onDeleteBulk={handleDeleteBulkParts}
               onDeleteAll={handleDeleteAllParts}
               onReorder={handleReorderParts}
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
@@ -1888,6 +1894,7 @@ export default function App() {
               onUpdate={handleUpdatePart}
               onDuplicate={handleDuplicatePart}
               onDelete={handleDeletePart}
+              onDeleteBulk={handleDeleteBulkParts}
               onDeleteAll={handleDeleteAllParts}
               onReorder={handleReorderParts}
               onCopyToMaster={(part) => setSaveMasterFromPartData({ name: part.name, content: part.content })}
