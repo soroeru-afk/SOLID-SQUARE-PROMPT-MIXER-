@@ -1533,7 +1533,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
       </div>
       
       {/* Editor Toolbar (Rest) */}
-      <div className="p-2 border-b border-border-main bg-bg-base flex flex-nowrap overflow-x-auto hide-scroll items-center gap-2 shrink-0">
+      <div className="p-2 border-b border-border-main bg-bg-base flex flex-wrap items-center gap-2 shrink-0">
         {(() => {
           const text = activeEditor === 'positive' ? editorText : negativeEditorText;
           const isVertical = text && text.includes('\n');
@@ -1848,7 +1848,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
       )}
 
         <div className={`${isPositiveOpen ? 'flex-1 min-h-[100px]' : 'shrink-0'} border border-border-main rounded-lg flex flex-col relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}>
-          <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-nowrap overflow-x-auto hide-scroll border-b border-border-main/30">
+          <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-wrap border-b border-border-main/30">
             <button 
               onClick={() => setIsPositiveOpen(!isPositiveOpen)}
               className={`flex items-center gap-1 text-[10px] font-mono font-bold uppercase mt-1 transition-colors text-text-main hover:opacity-70`}
@@ -1856,7 +1856,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               {isPositiveOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               PROMPT
             </button>
-            <div className="flex items-center gap-1 sm:gap-2 flex-nowrap shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap shrink-0">
               
               
               <button 
@@ -2002,7 +2002,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           className={`${!isPositiveOpen && isNegativeOpen ? 'flex-1 min-h-[100px]' : 'shrink-0'} border border-border-main rounded-lg flex flex-col relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}
           style={{ height: (!isPositiveOpen && isNegativeOpen) ? 'auto' : (isNegativeOpen ? `${negativeHeight}px` : 'auto') }}
         >
-          <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-nowrap overflow-x-auto hide-scroll border-b border-border-main/30">
+          <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-wrap border-b border-border-main/30">
             <button 
             onClick={() => setIsNegativeOpen(!isNegativeOpen)}
             className={`flex items-center gap-1 text-[10px] font-mono font-bold uppercase mt-1 transition-colors text-text-main hover:opacity-70`}
@@ -2010,7 +2010,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
             {isNegativeOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
             NEGATIVE PROMPT
           </button>
-            <div className="flex items-center gap-1 sm:gap-2 flex-nowrap shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap shrink-0">
               
               
               <button 
