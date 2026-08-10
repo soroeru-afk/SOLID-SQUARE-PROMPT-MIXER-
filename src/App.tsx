@@ -1704,7 +1704,7 @@ export default function App() {
         </button>
 
         {/* Center: Text Editor & Output */}
-        <section className="flex-1 flex flex-col bg-bg-base relative min-w-0">
+        <section className="flex-1 flex flex-col bg-bg-base relative min-w-0" style={{ minWidth: '960px' }}>
           <PreviewColumn
           selectedMasterId={selectedMasterId}
           selectedMasterName={selectedMasterId ? data.masters.find(m => m.id === selectedMasterId)?.name : undefined}
