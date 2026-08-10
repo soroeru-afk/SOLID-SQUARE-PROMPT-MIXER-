@@ -1518,6 +1518,22 @@ export default function App() {
   };
 
   const appMinWidth = (isLeftOpen ? leftWidth : 0) + 960 + (isRightOpen ? rightWidth : 0);
+  const osWindowMinWidth = leftWidth + 960 + rightWidth;
+
+  useEffect(() => {
+    const enforceMinWidth = () => {
+      if (window.innerWidth < osWindowMinWidth) {
+        try {
+          window.resizeTo(osWindowMinWidth, window.outerHeight || window.innerHeight);
+        } catch (e) {
+          // Ignore if browser blocks resizeTo
+        }
+      }
+    };
+    enforceMinWidth();
+    window.addEventListener('resize', enforceMinWidth);
+    return () => window.removeEventListener('resize', enforceMinWidth);
+  }, [osWindowMinWidth]);
 
   return (
     <div className={`h-screen w-full overflow-x-auto overflow-y-hidden bg-bg-base transition-colors duration-300`} style={{ zoom: 1 }}>
