@@ -18,89 +18,78 @@ import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 const STORAGE_KEY = 'prompt_console_data';
 
 
-const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
-  const fileTime = parsed.exportDate ? new Date(parsed.exportDate).getTime() : 0;
-
+const mergeMixerData = (parsed: any) => {
   // Categories
   if (parsed.attributeMixerCategories) {
-    const localUpdated = Number(localStorage.getItem('attribute_mixer_categories_updated_at') || 0);
-    if (!isAutoLoad || localUpdated <= fileTime) {
-      const incomingCats = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
-      
-      // Get existing
-      const existingCatsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
-      let existingCats = [];
-      if (existingCatsStr) {
-        try { existingCats = JSON.parse(existingCatsStr); } catch(e) {}
-      }
-      
-      // Merge
-      const mergedCats = [...existingCats];
-      const existingIds = new Set(existingCats.map((c: any) => c.id));
-      for (const cat of incomingCats) {
-        if (!existingIds.has(cat.id)) {
-          mergedCats.push(cat);
-          existingIds.add(cat.id);
-        }
-      }
-      
-      localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(mergedCats));
+    const incomingCats = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
+    
+    // Get existing
+    const existingCatsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
+    let existingCats = [];
+    if (existingCatsStr) {
+      try { existingCats = JSON.parse(existingCatsStr); } catch(e) {}
     }
+    
+    // Merge
+    const mergedCats = [...existingCats];
+    const existingIds = new Set(existingCats.map((c: any) => c.id));
+    for (const cat of incomingCats) {
+      if (!existingIds.has(cat.id)) {
+        mergedCats.push(cat);
+        existingIds.add(cat.id);
+      }
+    }
+    
+    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(mergedCats));
   }
   
   // Presets
   if (parsed.attributeMixerPresets) {
-    const localUpdated = Number(localStorage.getItem('attribute_mixer_presets_updated_at') || 0);
-    if (!isAutoLoad || localUpdated <= fileTime) {
-      const incomingPresets = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
-      
-      const existingPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
-      let existingPresets: any = {};
-      if (existingPresetsStr) {
-        try { existingPresets = JSON.parse(existingPresetsStr); } catch(e) {}
-      }
-      
-      const mergedPresets = { ...existingPresets };
-      for (const catId in incomingPresets) {
-        if (!mergedPresets[catId]) {
-          mergedPresets[catId] = incomingPresets[catId];
-        } else {
-          const existingValues = new Set(mergedPresets[catId].map((i: any) => i.value));
-          const newItems = incomingPresets[catId].filter((i: any) => !existingValues.has(i.value));
-          mergedPresets[catId] = [...mergedPresets[catId], ...newItems];
-        }
-      }
-      localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(mergedPresets));
+    const incomingPresets = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
+    
+    const existingPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
+    let existingPresets: any = {};
+    if (existingPresetsStr) {
+      try { existingPresets = JSON.parse(existingPresetsStr); } catch(e) {}
     }
+    
+    const mergedPresets = { ...existingPresets };
+    for (const catId in incomingPresets) {
+      if (!mergedPresets[catId]) {
+        mergedPresets[catId] = incomingPresets[catId];
+      } else {
+        const existingValues = new Set(mergedPresets[catId].map((i: any) => i.value));
+        const newItems = incomingPresets[catId].filter((i: any) => !existingValues.has(i.value));
+        mergedPresets[catId] = [...mergedPresets[catId], ...newItems];
+      }
+    }
+    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(mergedPresets));
   }
 
   // Combos
   if (parsed.attributeMixerCombos) {
-    const localUpdated = Number(localStorage.getItem('attribute_mixer_combos_updated_at') || 0);
-    if (!isAutoLoad || localUpdated <= fileTime) {
-      const incomingCombos = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
-      
-      const existingCombosStr = localStorage.getItem('attribute_mixer_combinations_v1') || localStorage.getItem('attribute_mixer_combinations');
-      let existingCombos = [];
-      if (existingCombosStr) {
-        try { existingCombos = JSON.parse(existingCombosStr); } catch(e) {}
-      }
-      
-      const mergedCombos = [...existingCombos];
-      const existingComboIds = new Set(existingCombos.map((c: any) => c.id));
-      for (const combo of incomingCombos) {
-        if (!existingComboIds.has(combo.id)) {
-          mergedCombos.push(combo);
-          existingComboIds.add(combo.id);
-        }
-      }
-      localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(mergedCombos));
+    const incomingCombos = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
+    
+    const existingCombosStr = localStorage.getItem('attribute_mixer_combinations_v1') || localStorage.getItem('attribute_mixer_combinations');
+    let existingCombos = [];
+    if (existingCombosStr) {
+      try { existingCombos = JSON.parse(existingCombosStr); } catch(e) {}
     }
+    
+    const mergedCombos = [...existingCombos];
+    const existingComboIds = new Set(existingCombos.map((c: any) => c.id));
+    for (const combo of incomingCombos) {
+      if (!existingComboIds.has(combo.id)) {
+        mergedCombos.push(combo);
+        existingComboIds.add(combo.id);
+      }
+    }
+    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(mergedCombos));
   }
   
   if (parsed.uiEditorTabs) {
     const incomingTabs = typeof parsed.uiEditorTabs === 'string' ? JSON.parse(parsed.uiEditorTabs) : parsed.uiEditorTabs;
-    localStorage.setItem('ui_editor_tabs', JSON.stringify(incomingTabs));
+    localStorage.setItem('ui_editor_tabs', JSON.stringify(incomingTabs)); // Tabs might be okay to overwrite
   }
   if (parsed.variationSectionOrder) {
     const incomingOrder = typeof parsed.variationSectionOrder === 'string' ? JSON.parse(parsed.variationSectionOrder) : parsed.variationSectionOrder;
@@ -259,16 +248,6 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      let color = '#0A0A0B';
-      if (theme === 'light') color = '#f9fafb';
-      else if (theme === 'black') color = '#000000';
-      else if (theme === 'red') color = '#140505';
-      else if (theme === 'navy') color = '#060913';
-      else if (theme === 'mono') color = '#ffffff';
-      metaThemeColor.setAttribute('content', color);
-    }
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
@@ -331,9 +310,15 @@ export default function App() {
       return t;
     }));
   }, [activeTabId]);
-  const [activeEditor, setActiveEditor] = useState<'positive' | 'negative'>(() => {
+  const [activeEditor, setActiveEditor] = useState<'positive' | 'negative' | 'find' | 'replace'>(() => {
     return (localStorage.getItem('ui_active_editor') as any) || 'positive';
   });
+  const [findText, setFindText] = useState('');
+  const [replaceText, setReplaceText] = useState('');
+  const [findCursorPos, setFindCursorPos] = useState<number | null>(null);
+  const [replaceCursorPos, setReplaceCursorPos] = useState<number | null>(null);
+  const [findSelectionEnd, setFindSelectionEnd] = useState<number | null>(null);
+  const [replaceSelectionEnd, setReplaceSelectionEnd] = useState<number | null>(null);
 
   useEffect(() => {
     if (selectedMasterId) localStorage.setItem('ui_selected_master_id', selectedMasterId);
@@ -351,7 +336,9 @@ export default function App() {
     localStorage.setItem('ui_active_editor', activeEditor);
   }, [activeEditor]);
   const [positiveCursorPos, setPositiveCursorPos] = useState<number | null>(null);
+  const [positiveSelectionEnd, setPositiveSelectionEnd] = useState<number | null>(null);
   const [negativeCursorPos, setNegativeCursorPos] = useState<number | null>(null);
+  const [negativeSelectionEnd, setNegativeSelectionEnd] = useState<number | null>(null);
 
   // History State for Undo/Redo
   const [canUndo, setCanUndo] = useState(false);
@@ -513,17 +500,6 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
-  const saveTimerRef = useRef<number | null>(null);
-  const showSaveToast = useCallback((msg: string) => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-    setSaveSuccessMessage(msg);
-    saveTimerRef.current = window.setTimeout(() => {
-      setSaveSuccessMessage(null);
-      saveTimerRef.current = null;
-    }, 2000);
-  }, []);
   const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
   const [importPendingData, setImportPendingData] = useState<any>(null);
 
@@ -554,7 +530,7 @@ export default function App() {
         const parsed = JSON.parse(text);
         if (parsed.masters && parsed.parts) {
           setData(parsed);
-          mergeMixerData(parsed, true);
+          mergeMixerData(parsed);
           setSelectedMasterId(parsed.masters[0]?.id || null);
           setLoadSuccessMessage(`Resumed from ${latestFile.name}`);
           setTimeout(() => setLoadSuccessMessage(null), 3000);
@@ -738,7 +714,7 @@ export default function App() {
     };
 
     setEditorText(prev => {
-      let result = prev;
+      let result = prev || '';
       let replaced = false;
       
       if (targetToReplace) {
@@ -751,7 +727,34 @@ export default function App() {
       } 
       
       if (!replaced && posStr) {
-        result = posStr + (posStr.endsWith(' ') || posStr.endsWith(',') ? '' : ', ') + result;
+        const actualPos = positiveCursorPos === null ? result.length : positiveCursorPos;
+        const endPos = positiveSelectionEnd === null ? actualPos : positiveSelectionEnd;
+        const start = Math.min(actualPos, endPos);
+        const end = Math.max(actualPos, endPos);
+        
+        if (start !== end) {
+          // If there is a selection, replace the selection
+          const before = result.slice(0, start);
+          const after = result.slice(end);
+          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+          const insertedStr = prefix + posStr + suffix;
+          const newPos = start + insertedStr.length;
+          setPositiveCursorPos(newPos);
+          setPositiveSelectionEnd(newPos);
+          result = before + insertedStr + after;
+        } else {
+          // Otherwise, insert at cursor position
+          const before = result.slice(0, start);
+          const after = result.slice(start);
+          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+          const insertedStr = prefix + posStr + suffix;
+          const newPos = start + insertedStr.length;
+          setPositiveCursorPos(newPos);
+          setPositiveSelectionEnd(newPos);
+          result = before + insertedStr + after;
+        }
       }
       
       result = result.replace(/,\s*,/g, ',');
@@ -760,7 +763,7 @@ export default function App() {
     });
 
     setNegativeEditorText(prev => {
-      let result = prev;
+      let result = prev || '';
       let replaced = false;
       
       if (targetToReplace) {
@@ -772,44 +775,115 @@ export default function App() {
       }
       
       if (!replaced && negStr) {
-        result = negStr + (negStr.endsWith(' ') || negStr.endsWith(',') ? '' : ', ') + result;
+        const actualPos = negativeCursorPos === null ? result.length : negativeCursorPos;
+        const endPos = negativeSelectionEnd === null ? actualPos : negativeSelectionEnd;
+        const start = Math.min(actualPos, endPos);
+        const end = Math.max(actualPos, endPos);
+
+        if (start !== end) {
+          const before = result.slice(0, start);
+          const after = result.slice(end);
+          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+          const insertedStr = prefix + negStr + suffix;
+          const newPos = start + insertedStr.length;
+          setNegativeCursorPos(newPos);
+          setNegativeSelectionEnd(newPos);
+          result = before + insertedStr + after;
+        } else {
+          const before = result.slice(0, start);
+          const after = result.slice(start);
+          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+          const insertedStr = prefix + negStr + suffix;
+          const newPos = start + insertedStr.length;
+          setNegativeCursorPos(newPos);
+          setNegativeSelectionEnd(newPos);
+          result = before + insertedStr + after;
+        }
       }
       
       result = result.replace(/,\s*,/g, ',');
       result = result.replace(/^,\s*/, '');
       return result.trim();
     });
-  }, [setEditorText, setNegativeEditorText]);
+  }, [autoOptimize, positiveCursorPos, positiveSelectionEnd, negativeCursorPos, negativeSelectionEnd, setEditorText, setNegativeEditorText]);
 
   const handleInsertText = useCallback((text: string, forceNegative?: boolean) => {
+    if (activeEditor === 'find') {
+      setFindText(prev => {
+        const safePrev = prev || '';
+        const actualPos = findCursorPos === null ? safePrev.length : findCursorPos;
+        const endPos = findSelectionEnd === null ? actualPos : findSelectionEnd;
+        const start = Math.min(actualPos, endPos);
+        const end = Math.max(actualPos, endPos);
+        const before = safePrev.slice(0, start);
+        const after = safePrev.slice(end);
+        const insertedStr = text;
+        const newPos = start + insertedStr.length;
+        setFindCursorPos(newPos);
+        setFindSelectionEnd(newPos);
+        return before + insertedStr + after;
+      });
+      return;
+    }
+
+    if (activeEditor === 'replace') {
+      setReplaceText(prev => {
+        const safePrev = prev || '';
+        const actualPos = replaceCursorPos === null ? safePrev.length : replaceCursorPos;
+        const endPos = replaceSelectionEnd === null ? actualPos : replaceSelectionEnd;
+        const start = Math.min(actualPos, endPos);
+        const end = Math.max(actualPos, endPos);
+        const before = safePrev.slice(0, start);
+        const after = safePrev.slice(end);
+        const insertedStr = text;
+        const newPos = start + insertedStr.length;
+        setReplaceCursorPos(newPos);
+        setReplaceSelectionEnd(newPos);
+        return before + insertedStr + after;
+      });
+      return;
+    }
+
     const isNegative = forceNegative !== undefined ? forceNegative : activeEditor === 'negative';
     
     if (isNegative) {
       setNegativeEditorText(prev => {
         const safePrev = prev || '';
         const actualPos = negativeCursorPos === null ? safePrev.length : negativeCursorPos;
-        const before = safePrev.slice(0, actualPos);
-        const after = safePrev.slice(actualPos);
+        const endPos = negativeSelectionEnd === null ? actualPos : negativeSelectionEnd;
+        const start = Math.min(actualPos, endPos);
+        const end = Math.max(actualPos, endPos);
+        const before = safePrev.slice(0, start);
+        const after = safePrev.slice(end);
         const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
         const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
         const insertedStr = prefix + text + suffix;
-        setNegativeCursorPos(actualPos + insertedStr.length);
+        const newPos = start + insertedStr.length;
+        setNegativeCursorPos(newPos);
+        setNegativeSelectionEnd(newPos);
         return cleanString(before + insertedStr + after);
       });
     } else {
       setEditorText(prev => {
         const safePrev = prev || '';
         const actualPos = positiveCursorPos === null ? safePrev.length : positiveCursorPos;
-        const before = safePrev.slice(0, actualPos);
-        const after = safePrev.slice(actualPos);
+        const endPos = positiveSelectionEnd === null ? actualPos : positiveSelectionEnd;
+        const start = Math.min(actualPos, endPos);
+        const end = Math.max(actualPos, endPos);
+        const before = safePrev.slice(0, start);
+        const after = safePrev.slice(end);
         const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
         const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
         const insertedStr = prefix + text + suffix;
-        setPositiveCursorPos(actualPos + insertedStr.length);
+        const newPos = start + insertedStr.length;
+        setPositiveCursorPos(newPos);
+        setPositiveSelectionEnd(newPos);
         return cleanString(before + insertedStr + after);
       });
     }
-  }, [autoOptimize, positiveCursorPos, negativeCursorPos, activeEditor, setEditorText, setNegativeEditorText]);
+  }, [autoOptimize, positiveCursorPos, positiveSelectionEnd, negativeCursorPos, negativeSelectionEnd, findCursorPos, findSelectionEnd, replaceCursorPos, replaceSelectionEnd, activeEditor, setEditorText, setNegativeEditorText, setFindText, setReplaceText]);
 
   const handleTogglePart = (id: string) => {
     setActivePartId(id);
@@ -882,7 +956,6 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = '', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -913,7 +986,6 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = '') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
-    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -1173,7 +1245,6 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = '') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4 | 5, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -1373,7 +1444,8 @@ export default function App() {
     
     setSelectedMasterId(parsed.masters[0]?.id || null);
     setImportPendingData(null);
-    showSaveToast("インポート完了！");
+    setLoadSuccessMessage(lang === 'en' ? 'Import completed!' : 'インポートが完了しました！');
+    setTimeout(() => setLoadSuccessMessage(null), 3000);
   };
 
   const handleSelectMasterId = (id: string | null, insert: boolean = true) => {
@@ -1384,35 +1456,50 @@ export default function App() {
           setEditorText(prev => {
             const safePrev = prev || '';
             const actualPos = positiveCursorPos === null ? safePrev.length : positiveCursorPos;
-            const before = safePrev.slice(0, actualPos);
-            const after = safePrev.slice(actualPos);
+            const endPos = positiveSelectionEnd === null ? actualPos : positiveSelectionEnd;
+            const start = Math.min(actualPos, endPos);
+            const end = Math.max(actualPos, endPos);
+            const before = safePrev.slice(0, start);
+            const after = safePrev.slice(end);
             const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
             const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
             const insertedStr = prefix + newMaster.content + suffix;
-            setPositiveCursorPos(actualPos + insertedStr.length);
+            const newPos = start + insertedStr.length;
+            setPositiveCursorPos(newPos);
+            setPositiveSelectionEnd(newPos);
             return cleanString(before + insertedStr + after);
           });
           setNegativeEditorText(prev => {
             const safePrev = prev || '';
             const actualPos = negativeCursorPos === null ? safePrev.length : negativeCursorPos;
-            const before = safePrev.slice(0, actualPos);
-            const after = safePrev.slice(actualPos);
+            const endPos = negativeSelectionEnd === null ? actualPos : negativeSelectionEnd;
+            const start = Math.min(actualPos, endPos);
+            const end = Math.max(actualPos, endPos);
+            const before = safePrev.slice(0, start);
+            const after = safePrev.slice(end);
             const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
             const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
             const insertedStr = prefix + newMaster.negativeContent! + suffix;
-            setNegativeCursorPos(actualPos + insertedStr.length);
+            const newPos = start + insertedStr.length;
+            setNegativeCursorPos(newPos);
+            setNegativeSelectionEnd(newPos);
             return cleanString(before + insertedStr + after);
           });
         } else {
           setEditorText(prev => {
             const safePrev = prev || '';
             const actualPos = positiveCursorPos === null ? safePrev.length : positiveCursorPos;
-            const before = safePrev.slice(0, actualPos);
-            const after = safePrev.slice(actualPos);
+            const endPos = positiveSelectionEnd === null ? actualPos : positiveSelectionEnd;
+            const start = Math.min(actualPos, endPos);
+            const end = Math.max(actualPos, endPos);
+            const before = safePrev.slice(0, start);
+            const after = safePrev.slice(end);
             const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
             const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
             const insertedStr = prefix + newMaster.content + suffix;
-            setPositiveCursorPos(actualPos + insertedStr.length);
+            const newPos = start + insertedStr.length;
+            setPositiveCursorPos(newPos);
+            setPositiveSelectionEnd(newPos);
             return cleanString(before + insertedStr + after);
           });
         }
@@ -1429,12 +1516,17 @@ export default function App() {
         setNegativeEditorText(prev => {
           const safePrev = prev || '';
           const actualPos = negativeCursorPos === null ? safePrev.length : negativeCursorPos;
-          const before = safePrev.slice(0, actualPos);
-          const after = safePrev.slice(actualPos);
+          const endPos = negativeSelectionEnd === null ? actualPos : negativeSelectionEnd;
+          const start = Math.min(actualPos, endPos);
+          const end = Math.max(actualPos, endPos);
+          const before = safePrev.slice(0, start);
+          const after = safePrev.slice(end);
           const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
           const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
           const insertedStr = prefix + newNeg.content + suffix;
-          setNegativeCursorPos(actualPos + insertedStr.length);
+          const newPos = start + insertedStr.length;
+          setNegativeCursorPos(newPos);
+          setNegativeSelectionEnd(newPos);
           return cleanString(before + insertedStr + after);
         });
       }
@@ -1518,12 +1610,10 @@ export default function App() {
   };
 
   const appMinWidth = (isLeftOpen ? leftWidth : 0) + 960 + (isRightOpen ? rightWidth : 0);
-  const osWindowMinWidth = leftWidth + 960 + rightWidth;
 
   return (
-    <div className={`h-screen w-full overflow-x-auto overflow-y-hidden bg-bg-base transition-colors duration-300`} style={{ zoom: 1 }}>
-      <div className={`h-full flex flex-col`} style={{ minWidth: `${osWindowMinWidth}px` }}>
-        {/* Header */}
+    <div className={`h-screen flex flex-col overflow-hidden bg-bg-base transition-colors duration-300`} style={{ zoom: 1, minWidth: `${appMinWidth}px` }}>
+      {/* Header */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border-main bg-bg-panel h-14 shrink-0">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
@@ -1570,7 +1660,7 @@ export default function App() {
       </header>
 
       {/* Main Layout (3 Columns: Master -> Editor <- Variations) */}
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex overflow-x-auto overflow-y-hidden">
         {/* Left Sidebar */}
         {isLeftOpen && (
           <aside style={{ width: leftWidth }} className="border-r border-border-main bg-bg-panel flex flex-col shrink-0 relative">
@@ -1728,10 +1818,24 @@ export default function App() {
             setNegativeEditorText={setNegativeEditorText}
             activeEditor={activeEditor}
             setActiveEditor={setActiveEditor}
+            findText={findText}
+            setFindText={setFindText}
+            replaceText={replaceText}
+            setReplaceText={setReplaceText}
+            findCursorPos={findCursorPos}
+            setFindCursorPos={setFindCursorPos}
+            findSelectionEnd={findSelectionEnd}
+            setFindSelectionEnd={setFindSelectionEnd}
+            replaceCursorPos={replaceCursorPos}
+            setReplaceCursorPos={setReplaceCursorPos}
+            replaceSelectionEnd={replaceSelectionEnd}
+            setReplaceSelectionEnd={setReplaceSelectionEnd}
             positiveCursorPos={positiveCursorPos}
             negativeCursorPos={negativeCursorPos}
             setPositiveCursorPos={setPositiveCursorPos}
             setNegativeCursorPos={setNegativeCursorPos}
+            setPositiveSelectionEnd={setPositiveSelectionEnd}
+            setNegativeSelectionEnd={setNegativeSelectionEnd}
             onSaveAsMaster={handleSaveAsMaster}
             onSaveAsPart={(name, content, category, section, items, isUpdate) => {
               if (items && items.length > 0) {
@@ -1987,7 +2091,7 @@ export default function App() {
           isVisible={toastMessage !== null} 
           onClose={() => setToastMessage(null)} 
         />
-      </div>
+
     </div>
   );
 }

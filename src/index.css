@@ -99,7 +99,7 @@
 }
 
 body {
-  @apply bg-bg-base text-text-main font-mono antialiased overflow-hidden;
+  @apply bg-bg-base text-text-main font-mono antialiased overflow-y-hidden overflow-x-auto;
 }
 
 /* Custom Scrollbar for DAW feel */

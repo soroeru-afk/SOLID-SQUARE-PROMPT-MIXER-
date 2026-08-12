@@ -23,8 +23,22 @@ interface PreviewColumnProps {
   negativeCursorPos: number | null;
   setPositiveCursorPos: (pos: number) => void;
   setNegativeCursorPos: (pos: number) => void;
-  activeEditor: 'positive' | 'negative';
-  setActiveEditor: (editor: 'positive' | 'negative') => void;
+  setPositiveSelectionEnd?: (pos: number) => void;
+  setNegativeSelectionEnd?: (pos: number) => void;
+  activeEditor: 'positive' | 'negative' | 'find' | 'replace';
+  findText: string;
+  setFindText: React.Dispatch<React.SetStateAction<string>>;
+  replaceText: string;
+  setReplaceText: React.Dispatch<React.SetStateAction<string>>;
+  findCursorPos: number | null;
+  replaceCursorPos: number | null;
+  findSelectionEnd: number | null;
+  replaceSelectionEnd: number | null;
+  setFindCursorPos: (pos: number) => void;
+  setReplaceCursorPos: (pos: number) => void;
+  setFindSelectionEnd: (pos: number) => void;
+  setReplaceSelectionEnd: (pos: number) => void;
+  setActiveEditor: (editor: 'positive' | 'negative' | 'find' | 'replace') => void;
   onSaveAsMaster?: (title: string, content: string, isNegative: boolean, negativeContent?: string, isUpdate?: boolean) => void;
   onSaveAsPart?: (name: string, content: string, category: string, section: number, items?: {name: string, content: string}[], isUpdate?: boolean) => void;
   onSaveAsMemo?: (name: string, content: string, isUpdate: boolean) => void;
@@ -58,7 +72,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   onTabsClear, 
   editorText, setEditorText,
   negativeEditorText, setNegativeEditorText,
-  activeEditor, setActiveEditor, positiveCursorPos, negativeCursorPos, setPositiveCursorPos, setNegativeCursorPos,
+  activeEditor, setActiveEditor, findText, setFindText, replaceText, setReplaceText, findCursorPos, setFindCursorPos, replaceCursorPos, setReplaceCursorPos, findSelectionEnd, setFindSelectionEnd, replaceSelectionEnd, setReplaceSelectionEnd, positiveCursorPos, negativeCursorPos, setPositiveCursorPos, setNegativeCursorPos, setPositiveSelectionEnd, setNegativeSelectionEnd,
   onSaveAsMaster,
   onSaveAsPart,
   onSaveAsMemo,
@@ -83,7 +97,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   onToggleAutoOptimize
 }) => {
   const [copied, setCopied] = useState(false);
-  const [findText, setFindText] = useState('');
+  
   const [showFormatOptions, setShowFormatOptions] = useState(false);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
 
@@ -92,8 +106,12 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   
   const positiveTextRef = useRef<HTMLTextAreaElement>(null);
   const negativeTextRef = useRef<HTMLTextAreaElement>(null);
+  const findTextRef = useRef<HTMLInputElement>(null);
+  const replaceTextRef = useRef<HTMLInputElement>(null);
   const lastUserTextRef = useRef(editorText);
   const lastUserNegativeTextRef = useRef(negativeEditorText);
+  const lastFindTextRef = useRef(findText);
+  const lastReplaceTextRef = useRef(replaceText);
   
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -120,7 +138,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     return () => stopScroll();
   }, []);
 
-  const [replaceText, setReplaceText] = useState('');
+  
   
   const [isSavePartModalOpen, setIsSavePartModalOpen] = useState(false);
   const [savePartContent, setSavePartContent] = useState('');
@@ -311,7 +329,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   };
 
   const applyTransformToSelectionOrAll = (transformFn: (text: string) => string, skipClean: boolean = false) => {
-    const isPositive = activeEditor === 'positive';
+    const isPositive = activeEditor !== 'negative';
     const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
     
     if (textarea) {
@@ -356,7 +374,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
   
   const applyTransformToSelectionOrWord = (transformFn: (text: string) => string) => {
-    const isPositive = activeEditor === 'positive';
+    const isPositive = activeEditor !== 'negative';
     const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
     
     if (textarea) {
@@ -1057,6 +1075,30 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     }
   }, [negativeEditorText, negativeCursorPos, activeEditor]);
 
+  useLayoutEffect(() => {
+    if (findText !== lastFindTextRef.current) {
+      if (findTextRef.current && findCursorPos !== null) {
+        findTextRef.current.setSelectionRange(findCursorPos, findCursorPos);
+        if (activeEditor === 'find') {
+          findTextRef.current.focus();
+        }
+      }
+      lastFindTextRef.current = findText;
+    }
+  }, [findText, findCursorPos, activeEditor]);
+
+  useLayoutEffect(() => {
+    if (replaceText !== lastReplaceTextRef.current) {
+      if (replaceTextRef.current && replaceCursorPos !== null) {
+        replaceTextRef.current.setSelectionRange(replaceCursorPos, replaceCursorPos);
+        if (activeEditor === 'replace') {
+          replaceTextRef.current.focus();
+        }
+      }
+      lastReplaceTextRef.current = replaceText;
+    }
+  }, [replaceText, replaceCursorPos, activeEditor]);
+
 
 const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -1139,7 +1181,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
   };
 
       const handleMoveSelection = (position: 'start' | 'end') => {
-    const isPositive = activeEditor === 'positive';
+    const isPositive = activeEditor !== 'negative';
     const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
     if (!textarea) return;
     
@@ -1240,7 +1282,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
   };
 
   const handleMoveSelectionStep = (direction: 'left' | 'right') => {
-    const isPositive = activeEditor === 'positive';
+    const isPositive = activeEditor !== 'negative';
     const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
     if (!textarea) return;
     
@@ -1433,17 +1475,57 @@ const handleResizeStart = (e: React.MouseEvent) => {
         <style>{".hide-scroll::-webkit-scrollbar { display: none; } .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }"}</style>
         <div className="flex items-center gap-2 shrink-0">
           <input 
+            ref={findTextRef}
             type="text" 
             placeholder={t('find', lang)} 
             value={findText}
-            onChange={e => setFindText(e.target.value)}
+            onChange={e => {
+              setFindText(e.target.value);
+              setActiveEditor('find');
+              setFindCursorPos(e.target.selectionStart || 0);
+              setFindSelectionEnd(e.target.selectionEnd || 0);
+            }}
+            onSelect={(e) => {
+              setActiveEditor('find');
+              setFindCursorPos(e.currentTarget.selectionStart || 0);
+              setFindSelectionEnd(e.currentTarget.selectionEnd || 0);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'copy';
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              const text = e.dataTransfer.getData('text/plain');
+              if (text) setFindText(text);
+            }}
             className="bg-bg-input border border-border-main text-[11px] font-mono px-3 py-1.5 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600 w-[120px]"
           />
           <input 
+            ref={replaceTextRef}
             type="text" 
             placeholder={t('replace', lang)} 
             value={replaceText}
-            onChange={e => setReplaceText(e.target.value)}
+            onChange={e => {
+              setReplaceText(e.target.value);
+              setActiveEditor('replace');
+              setReplaceCursorPos(e.target.selectionStart || 0);
+              setReplaceSelectionEnd(e.target.selectionEnd || 0);
+            }}
+            onSelect={(e) => {
+              setActiveEditor('replace');
+              setReplaceCursorPos(e.currentTarget.selectionStart || 0);
+              setReplaceSelectionEnd(e.currentTarget.selectionEnd || 0);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'copy';
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              const text = e.dataTransfer.getData('text/plain');
+              if (text) setReplaceText(text);
+            }}
             className="bg-bg-input border border-border-main text-[11px] font-mono px-3 py-1.5 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600 w-[120px]"
           />
           <button 
@@ -1535,12 +1617,12 @@ const handleResizeStart = (e: React.MouseEvent) => {
       {/* Editor Toolbar (Rest) */}
       <div className="p-2 border-b border-border-main bg-bg-base flex flex-wrap items-center gap-2 shrink-0">
         {(() => {
-          const text = activeEditor === 'positive' ? editorText : negativeEditorText;
+          const text = activeEditor !== 'negative' ? editorText : negativeEditorText;
           const isVertical = text && text.includes('\n');
           return (
             <button 
               onClick={handleFormatVertical}
-              className={`w-[124px] shrink-0 h-8 px-3 text-[10px] whitespace-nowrap font-bold font-mono border-2 ${theme === 'light' || theme === 'mono' ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400' : 'border-white text-white bg-bg-input hover:bg-white hover:text-black'} rounded transition-colors flex items-center justify-center gap-1.5`}
+              className={`w-[124px] h-8 px-3 text-[10px] whitespace-nowrap font-bold font-mono border-2 ${theme === 'light' || theme === 'mono' ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400' : 'border-white text-white bg-bg-input hover:bg-white hover:text-black'} rounded transition-colors flex items-center justify-center gap-1.5`}
               title={lang === 'en' ? "Toggle vertical/horizontal list" : "縦/横リストの切り替え"}
             >
               <List size={14} className={`${theme === 'light' || theme === 'mono' ? 'text-black' : ''}`} />
@@ -1548,10 +1630,10 @@ const handleResizeStart = (e: React.MouseEvent) => {
             </button>
           );
         })()}
-        <div className="w-px h-6 shrink-0 bg-border-main mx-1"></div>
+        <div className="w-px h-6 bg-border-main mx-1"></div>
         <button 
           onClick={handleMergeDupes}
-          className={`px-3 h-8 whitespace-nowrap shrink-0 text-[10px] font-mono border rounded transition-colors ${
+          className={`px-3 h-8 text-[10px] font-mono border rounded transition-colors ${
             (theme === 'light' || theme === 'mono') 
               ? 'bg-[#3b5323]/10 hover:bg-[#3b5323]/20 border-[#3b5323]/60 text-[#3b5323]' 
               : 'bg-[#7a9a5a]/10 hover:bg-[#7a9a5a]/20 border-[#7a9a5a]/50 text-[#9bb87d]'
@@ -1562,7 +1644,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
         </button>
         <button 
           onClick={handleClearAllWeights}
-          className={`px-3 h-8 whitespace-nowrap shrink-0 text-[10px] font-mono border rounded transition-colors ${
+          className={`px-3 h-8 text-[10px] font-mono border rounded transition-colors ${
             (theme === 'light' || theme === 'mono') 
               ? 'bg-[#991b1b]/10 hover:bg-[#991b1b]/20 border-[#991b1b]/60 text-[#991b1b]' 
               : 'bg-[#fca5a5]/10 hover:bg-[#fca5a5]/20 border-[#fca5a5]/50 text-[#fca5a5]'
@@ -1589,14 +1671,9 @@ const handleResizeStart = (e: React.MouseEvent) => {
           </button>
         </div>
 
-
-        
-
-                
-
         <button 
           onClick={() => handleMoveSelection('start')}
-          className={`px-3 h-8 whitespace-nowrap shrink-0  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          className={`px-3 h-8 ml-2 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
           title={t('move_to_front_tooltip', lang)}
         >
           {t('move_to_front', lang)}
@@ -1617,16 +1694,16 @@ const handleResizeStart = (e: React.MouseEvent) => {
         </button>
         <button 
           onClick={() => handleMoveSelection('end')}
-          className={`px-3 h-8 whitespace-nowrap shrink-0  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          className={`px-3 h-8  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
           title={t('move_to_back_tooltip', lang)}
         >
           {t('move_to_back', lang)}
         </button>
-        <div className="w-px h-6 shrink-0 bg-border-main mx-1"></div>
-        <div className="flex items-center space-x-1 shrink-0">
+        <div className="w-px h-6 bg-border-main mx-1"></div>
+        <div className="flex items-center space-x-1">
           <button 
             onClick={handleEmphasizeAdd}
-            className={`px-2 h-8 whitespace-nowrap shrink-0 text-[10px] font-mono border rounded transition-colors ${
+            className={`px-2 h-8 text-[10px] font-mono border rounded transition-colors ${
               (theme === 'light' || theme === 'mono') || theme === 'paper'
                 ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
                 : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
@@ -1635,7 +1712,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           >+( )</button>
           <button 
             onClick={handleEmphasizeRemove}
-            className={`px-2 h-8 whitespace-nowrap shrink-0 text-[10px] font-mono border rounded transition-colors ${
+            className={`px-2 h-8 text-[10px] font-mono border rounded transition-colors ${
               (theme === 'light' || theme === 'mono') || theme === 'paper'
                 ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
                 : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
@@ -1644,7 +1721,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           >-( )</button>
           <button 
             onClick={handleEmphasizeClear}
-            className={`px-2 h-8 whitespace-nowrap shrink-0 text-[10px] font-mono border rounded transition-colors ${
+            className={`px-2 h-8 text-[10px] font-mono border rounded transition-colors ${
               (theme === 'light' || theme === 'mono') || theme === 'paper'
                 ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
                 : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
@@ -1653,11 +1730,9 @@ const handleResizeStart = (e: React.MouseEvent) => {
           >{t('emphasize_clear', lang)}</button>
         </div>
 
-
-        
         <button 
           onClick={handleCleanupChat}
-          className={`px-3 h-8 whitespace-nowrap shrink-0  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          className={`px-3 h-8  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
           title="Clean Chat Logs"
         >
           {t('cleanup_chat', lang) || 'CHAT CLEAN'}
@@ -1665,26 +1740,26 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
         <button 
           onClick={handleUppercase}
-          className={`px-3 h-8 whitespace-nowrap shrink-0  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          className={`px-3 h-8  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
         >
           {t('uppercase', lang)}
         </button>
         <button 
           onClick={handleLowercase}
-          className={`px-3 h-8 whitespace-nowrap shrink-0  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          className={`px-3 h-8  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
         >
           {t('lowercase', lang)}
         </button>
-        <div className="w-px h-6 shrink-0 bg-border-main mx-1"></div>
-        <div className="flex items-center space-x-1 shrink-0">
+        <div className="w-px h-6 bg-border-main mx-1"></div>
+        <div className="flex items-center space-x-1">
           <button 
             onClick={() => setEditorFontSize(s => Math.max(8, s - 1))}
-            className={`px-2 h-8 whitespace-nowrap shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
+            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
           >A-</button>
           <span className="text-[16px] font-bold font-mono text-text-main w-6 text-center shrink-0">{editorFontSize}</span>
           <button 
             onClick={() => setEditorFontSize(s => Math.min(24, s + 1))}
-            className={`px-2 h-8 whitespace-nowrap shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
+            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
           >A+</button>
           
           <select 
@@ -1711,11 +1786,11 @@ const handleResizeStart = (e: React.MouseEvent) => {
           </div>
         </div>
         
-        <div className="flex items-center gap-2 ml-auto shrink-0">
+        <div className="flex items-center gap-2 ml-auto">
           <button
             onClick={undo}
             disabled={!canUndo}
-            className={`px-3 h-8 whitespace-nowrap shrink-0 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
+            className={`px-3 h-8 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
             title={t('undo', lang)}
           >
             <Undo2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'UNDO' : '前に戻す'}
@@ -1724,7 +1799,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <button
             onClick={redo}
             disabled={!canRedo}
-            className={`px-3 h-8 whitespace-nowrap shrink-0 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
+            className={`px-3 h-8 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
             title={lang === 'en' ? 'REDO' : '次に進む'}
           >
             <Redo2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'REDO' : '次に進む'}
@@ -1732,7 +1807,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           
           <button 
           onClick={() => {            setEditorText('');            setNegativeEditorText('');          }}
-          className={`px-3 h-8 whitespace-nowrap shrink-0  border rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
+          className={`px-3 h-8  border rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
             (theme === 'light' || theme === 'mono')
               ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
               : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
@@ -1856,7 +1931,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               {isPositiveOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               PROMPT
             </button>
-            <div className="flex items-center gap-1 sm:gap-2 flex-wrap shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
               
               
               <button 
@@ -1935,10 +2010,12 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 setEditorText(e.target.value);
                 setActiveEditor('positive');
                 setPositiveCursorPos(e.target.selectionStart);
+                if (setPositiveSelectionEnd) setPositiveSelectionEnd(e.target.selectionEnd);
               }}
               onSelect={(e) => {
                 setActiveEditor('positive');
                 setPositiveCursorPos(e.currentTarget.selectionStart);
+                if (setPositiveSelectionEnd) setPositiveSelectionEnd(e.currentTarget.selectionEnd);
               }}
               onScroll={(e) => {
                 if (positiveHighlightRef.current) {
@@ -1975,15 +2052,15 @@ const handleResizeStart = (e: React.MouseEvent) => {
             </button>
             <button 
               onClick={() => handleMoveTextBetweenEditors('down')}
-              className={`h-8 w-8 whitespace-nowrap shrink-0 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
+              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
               title={t('move_to_negative', lang)}
             >
               <ArrowDown size={14} />
             </button>
-            <div className="w-px h-6 shrink-0 bg-border-main my-auto mx-1"></div>
+            <div className="w-px h-6 bg-border-main my-auto mx-1"></div>
             <button 
               onClick={() => handleMoveTextBetweenEditors('up')}
-              className={`h-8 w-8 whitespace-nowrap shrink-0 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
+              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
               title={t('move_to_positive', lang)}
             >
               <ArrowUp size={14} />
@@ -2010,7 +2087,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
             {isNegativeOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
             NEGATIVE PROMPT
           </button>
-            <div className="flex items-center gap-1 sm:gap-2 flex-wrap shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
               
               
               <button 
@@ -2069,10 +2146,12 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 setNegativeEditorText(e.target.value);
                 setActiveEditor('negative');
                 setNegativeCursorPos(e.target.selectionStart);
+                if (setNegativeSelectionEnd) setNegativeSelectionEnd(e.target.selectionEnd);
               }}
               onSelect={(e) => {
                 setActiveEditor('negative');
                 setNegativeCursorPos(e.currentTarget.selectionStart);
+                if (setNegativeSelectionEnd) setNegativeSelectionEnd(e.currentTarget.selectionEnd);
               }}
               onScroll={(e) => {
                 if (negativeHighlightRef.current) {
