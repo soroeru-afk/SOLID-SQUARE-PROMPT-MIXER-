@@ -659,16 +659,41 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                 </div>
                                 <div className="absolute right-2 flex items-center gap-1">
                                   {expandedActionId !== part.id && (
-                                    <button 
-                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedActionId(part.id); }}
-                                      className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-text-main transition-opacity p-1 bg-bg-panel rounded shadow-sm border border-border-main"
-                                      title={lang === 'en' ? "More actions" : "メニュー"}
-                                    >
-                                      <MoreHorizontal className="w-3 h-3" />
-                                    </button>
+                                    <>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(part.content);
+                                          setCopiedPartId(part.id);
+                                          setTimeout(() => setCopiedPartId(null), 2000);
+                                        }}
+                                        className={`opacity-0 group-hover:opacity-100 p-1 bg-bg-panel rounded shadow-sm border border-border-main transition-all ${
+                                          copiedPartId === part.id 
+                                            ? 'text-green-500 bg-green-500/10 opacity-100'
+                                            : 'text-text-dim hover:text-green-400'
+                                        }`}
+                                        title={lang === 'en' ? 'Copy Prompt Text' : 'プロンプトをコピー'}
+                                      >
+                                        {copiedPartId === part.id ? (
+                                          <Check className="w-3 h-3" />
+                                        ) : (
+                                          <div className="relative w-3 h-3 flex items-center justify-center">
+                                            <div className="border border-current rounded-[2px] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
+                                          </div>
+                                        )}
+                                      </button>
+                                      <button 
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedActionId(part.id); }}
+                                        className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-text-main transition-opacity p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                                        title={lang === 'en' ? 'More actions' : 'メニュー'}
+                                      >
+                                        <MoreHorizontal className="w-3 h-3" />
+                                      </button>
+                                    </>
                                   )}
                                   
-                                  {(expandedActionId === part.id || confirmQuickDeleteId === part.id || copiedPartId === part.id) && (
+                                  {(expandedActionId === part.id || confirmQuickDeleteId === part.id) && (
                                     <>
                                       <div className="flex items-center bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden">
                                         <button 
@@ -725,29 +750,6 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                         title={confirmQuickDeleteId === part.id ? "Confirm delete" : "Delete"}
                                       >
                                         <Trash2 className="w-3 h-3" />
-                                      </button>
-                                      <button 
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          navigator.clipboard.writeText(part.content);
-                                          setCopiedPartId(part.id);
-                                          setTimeout(() => setCopiedPartId(null), 2000);
-                                        }}
-                                        className={`p-1 bg-bg-panel rounded shadow-sm border border-border-main ${
-                                          copiedPartId === part.id 
-                                            ? 'text-green-500 hover:text-green-400 bg-green-500/10'
-                                            : 'text-text-dim hover:text-green-400'
-                                        }`}
-                                        title={lang === 'en' ? "Copy Prompt Text" : "プロンプトをコピー"}
-                                      >
-                                        {copiedPartId === part.id ? (
-                                          <Check className="w-3 h-3" />
-                                        ) : (
-                                          <div className="relative w-3 h-3 flex items-center justify-center">
-                                            <div className="border border-current rounded-[2px] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
-                                          </div>
-                                        )}
                                       </button>
                                       <button 
                                         onClick={(e) => startEdit(part, e)}

@@ -6,6 +6,7 @@ import { SavePartModal } from './SavePartModal';
 import { SaveMasterModal } from './SaveMasterModal';
 import { SaveMemoModal } from './SaveMemoModal';
 import { extractMetadataFromImage } from '../utils/imageMetadata';
+import { calculateCursorPos } from '../utils/cursorUtils';
 
 
 interface PreviewColumnProps {
@@ -304,8 +305,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     if (!autoOptimize && !force) return text;
     return text
       .split('\n')
-      .map(line => 
-        line
+      .map(line => {
+        let cleanedLine = line
           .replace(/[\u3000]/g, ' ')
           .replace(/[ \t]+/g, ' ')
           .replace(/\.\s*,/g, ',')
@@ -315,11 +316,15 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           .replace(/,+/g, ',')
           .replace(/,[ \t]*,/g, ',')
           .replace(/,([^\s])/g, ', $1')
-          .trim()
-      )
+          .trim();
+        if (cleanedLine.length > 0) {
+          cleanedLine = cleanedLine.replace(/[\s,]*$/, ',');
+        }
+        return cleanedLine;
+      })
       .join('\n')
       .replace(/\n{3,}/g, '\n\n')
-      .replace(/^[\s,]+|[\s,]+$/g, '')
+      .replace(/^[\s,]+/g, '')
       .trim();
   };
 
@@ -959,18 +964,24 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       const end = textarea.selectionEnd || 0;
       
       const currentText = isNegative ? negativeEditorText : editorText;
-      const newText = currentText.slice(0, start) + content + currentText.slice(end);
+      const rawNewText = currentText.slice(0, start) + content + currentText.slice(end);
+      const newText = cleanString(rawNewText);
+      
+      const after = currentText.slice(end);
+      const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+      const before = currentText.slice(0, start);
+      const finalPos = calculateCursorPos(before, content, newText, isAtEnd);
       
       if (isNegative) {
         setNegativeEditorText(newText);
-        setNegativeCursorPos(start + content.length);
+        setNegativeCursorPos(finalPos);
       } else {
         setEditorText(newText);
-        setPositiveCursorPos(start + content.length);
+        setPositiveCursorPos(finalPos);
       }
       
       requestAnimationFrame(() => {
-         textarea.setSelectionRange(start + content.length, start + content.length);
+         textarea.setSelectionRange(finalPos, finalPos);
       });
     }
   };
@@ -1151,11 +1162,11 @@ const handleResizeStart = (e: React.MouseEvent) => {
           let neg = '';
           if (metadata.positive) {
             pos = metadata.positive;
-            setEditorText(prev => prev ? prev + '\n' + metadata.positive : metadata.positive);
+            setEditorText(prev => cleanString(prev ? prev + '\n' + metadata.positive : metadata.positive));
           }
           if (metadata.negative) {
             neg = metadata.negative;
-            setNegativeEditorText(prev => prev ? prev + '\n' + metadata.negative : metadata.negative);
+            setNegativeEditorText(prev => cleanString(prev ? prev + '\n' + metadata.negative : metadata.negative));
           }
           if (pos || neg) {
             window.dispatchEvent(new CustomEvent('restore_mixer_from_prompt', {
@@ -1169,9 +1180,9 @@ const handleResizeStart = (e: React.MouseEvent) => {
           const content = event.target?.result as string;
           if (content) {
             if (isNegative) {
-              setNegativeEditorText(prev => prev ? prev + '\n' + content : content);
+              setNegativeEditorText(prev => cleanString(prev ? prev + '\n' + content : content));
             } else {
-              setEditorText(prev => prev ? prev + '\n' + content : content);
+              setEditorText(prev => cleanString(prev ? prev + '\n' + content : content));
             }
           }
         };

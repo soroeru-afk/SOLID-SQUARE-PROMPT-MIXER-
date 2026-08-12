@@ -14,6 +14,7 @@ import { AppData, MasterPrompt, VariationPart } from './types';
 import { Language, t, translations } from './i18n';
 import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight, Check, Maximize, Minimize } from 'lucide-react';
 import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
+import { calculateCursorPos } from './utils/cursorUtils';
 
 const STORAGE_KEY = 'prompt_console_data';
 
@@ -677,19 +678,23 @@ export default function App() {
     if (!autoOptimize) return text;
     return text
       .split('\n')
-      .map(line => 
-        line
+      .map(line => {
+        let cleanedLine = line
           .replace(/[\u3000]/g, ' ')
           .replace(/[ \t]+/g, ' ')
           .replace(/[ \t]+,/g, ',')
           .replace(/,+/g, ',')
           .replace(/,[ \t]*,/g, ',')
           .replace(/,([^\s])/g, ', $1')
-          .trim()
-      )
+          .trim();
+        if (cleanedLine.length > 0) {
+          cleanedLine = cleanedLine.replace(/[\s,]*$/, ',');
+        }
+        return cleanedLine;
+      })
       .join('\n')
       .replace(/\n{3,}/g, '\n\n')
-      .replace(/^[\s,]+|[\s,]+$/g, '')
+      .replace(/^[\s,]+/g, '')
       .trim();
   };
 
@@ -768,23 +773,27 @@ export default function App() {
           // If there is a selection, replace the selection
           const before = result.slice(0, start);
           const after = result.slice(end);
-          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+          const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
           const insertedStr = prefix + posStr + suffix;
-          const newPos = start + insertedStr.length;
-          setPositiveCursorPos(newPos);
-          setPositiveSelectionEnd(newPos);
+          const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+          setPositiveCursorPos(finalPos);
+          setPositiveSelectionEnd(finalPos);
           result = before + insertedStr + after;
         } else {
           // Otherwise, insert at cursor position
           const before = result.slice(0, start);
           const after = result.slice(start);
-          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+          const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
           const insertedStr = prefix + posStr + suffix;
-          const newPos = start + insertedStr.length;
-          setPositiveCursorPos(newPos);
-          setPositiveSelectionEnd(newPos);
+          const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+          setPositiveCursorPos(finalPos);
+          setPositiveSelectionEnd(finalPos);
           result = before + insertedStr + after;
         }
       }
@@ -815,22 +824,26 @@ export default function App() {
         if (start !== end) {
           const before = result.slice(0, start);
           const after = result.slice(end);
-          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+          const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
           const insertedStr = prefix + negStr + suffix;
-          const newPos = start + insertedStr.length;
-          setNegativeCursorPos(newPos);
-          setNegativeSelectionEnd(newPos);
+          const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+          setNegativeCursorPos(finalPos);
+          setNegativeSelectionEnd(finalPos);
           result = before + insertedStr + after;
         } else {
           const before = result.slice(0, start);
           const after = result.slice(start);
-          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+          const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
           const insertedStr = prefix + negStr + suffix;
-          const newPos = start + insertedStr.length;
-          setNegativeCursorPos(newPos);
-          setNegativeSelectionEnd(newPos);
+          const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+          setNegativeCursorPos(finalPos);
+          setNegativeSelectionEnd(finalPos);
           result = before + insertedStr + after;
         }
       }
@@ -852,9 +865,11 @@ export default function App() {
         const before = safePrev.slice(0, start);
         const after = safePrev.slice(end);
         const insertedStr = text;
-        const newPos = start + insertedStr.length;
-        setFindCursorPos(newPos);
-        setFindSelectionEnd(newPos);
+        const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+        setFindCursorPos(finalPos);
+        setFindSelectionEnd(finalPos);
         return before + insertedStr + after;
       });
       return;
@@ -870,9 +885,11 @@ export default function App() {
         const before = safePrev.slice(0, start);
         const after = safePrev.slice(end);
         const insertedStr = text;
-        const newPos = start + insertedStr.length;
-        setReplaceCursorPos(newPos);
-        setReplaceSelectionEnd(newPos);
+        const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+        setReplaceCursorPos(finalPos);
+        setReplaceSelectionEnd(finalPos);
         return before + insertedStr + after;
       });
       return;
@@ -889,13 +906,15 @@ export default function App() {
         const end = Math.max(actualPos, endPos);
         const before = safePrev.slice(0, start);
         const after = safePrev.slice(end);
-        const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-        const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+        const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+        const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
         const insertedStr = prefix + text + suffix;
-        const newPos = start + insertedStr.length;
-        setNegativeCursorPos(newPos);
-        setNegativeSelectionEnd(newPos);
-        return cleanString(before + insertedStr + after);
+        const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+        setNegativeCursorPos(finalPos);
+        setNegativeSelectionEnd(finalPos);
+        return cleaned;
       });
     } else {
       setEditorText(prev => {
@@ -906,13 +925,15 @@ export default function App() {
         const end = Math.max(actualPos, endPos);
         const before = safePrev.slice(0, start);
         const after = safePrev.slice(end);
-        const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-        const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+        const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+        const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
         const insertedStr = prefix + text + suffix;
-        const newPos = start + insertedStr.length;
-        setPositiveCursorPos(newPos);
-        setPositiveSelectionEnd(newPos);
-        return cleanString(before + insertedStr + after);
+        const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+        setPositiveCursorPos(finalPos);
+        setPositiveSelectionEnd(finalPos);
+        return cleaned;
       });
     }
   }, [autoOptimize, positiveCursorPos, positiveSelectionEnd, negativeCursorPos, negativeSelectionEnd, findCursorPos, findSelectionEnd, replaceCursorPos, replaceSelectionEnd, activeEditor, setEditorText, setNegativeEditorText, setFindText, setReplaceText]);
@@ -1495,13 +1516,15 @@ export default function App() {
             const end = Math.max(actualPos, endPos);
             const before = safePrev.slice(0, start);
             const after = safePrev.slice(end);
-            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+            const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+            const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
             const insertedStr = prefix + newMaster.content + suffix;
-            const newPos = start + insertedStr.length;
-            setPositiveCursorPos(newPos);
-            setPositiveSelectionEnd(newPos);
-            return cleanString(before + insertedStr + after);
+            const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+            setPositiveCursorPos(finalPos);
+            setPositiveSelectionEnd(finalPos);
+            return cleaned;
           });
           setNegativeEditorText(prev => {
             const safePrev = prev || '';
@@ -1511,13 +1534,15 @@ export default function App() {
             const end = Math.max(actualPos, endPos);
             const before = safePrev.slice(0, start);
             const after = safePrev.slice(end);
-            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+            const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+            const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
             const insertedStr = prefix + newMaster.negativeContent! + suffix;
-            const newPos = start + insertedStr.length;
-            setNegativeCursorPos(newPos);
-            setNegativeSelectionEnd(newPos);
-            return cleanString(before + insertedStr + after);
+            const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+            setNegativeCursorPos(finalPos);
+            setNegativeSelectionEnd(finalPos);
+            return cleaned;
           });
         } else {
           setEditorText(prev => {
@@ -1528,13 +1553,15 @@ export default function App() {
             const end = Math.max(actualPos, endPos);
             const before = safePrev.slice(0, start);
             const after = safePrev.slice(end);
-            const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-            const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+            const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+            const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
             const insertedStr = prefix + newMaster.content + suffix;
-            const newPos = start + insertedStr.length;
-            setPositiveCursorPos(newPos);
-            setPositiveSelectionEnd(newPos);
-            return cleanString(before + insertedStr + after);
+            const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+            setPositiveCursorPos(finalPos);
+            setPositiveSelectionEnd(finalPos);
+            return cleaned;
           });
         }
       }
@@ -1555,13 +1582,15 @@ export default function App() {
           const end = Math.max(actualPos, endPos);
           const before = safePrev.slice(0, start);
           const after = safePrev.slice(end);
-          const prefix = autoOptimize && before.length > 0 && !before.endsWith(', ') && !before.endsWith(',') && !before.endsWith(' ') && !before.endsWith('\n') ? ', ' : '';
-          const suffix = autoOptimize && after.length > 0 && !after.startsWith(',') && !after.startsWith(' ') && !after.startsWith('\n') ? ', ' : '';
+          const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+          const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
           const insertedStr = prefix + newNeg.content + suffix;
-          const newPos = start + insertedStr.length;
-          setNegativeCursorPos(newPos);
-          setNegativeSelectionEnd(newPos);
-          return cleanString(before + insertedStr + after);
+          const cleaned = cleanString(before + insertedStr + after);
+          const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
+          const finalPos = calculateCursorPos(before, insertedStr, cleaned, isAtEnd);
+          setNegativeCursorPos(finalPos);
+          setNegativeSelectionEnd(finalPos);
+          return cleaned;
         });
       }
     }
