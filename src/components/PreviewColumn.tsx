@@ -1791,7 +1791,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               step="0.1" 
               value={editorLineHeight}
               onChange={e => setEditorLineHeight(parseFloat(e.target.value))}
-              className="w-16 h-1 bg-border-main rounded-lg appearance-none cursor-pointer accent-blue-500"
+              className="w-16 square-slider"
               title={`Line Height: ${editorLineHeight}`}
             />
           </div>
