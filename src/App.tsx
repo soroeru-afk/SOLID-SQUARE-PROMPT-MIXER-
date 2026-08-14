@@ -2062,6 +2062,8 @@ export default function App() {
             setReplaceSelectionEnd={setReplaceSelectionEnd}
             positiveCursorPos={positiveCursorPos}
             negativeCursorPos={negativeCursorPos}
+            positiveSelectionEnd={positiveSelectionEnd}
+            negativeSelectionEnd={negativeSelectionEnd}
             setPositiveCursorPos={setPositiveCursorPos}
             setNegativeCursorPos={setNegativeCursorPos}
             setPositiveSelectionEnd={setPositiveSelectionEnd}
