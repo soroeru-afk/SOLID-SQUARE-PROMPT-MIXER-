@@ -1,6 +1,6 @@
-let text = "1girl (steamy bathroom:1.5), test [tag]";
-let text2 = "1girl(steamy bathroom:1.5)test";
-text = text.replace(/([^,\[(\s])\s*(\(|\[)/g, '$1, $2');
-text2 = text2.replace(/([^,\[(\s])\s*(\(|\[)/g, '$1, $2');
-console.log(text);
-console.log(text2);
+const regex = /[。！？：…・、,」』】）]$/;
+console.log("(masterpiece:1.2)", regex.test("(masterpiece:1.2)"));
+console.log("User：", regex.test("User："));
+console.log("hello", regex.test("hello"));
+console.log("<lora:model:1>", regex.test("<lora:model:1>"));
+console.log("Drive保存", regex.test("Drive保存"));

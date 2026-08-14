@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trash2, ChevronDown, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, RotateCcw, ArrowDown, ArrowUp, Copy, Plus, X, List, ArrowRightLeft } from 'lucide-react';
+import { Trash2, ChevronDown, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, RotateCcw, ArrowDown, ArrowUp, Copy, Plus, X, List, ArrowRightLeft, Search } from 'lucide-react';
 import { Language, t } from '../i18n';
 import { SavePartModal } from './SavePartModal';
 import { SaveMasterModal } from './SaveMasterModal';
@@ -101,11 +101,13 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   autoOptimize = true,
   onToggleAutoOptimize
 }) => {
-  const effectiveAutoOptimize = isMemoTab ? false : autoOptimize;
+  
   const [copied, setCopied] = useState(false);
   
   const [showFormatOptions, setShowFormatOptions] = useState(false);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
+  const [searchSelectionActive, setSearchSelectionActive] = useState(false);
+  const [appliedFindText, setAppliedFindText] = useState('');
 
   const positiveHighlightRef = useRef<HTMLDivElement>(null);
   const negativeHighlightRef = useRef<HTMLDivElement>(null);
@@ -295,6 +297,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
   const handleFindNext = () => {
     if (!findText) return;
+    setAppliedFindText(findText);
 
     const searchFromPos = (text: string, pos: number, ref: React.RefObject<HTMLTextAreaElement>, setActive: () => void, setCursor: (p: number) => void, setSelectionEnd: (p: number) => void) => {
       const lowerText = text.toLowerCase();
@@ -318,6 +321,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         }
         setCursor(index);
         setSelectionEnd(index + findText.length);
+        setSearchSelectionActive(true);
         return true;
       }
       return false;
@@ -352,6 +356,70 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     }
   };
 
+
+  const handleFindPrev = () => {
+    if (!findText) return;
+    setAppliedFindText(findText);
+
+    const searchFromPos = (text: string, pos: number, ref: React.RefObject<HTMLTextAreaElement>, setActive: () => void, setCursor: (p: number) => void, setSelectionEnd: (p: number) => void) => {
+      const lowerText = text.toLowerCase();
+      const lowerFind = findText.toLowerCase();
+      
+      let searchPos = Math.max(0, pos - findText.length - 1);
+      let index = lowerText.lastIndexOf(lowerFind, searchPos);
+      if (index === -1) {
+        // Wrap around
+        index = lowerText.lastIndexOf(lowerFind);
+      }
+      
+      if (index !== -1) {
+        setActive();
+        if (ref.current) {
+          ref.current.focus();
+          ref.current.setSelectionRange(index, index + findText.length);
+          // Browsers usually scroll to selection automatically, but just in case:
+          const textBefore = text.substring(0, index);
+          const newLines = (textBefore.match(/\n/g) || []).length;
+          const lineHeight = parseInt(getComputedStyle(ref.current).lineHeight) || 20;
+          ref.current.scrollTop = newLines * lineHeight;
+        }
+        setCursor(index);
+        setSelectionEnd(index + findText.length);
+        setSearchSelectionActive(true);
+        return true;
+      }
+      return false;
+    };
+
+    const isNegativeFocused = activeEditor === 'negative';
+    
+    if (isNegativeFocused) {
+       const foundInNeg = searchFromPos(
+         negativeEditorText,
+         negativeSelectionEnd !== null && negativeSelectionEnd !== undefined ? negativeSelectionEnd : (negativeCursorPos || 0),
+         negativeTextRef,
+         () => setActiveEditor('negative'),
+         setNegativeCursorPos,
+         setNegativeSelectionEnd!
+       );
+       if (!foundInNeg) {
+         searchFromPos(editorText, editorText.length, positiveTextRef, () => setActiveEditor('positive'), setPositiveCursorPos, setPositiveSelectionEnd!);
+       }
+    } else {
+       const foundInPos = searchFromPos(
+         editorText,
+         positiveSelectionEnd !== null && positiveSelectionEnd !== undefined ? positiveSelectionEnd : (positiveCursorPos || 0),
+         positiveTextRef,
+         () => setActiveEditor('positive'),
+         setPositiveCursorPos,
+         setPositiveSelectionEnd!
+       );
+       if (!foundInPos) {
+         searchFromPos(negativeEditorText, negativeEditorText.length, negativeTextRef, () => setActiveEditor('negative'), setNegativeCursorPos, setNegativeSelectionEnd!);
+       }
+    }
+  };
+
   const handleReplace = () => {
     if (!findText) return;
     const regex = new RegExp(escapeRegExp(findText), 'i');
@@ -366,7 +434,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     setNegativeEditorText(prev => prev.replace(regex, replaceText));
   };
   const cleanString = (text: string, force: boolean = false) => {
-    if (!effectiveAutoOptimize && !force) return text;
+    if (!autoOptimize && !force) return text;
     return text
       .split('\n')
       .map(line => {
@@ -1512,38 +1580,60 @@ const handleResizeStart = (e: React.MouseEvent) => {
     }
   };
 
-  const renderHighlightedText = (text: string) => {
-    const isLight = paperMode || (theme === 'light' || theme === 'mono') || theme === 'paper' || theme === 'mono';
+  const renderHighlightedText = (text: string, isNegative: boolean) => {
+    const isLight = paperMode || (theme === 'light' || theme === 'mono') || theme === 'paper';
     const highlightColorClass = isLight ? 'text-[#059669] drop-shadow-sm' : 'text-[#34d399] drop-shadow-sm';
-    
-    // First, split by findText if it exists
-    if (findText) {
-      const searchRegex = new RegExp(`(${escapeRegExp(findText)})`, 'gi');
-      const searchParts = text.split(searchRegex);
-      
-      return searchParts.map((sPart, j) => {
-        if (sPart.toLowerCase() === findText.toLowerCase()) {
-          return <span key={`find-${j}`} className="bg-blue-400/30 px-[2px] mx-[-2px] rounded-[3px]">{sPart}</span>;
-        }
-        // Further split by parentheses
-        const parts = sPart.split(/(\([^)]+\))/g);
-        return parts.map((part, i) => {
-          if (part.startsWith('(') && part.endsWith(')')) {
-            return <span key={`paren-${j}-${i}`} className={highlightColorClass}>{part}</span>;
+    const highlightBgClass = isLight ? 'bg-[#059669]' : 'bg-[#34d399]';
+
+    let currentGlobalIndex = 0;
+
+    const parenParts = text.split(/(\([^)]+\))/g);
+
+    return parenParts.map((parenPart, i) => {
+      const isParen = parenPart.startsWith('(') && parenPart.endsWith(')');
+      const baseClass = isParen ? highlightColorClass : '';
+
+      if (appliedFindText) {
+        const searchRegex = new RegExp(`(${escapeRegExp(appliedFindText)})`, 'gi');
+        const searchParts = parenPart.split(searchRegex);
+
+        return searchParts.map((sPart, j) => {
+          const partStartIndex = currentGlobalIndex;
+          currentGlobalIndex += sPart.length;
+
+          if (sPart.toLowerCase() === appliedFindText.toLowerCase()) {
+            const cursorPos = isNegative ? negativeCursorPos : positiveCursorPos;
+            const isActiveEditor = activeEditor === (isNegative ? 'negative' : 'positive');
+            const isMatchActive = searchSelectionActive && isActiveEditor && cursorPos !== null && partStartIndex === cursorPos;
+
+            if (isMatchActive) {
+              const activeStyle = 'bg-blue-600 text-white';
+
+              return (
+                <span key={`find-${i}-${j}`} className={`${activeStyle} rounded-[2px] z-10 relative`}>
+                  {sPart}
+                </span>
+              );
+            } else {
+              return (
+                <span key={`find-${i}-${j}`} className={`bg-amber-500/40 rounded-[2px] ${baseClass}`}>
+                  {sPart}
+                </span>
+              );
+            }
           }
-          return <span key={`text-${j}-${i}`}>{part}</span>;
+
+          return <span key={`text-${i}-${j}`} className={baseClass}>{sPart}</span>;
         });
-      });
-    } else {
-      const parts = text.split(/(\([^)]+\))/g);
-      return parts.map((part, i) => {
-        if (part.startsWith('(') && part.endsWith(')')) {
-          return <span key={i} className={highlightColorClass}>{part}</span>;
-        }
-        return <span key={i}>{part}</span>;
-      });
-    }
+      }
+
+      currentGlobalIndex += parenPart.length;
+      return <span key={`text-${i}`} className={baseClass}>{parenPart}</span>;
+    });
   };
+
+  const charCount = (editorText?.length || 0) + (negativeEditorText?.length || 0);
+  const MAX_CHARS = 4096;
 
   return (
     <>
@@ -1552,180 +1642,218 @@ const handleResizeStart = (e: React.MouseEvent) => {
       <div className="p-2 border-b border-border-main flex items-center justify-between bg-bg-panel shrink-0 gap-2">
         <div className="flex items-center gap-3">
           <span className="text-[10px] font-mono text-text-main font-bold uppercase tracking-widest hidden lg:inline">{t('output_synthesis', lang)}</span>
-          {isMemoTab ? (
-            <div className="px-2 py-1 text-[9px] font-mono border border-text-dim text-text-dim rounded outline-none cursor-default">
-              MEMO MODE
-            </div>
-          ) : (
-            <button 
-              onClick={onToggleAutoOptimize}
-              className={`px-2 py-1 text-[9px] font-mono border rounded transition-colors outline-none cursor-pointer ${autoOptimize ? 'border-text-main text-text-main' : 'border-text-dim text-text-dim hover:border-text-main hover:text-text-main'}`}
-            >
-              {t(autoOptimize ? 'auto_optimize_on' : 'auto_optimize_off', lang)}
-            </button>
-          )}
+          <button 
+            onClick={onToggleAutoOptimize}
+            className={`px-2 py-1 text-[9px] font-mono border rounded outline-none transition-colors bg-transparent ${autoOptimize 
+              ? 'border-border-main text-text-main' 
+              : 'border-border-main/50 text-text-dim hover:text-text-main'}`}
+          >
+            {autoOptimize ? t('auto_optimize_on', lang) : t('auto_optimize_off', lang)}
+          </button>
         </div>
-        <div className="flex items-center">
-          <span className="text-[9px] text-text-dim font-mono whitespace-nowrap">CHAR: {editorText.length} / 4096</span>
+        <div className="text-[10px] font-mono text-text-dim shrink-0">
+          <span className="font-bold hidden sm:inline">CHAR:</span> {charCount} / {MAX_CHARS}
         </div>
       </div>
 
-      {/* Row 1: Search/Replace & Copy Buttons (No Wrap, Horizontal Scroll) */}
-      <div className="p-2 border-b border-border-main flex items-center bg-bg-panel shrink-0 gap-3 overflow-x-auto whitespace-nowrap hide-scroll" style={{ minHeight: '48px' }}>
-        <style>{".hide-scroll::-webkit-scrollbar { display: none; } .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }"}</style>
-        <div className="flex items-center gap-2 shrink-0">
-          <input 
-            ref={findTextRef}
-            type="text" 
-            placeholder={t('find', lang)} 
-            value={findText}
-            onChange={e => {
-              setFindText(e.target.value);
-              setActiveEditor('find');
-              setFindCursorPos(e.target.selectionStart || 0);
-              setFindSelectionEnd(e.target.selectionEnd || 0);
-            }}
-            onSelect={(e) => {
-              setActiveEditor('find');
-              setFindCursorPos(e.currentTarget.selectionStart || 0);
-              setFindSelectionEnd(e.currentTarget.selectionEnd || 0);
-            }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'copy';
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              const text = e.dataTransfer.getData('text/plain');
-              if (text) setFindText(text);
-            }}
-            className="bg-bg-input border border-border-main text-[11px] font-mono px-3 py-1.5 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600 w-[120px]"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+      {/* Tools Header: Search, Replace, Copy */}
+      <div className="p-2 border-b border-border-main flex flex-wrap items-center justify-between bg-bg-panel shrink-0 gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 flex-1">
+          <div className="flex items-center gap-1 shrink-0">
+            <div className="relative flex items-center">
+              <input 
+                ref={findTextRef}
+                type="text" 
+                placeholder={t('find', lang)} 
+                value={findText}
+                onChange={e => {
+                  setFindText(e.target.value);
+                  if (e.target.value === '') setAppliedFindText('');
+                  setActiveEditor('find');
+                  setFindCursorPos(e.target.selectionStart || 0);
+                  setFindSelectionEnd(e.target.selectionEnd || 0);
+                }}
+                onSelect={(e) => {
+                  setActiveEditor('find');
+                  setFindCursorPos(e.currentTarget.selectionStart || 0);
+                  setFindSelectionEnd(e.currentTarget.selectionEnd || 0);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (e.shiftKey) handleFindPrev();
+                    else handleFindNext();
+                  }
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'copy';
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'copy';
+                  const text = e.dataTransfer.getData('text/plain');
+                  if (text) {
+                    setFindText(text);
+                    if (text === '') setAppliedFindText('');
+                    setActiveEditor('find');
+                  }
+                }}
+                className={`w-28 pl-2 pr-6 py-1.5 ${theme === 'mono' ? 'bg-bg-input text-text-main hover:bg-gray-500' : 'bg-bg-input text-text-main border-border-main hover:border-border-hover'} text-[10px] font-mono border rounded outline-none transition-colors`}
+              />
+              {findText && (
+                <button
+                  onClick={() => {
+                    setFindText('');
+                    setAppliedFindText('');
+                    setActiveEditor('find');
+                    if (findTextRef.current) findTextRef.current.focus();
+                  }}
+                  className="absolute right-1 text-text-dim hover:text-text-main transition-colors"
+                  title="Clear"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="flex -space-x-px">
+              <button 
+                onClick={() => {
+                  if (!findText) return;
+                  handleFindNext();
+                }}
+                className={`shrink-0 flex items-center justify-center px-2 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] border border-border-hover rounded-l text-text-dim transition-colors`}
+                title={lang === 'en' ? 'Search' : '検索'}
+              >
+                <Search className="w-3.5 h-3.5" />
+              </button>
+              <button 
+                onClick={handleFindPrev}
+                className={`shrink-0 whitespace-nowrap px-2 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
+                title="Shift+Enter"
+              >
+                {lang === 'en' ? 'Prev' : '前へ'}
+              </button>
+              <button 
+                onClick={handleFindNext}
+                className={`shrink-0 whitespace-nowrap px-2 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded-r text-text-dim transition-colors`}
+                title="Enter"
+              >
+                {lang === 'en' ? 'Next' : '次へ'}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <input 
+              ref={replaceTextRef}
+              type="text" 
+              placeholder={t('replace', lang)} 
+              value={replaceText}
+              onChange={e => {
+                setReplaceText(e.target.value);
+                setActiveEditor('replace');
+                setReplaceCursorPos(e.target.selectionStart || 0);
+                setReplaceSelectionEnd(e.target.selectionEnd || 0);
+              }}
+              onSelect={(e) => {
+                setActiveEditor('replace');
+                setReplaceCursorPos(e.currentTarget.selectionStart || 0);
+                setReplaceSelectionEnd(e.currentTarget.selectionEnd || 0);
+              }}
+              onDragOver={(e) => {
                 e.preventDefault();
-                handleFindNext();
-              }
-            }}
-          />
-          <button 
-            onClick={handleFindNext}
-            className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
-          >
-            {lang === 'en' ? 'Find Next' : '次を検索'}
-          </button>
-          <input 
-            ref={replaceTextRef}
-            type="text" 
-            placeholder={t('replace', lang)} 
-            value={replaceText}
-            onChange={e => {
-              setReplaceText(e.target.value);
-              setActiveEditor('replace');
-              setReplaceCursorPos(e.target.selectionStart || 0);
-              setReplaceSelectionEnd(e.target.selectionEnd || 0);
-            }}
-            onSelect={(e) => {
-              setActiveEditor('replace');
-              setReplaceCursorPos(e.currentTarget.selectionStart || 0);
-              setReplaceSelectionEnd(e.currentTarget.selectionEnd || 0);
-            }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'copy';
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              const text = e.dataTransfer.getData('text/plain');
-              if (text) setReplaceText(text);
-            }}
-            className="bg-bg-input border border-border-main text-[11px] font-mono px-3 py-1.5 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600 w-[120px]"
-          />
-          <button 
-            onClick={handleReplace}
-            className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
-          >
-            {t('replace', lang)}
-          </button>
-          <button 
-            onClick={handleReplaceAll}
-            className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
-          >
-            {t('replace_all', lang)}
-          </button>
-          
-          {!showFormatOptions ? (
+                e.dataTransfer.dropEffect = 'copy';
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const text = e.dataTransfer.getData('text/plain');
+                if (text) setReplaceText(text);
+              }}
+              className="bg-bg-input border border-border-main text-[11px] font-mono px-3 py-1.5 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600 w-[120px] shrink-0"
+            />
             <button 
-              onClick={() => setShowFormatOptions(true)}
-              className={`ml-2 px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors shrink-0`}
+              onClick={handleReplace}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+            >
+              {t('replace', lang)}
+            </button>
+            <button 
+              onClick={handleReplaceAll}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+            >
+              {t('replace_all', lang)}
+            </button>
+          </div>
+
+          <div className="relative flex items-center shrink-0 ml-2">
+            <button 
+              onClick={() => setShowFormatOptions(!showFormatOptions)}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded ${showFormatOptions ? 'text-text-main bg-border-main/50' : 'text-text-dim'} transition-colors shrink-0`}
             >
               {lang === 'en' ? 'Format...' : 'テキスト整理...'}
             </button>
-          ) : (
-            <div className="flex items-center gap-1.5 ml-2 shrink-0">
-              <button 
-                onClick={handleFormatComma}
-                className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-2`}
-                title="Toggle periods and commas"
-              >
-                <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
-                <ArrowRightLeft className="w-3.5 h-3.5 text-text-dim opacity-80" />
-                <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">,</span>
-              </button>
-              <button 
-                onClick={handleFormatHyphen}
-                className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-2`}
-                title="Toggle periods and hyphens"
-              >
-                <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
-                <ArrowRightLeft className="w-3.5 h-3.5 text-text-dim opacity-80" />
-                <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">-</span>
-              </button>
-              <button 
-                onClick={handleStripPunctuation}
-                className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-2`}
-                title="Toggle punctuation and spaces"
-              >
-                <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.,</span>
-                <ArrowRightLeft className="w-3.5 h-3.5 text-text-dim opacity-80" />
-                <span className="text-[10px] font-bold text-text-dim leading-none">{lang === 'en' ? 'SPACE' : '空白'}</span>
-              </button>
-              <button
-                onClick={() => setShowFormatOptions(false)}
-                className={`px-2 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center text-text-dim`}
-              >
-                <X size={12} />
-              </button>
-            </div>
-          )}
+            
+            {showFormatOptions && (
+              <div className="absolute top-[calc(100%+4px)] left-0 bg-bg-panel border border-border-main rounded-md shadow-xl flex flex-col gap-1.5 p-2 z-[100] min-w-[200px]">
+                <button 
+                  onClick={handleFormatComma}
+                  className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-2`}
+                  title="Toggle periods and commas"
+                >
+                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-text-dim opacity-80" />
+                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">,</span>
+                </button>
+                <button 
+                  onClick={handleFormatHyphen}
+                  className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-2`}
+                  title="Toggle periods and hyphens"
+                >
+                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-text-dim opacity-80" />
+                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">-</span>
+                </button>
+                <button 
+                  onClick={handleStripPunctuation}
+                  className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-2`}
+                  title="Toggle punctuation and spaces"
+                >
+                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.,</span>
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-text-dim opacity-80" />
+                  <span className="text-[10px] font-bold text-text-dim leading-none">{lang === 'en' ? 'SPACE' : '空白'}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="w-px h-6 bg-border-main mx-1 shrink-0"></div>
-
+        <div className="hidden xl:block w-px h-6 bg-border-main mx-1 shrink-0"></div>
         <div className="flex items-center gap-1.5 shrink-0 ml-auto">
           <span className="text-[10px] font-mono text-text-dim mr-1 flex items-center gap-1 font-bold">
             <Copy className="w-3.5 h-3.5" /> COPY
           </span>
           <button 
             onClick={() => handleCopy('main')}
-            className="w-20 h-8 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
           >
             {t('copy_main', lang)}
           </button>
           <button 
             onClick={() => handleCopy('negative')}
-            className="w-20 h-8 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
           >
             {t('copy_negative_only', lang)}
           </button>
           <button 
             onClick={() => handleCopy('all')}
-            className="w-20 h-8 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
           >
             {t('copy_all', lang)}
           </button>
         </div>
       </div>
-      
+
       {/* Editor Toolbar (Rest) */}
       <div className="p-2 border-b border-border-main bg-bg-base flex flex-wrap items-center gap-2 shrink-0">
         {(() => {
@@ -1866,12 +1994,12 @@ const handleResizeStart = (e: React.MouseEvent) => {
         <div className="flex items-center space-x-1">
           <button 
             onClick={() => setEditorFontSize(s => Math.max(8, s - 1))}
-            className={`px-2 h-8 whitespace-nowrap shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
+            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
           >A-</button>
           <span className="text-[16px] font-bold font-mono text-text-main w-6 text-center shrink-0">{editorFontSize}</span>
           <button 
             onClick={() => setEditorFontSize(s => Math.min(24, s + 1))}
-            className={`px-2 h-8 whitespace-nowrap shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
+            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
           >A+</button>
           
           <select 
@@ -1902,7 +2030,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <button
             onClick={undo}
             disabled={!canUndo}
-            className={`px-3 h-8 whitespace-nowrap shrink-0 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
+            className={`px-3 h-8 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
             title={t('undo', lang)}
           >
             <Undo2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'UNDO' : '前に戻す'}
@@ -1911,7 +2039,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <button
             onClick={redo}
             disabled={!canRedo}
-            className={`px-3 h-8 whitespace-nowrap shrink-0 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
+            className={`px-3 h-8 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
             title={lang === 'en' ? 'REDO' : '次に進む'}
           >
             <Redo2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'REDO' : '次に進む'}
@@ -1919,7 +2047,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           
           <button 
           onClick={() => {            setEditorText('');            setNegativeEditorText('');          }}
-          className={`px-3 h-8 whitespace-nowrap shrink-0  border rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
+          className={`px-3 h-8  border rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
             (theme === 'light' || theme === 'mono')
               ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
               : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
@@ -1957,7 +2085,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
             )}
             <div 
               ref={tabsScrollRef}
-              className="flex-1 flex items-center overflow-x-auto px-0 pt-0 pb-1 bg-transparent [&::-webkit-scrollbar]:hidden" 
+              className="flex-1 flex items-center overflow-x-auto pl-0 pt-0 pb-1 pr-8 bg-transparent [&::-webkit-scrollbar]:hidden" 
               style={{ gap: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {tabs.map(tab => (
@@ -2108,16 +2236,18 @@ const handleResizeStart = (e: React.MouseEvent) => {
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
               aria-hidden="true"
             >
-              {editorText ? <>{renderHighlightedText(editorText)}{editorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">{t('placeholder', lang)}</span>}
+              {editorText ? <>{renderHighlightedText(editorText, false)}{editorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">{t('placeholder', lang)}</span>}
             </div>
             <textarea
               onKeyDown={(e) => handleKeyDown(e, false)}
               onPaste={(e) => handlePaste(e, false)}
               ref={positiveTextRef}
+              onMouseDown={() => setSearchSelectionActive(false)}
               value={editorText}
-              onDragOver={handleDragOver}
+              onDragStart={(e) => { e.dataTransfer.effectAllowed = 'copy'; }} onDragOver={handleDragOver}
               onDrop={(e) => handleDropFile(e, false)}
               onChange={(e) => {
+                setSearchSelectionActive(false);
                 lastUserTextRef.current = e.target.value;
                 setEditorText(e.target.value);
                 setActiveEditor('positive');
@@ -2125,6 +2255,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 if (setPositiveSelectionEnd) setPositiveSelectionEnd(e.target.selectionEnd);
               }}
               onSelect={(e) => {
+                setSearchSelectionActive(false);
                 setActiveEditor('positive');
                 setPositiveCursorPos(e.currentTarget.selectionStart);
                 if (setPositiveSelectionEnd) setPositiveSelectionEnd(e.currentTarget.selectionEnd);
@@ -2137,7 +2268,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               }}
               
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono selection:bg-blue-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-blue-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
@@ -2164,15 +2295,15 @@ const handleResizeStart = (e: React.MouseEvent) => {
             </button>
             <button 
               onClick={() => handleMoveTextBetweenEditors('down')}
-              className={`h-8 w-8 whitespace-nowrap shrink-0 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
+              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
               title={t('move_to_negative', lang)}
             >
               <ArrowDown size={14} />
             </button>
-            <div className="w-px h-6 shrink-0 bg-border-main my-auto mx-1"></div>
+            <div className="w-px h-6 bg-border-main my-auto mx-1"></div>
             <button 
               onClick={() => handleMoveTextBetweenEditors('up')}
-              className={`h-8 w-8 whitespace-nowrap shrink-0 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
+              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
               title={t('move_to_positive', lang)}
             >
               <ArrowUp size={14} />
@@ -2244,16 +2375,18 @@ const handleResizeStart = (e: React.MouseEvent) => {
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
               aria-hidden="true"
             >
-              {negativeEditorText ? <>{renderHighlightedText(negativeEditorText)}{negativeEditorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">Negative prompt...</span>}
+              {negativeEditorText ? <>{renderHighlightedText(negativeEditorText, true)}{negativeEditorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">Negative prompt...</span>}
             </div>
             <textarea
               onKeyDown={(e) => handleKeyDown(e, true)}
               onPaste={(e) => handlePaste(e, true)}
               ref={negativeTextRef}
+              onMouseDown={() => setSearchSelectionActive(false)}
               value={negativeEditorText}
-              onDragOver={handleDragOver}
+              onDragStart={(e) => { e.dataTransfer.effectAllowed = 'copy'; }} onDragOver={handleDragOver}
               onDrop={(e) => handleDropFile(e, true)}
               onChange={(e) => {
+                setSearchSelectionActive(false);
                 lastUserNegativeTextRef.current = e.target.value;
                 setNegativeEditorText(e.target.value);
                 setActiveEditor('negative');
@@ -2261,6 +2394,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 if (setNegativeSelectionEnd) setNegativeSelectionEnd(e.target.selectionEnd);
               }}
               onSelect={(e) => {
+                setSearchSelectionActive(false);
                 setActiveEditor('negative');
                 setNegativeCursorPos(e.currentTarget.selectionStart);
                 if (setNegativeSelectionEnd) setNegativeSelectionEnd(e.currentTarget.selectionEnd);
@@ -2273,7 +2407,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               }}
               
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono selection:bg-red-500/40 selection:text-transparent bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-red-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>

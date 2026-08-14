@@ -8,7 +8,6 @@ import { SavePartModal } from './components/SavePartModal';
 import { SaveMasterModal } from './components/SaveMasterModal';
 import { SaveMixerModal } from './components/SaveMixerModal';
 import { Toast } from './components/Toast';
-import { ImportModal } from './components/ImportModal';
 import { initialData } from './data';
 import { AppData, MasterPrompt, VariationPart } from './types';
 import { Language, t, translations } from './i18n';
@@ -285,7 +284,12 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
+          let normalCount = 0;
+          return parsed.map((t: any) => {
+            if (t.isMemo) return { ...t, name: t.name || 'MEMO' };
+            normalCount++;
+            return { ...t, name: `TAB ${String(normalCount).padStart(2, '0')}` };
+          });
         }
       } catch (e) {}
     }
@@ -439,7 +443,12 @@ export default function App() {
     const newId = `tab-${Date.now()}`;
     setTabs(prev => {
       const newTabs = [...prev, { id: newId, name: '', pos: '', neg: '' }];
-      return newTabs.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
+      let normalCount = 0;
+      return newTabs.map((t) => {
+        if (t.isMemo) return t;
+        normalCount++;
+        return { ...t, name: `TAB ${String(normalCount).padStart(2, '0')}` };
+      });
     });
     setActiveTabId(newId);
   }, []);
@@ -463,7 +472,12 @@ export default function App() {
       }
       delete historyRef.current[id];
       delete indexRef.current[id];
-      return newTabs.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
+      let normalCount = 0;
+      return newTabs.map((t) => {
+        if (t.isMemo) return t;
+        normalCount++;
+        return { ...t, name: `TAB ${String(normalCount).padStart(2, '0')}` };
+      });
     });
   }, [activeTabId]);
 
@@ -533,9 +547,6 @@ export default function App() {
       saveTimerRef.current = null;
     }, 2000);
   }, []);
-  const [loadSuccessMessage, setLoadSuccessMessage] = useState<string | null>(null);
-  const [importPendingData, setImportPendingData] = useState<any>(null);
-
   useEffect(() => {
     getFileHandle('export_directory').then(async handle => {
       if (handle && handle.name) {
@@ -565,12 +576,12 @@ export default function App() {
           setData(parsed);
           mergeMixerData(parsed, true);
           setSelectedMasterId(parsed.masters[0]?.id || null);
-          setLoadSuccessMessage(`Resumed from ${latestFile.name}`);
-          setTimeout(() => setLoadSuccessMessage(null), 3000);
+          setSaveSuccessMessage(`Resumed from ${latestFile.name}`);
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
         }
       } else {
-        setLoadSuccessMessage('No JSON files found in directory');
-        setTimeout(() => setLoadSuccessMessage(null), 3000);
+        setSaveSuccessMessage('No JSON files found in directory');
+        setTimeout(() => setSaveSuccessMessage(null), 3000);
       }
     } catch (e) {
       console.error("Failed to load latest file", e);
@@ -1330,6 +1341,7 @@ export default function App() {
   };
 
 
+
   const handleExportOverall = async () => {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -1522,23 +1534,38 @@ export default function App() {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed.masters && parsed.parts) {
-          // 直接上書き (Overwrite completely)
-          setData(parsed);
+          setData(prev => {
+            const hasExistingParts = prev.parts && prev.parts.length > 0;
+            const hasExistingCategories = prev.customCategories && prev.customCategories.length > 0;
+            const hasExistingSectionNames = prev.customSectionNames && Object.keys(prev.customSectionNames).length > 0;
+            
+            return {
+              ...parsed,
+              // パーツデータが既に存在する場合は上書きせず保護する
+              parts: hasExistingParts ? prev.parts : parsed.parts,
+              customCategories: hasExistingCategories ? prev.customCategories : (parsed.customCategories || []),
+              customSectionNames: hasExistingSectionNames ? prev.customSectionNames : (parsed.customSectionNames || {}),
+            };
+          });
           
-          if (parsed.attributeMixerCategories) {
+          // ミキサーのデータも、既存データがある場合は上書きせず保護する
+          const existingCategories = localStorage.getItem('attribute_mixer_categories_v2');
+          if ((!existingCategories || existingCategories === '[]') && parsed.attributeMixerCategories) {
             localStorage.setItem('attribute_mixer_categories_v2', typeof parsed.attributeMixerCategories === 'string' ? parsed.attributeMixerCategories : JSON.stringify(parsed.attributeMixerCategories));
           }
-          if (parsed.attributeMixerPresets) {
+          
+          const existingPresets = localStorage.getItem('attribute_mixer_custom_presets_v7');
+          if ((!existingPresets || existingPresets === '[]') && parsed.attributeMixerPresets) {
             localStorage.setItem('attribute_mixer_custom_presets_v7', typeof parsed.attributeMixerPresets === 'string' ? parsed.attributeMixerPresets : JSON.stringify(parsed.attributeMixerPresets));
           }
-          if (parsed.attributeMixerCombos) {
+          
+          const existingCombos = localStorage.getItem('attribute_mixer_combinations_v1');
+          if ((!existingCombos || existingCombos === '[]') && parsed.attributeMixerCombos) {
             localStorage.setItem('attribute_mixer_combinations_v1', typeof parsed.attributeMixerCombos === 'string' ? parsed.attributeMixerCombos : JSON.stringify(parsed.attributeMixerCombos));
           }
           
           window.dispatchEvent(new Event('attributeMixerDataImported'));
-          setSelectedMasterId(parsed.masters[0]?.id || null);
-          setSaveSuccessMessage(lang === 'en' ? 'Overall Import completed!' : '全体のインポートが完了しました！');
-          setTimeout(() => setSaveSuccessMessage(null), 3000);
+          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format for Overall Import.');
         }
@@ -1576,9 +1603,7 @@ export default function App() {
             localStorage.setItem('attribute_mixer_combinations_v1', typeof parsed.attributeMixerCombos === 'string' ? parsed.attributeMixerCombos : JSON.stringify(parsed.attributeMixerCombos));
           }
           
-          window.dispatchEvent(new Event('attributeMixerDataImported'));
-          setSaveSuccessMessage(lang === 'en' ? 'Parts Import completed!' : 'パーツのインポートが完了しました！');
-          setTimeout(() => setSaveSuccessMessage(null), 3000);
+          showSaveToast("インポート完了！");
         } else {
           alert('Invalid JSON format for Parts Import.');
         }
@@ -1590,62 +1615,6 @@ export default function App() {
     e.target.value = '';
   };
 
-  const executeImport = (shouldMerge: boolean) => {
-    if (!importPendingData) return;
-    const parsed = importPendingData;
-    
-    if (shouldMerge) {
-      setData(prev => {
-        const mergeArray = (oldArr: any[], newArr: any[]) => {
-          const map = new Map();
-          oldArr.forEach(item => map.set(item.id, item));
-          newArr.forEach(item => {
-            if (!map.has(item.id)) {
-              map.set(item.id, item);
-            }
-          });
-          return Array.from(map.values());
-        };
-
-        const mergeCategories = (oldCats: any[], newCats: any[]) => {
-          const map = new Set(oldCats.map(c => `${c.section}-${c.name}`));
-          const merged = [...oldCats];
-          newCats.forEach(c => {
-            if (!map.has(`${c.section}-${c.name}`)) {
-              merged.push(c);
-              map.add(`${c.section}-${c.name}`);
-            }
-          });
-          return merged;
-        };
-
-        return {
-          masters: mergeArray(prev.masters, parsed.masters),
-          parts: mergeArray(prev.parts, parsed.parts),
-          memos: mergeArray(prev.memos || [], parsed.memos || []),
-          negatives: mergeArray(prev.negatives || [], parsed.negatives || []),
-          customCategories: mergeCategories(prev.customCategories || [], parsed.customCategories || [])
-        };
-      });
-      mergeMixerData(parsed);
-    } else {
-      setData(parsed);
-      if (parsed.attributeMixerCategories) {
-        localStorage.setItem('attribute_mixer_categories_v2', typeof parsed.attributeMixerCategories === 'string' ? parsed.attributeMixerCategories : JSON.stringify(parsed.attributeMixerCategories));
-      }
-      if (parsed.attributeMixerPresets) {
-        localStorage.setItem('attribute_mixer_custom_presets_v7', typeof parsed.attributeMixerPresets === 'string' ? parsed.attributeMixerPresets : JSON.stringify(parsed.attributeMixerPresets));
-      }
-      if (parsed.attributeMixerCombos) {
-        localStorage.setItem('attribute_mixer_combinations_v1', typeof parsed.attributeMixerCombos === 'string' ? parsed.attributeMixerCombos : JSON.stringify(parsed.attributeMixerCombos));
-      }
-      window.dispatchEvent(new Event('attributeMixerDataImported'));
-    }
-    
-    setSelectedMasterId(parsed.masters[0]?.id || null);
-    setImportPendingData(null);
-    showSaveToast("インポート完了！");
-  };
 
   const handleSelectMasterId = (id: string | null, insert: boolean = true) => {
     if (id && insert) {
@@ -1985,8 +1954,9 @@ export default function App() {
               >
                 {exportDirectoryName || t('not_set', lang)}
               </button>
-              {loadSuccessMessage && (<div className="mt-1 text-center text-[10px] font-mono text-accent-main animate-pulse font-bold">{loadSuccessMessage}</div>)}
+              
             </div>
+            
             <div className="flex flex-col gap-2">
               <div className="text-[10px] font-mono text-text-dim text-center">▼ {lang === 'en' ? 'Overall (Master, Memos, Parts)' : '全体 (マスター・メモ・パーツ全て)'} ▼</div>
               <div className="flex gap-2">
@@ -2010,6 +1980,7 @@ export default function App() {
                 </button>
               </div>
             </div>
+
           </div>
 
           <div 
@@ -2029,7 +2000,6 @@ export default function App() {
         {/* Center: Text Editor & Output */}
         <section className="flex-1 flex flex-col bg-bg-base relative min-w-0" style={{ minWidth: '960px' }}>
           <PreviewColumn
-          isMemoTab={activeTab?.isMemo || false}
           selectedMasterId={selectedMasterId}
           selectedMasterName={selectedMasterId ? data.masters.find(m => m.id === selectedMasterId)?.name : undefined}
           selectedNegativeId={selectedNegativeId}
@@ -2038,6 +2008,7 @@ export default function App() {
           selectedPartName={activePartId ? data.parts.find(p => p.id === activePartId)?.name : undefined}
           tabs={tabs}
           activeTabId={activeTabId}
+          isMemoTab={activeTab.isMemo}
           onTabChange={handleTabChange}
           onTabAdd={handleTabAdd}
           onTabClose={handleTabClose}
@@ -2112,7 +2083,7 @@ export default function App() {
             canUndo={canUndo}
             canRedo={canRedo}
             autoOptimize={autoOptimize}
-            onToggleAutoOptimize={() => setAutoOptimize(!autoOptimize)}
+            onToggleAutoOptimize={() => setAutoOptimize(prev => !prev)}
           />
         </section>
 
@@ -2310,13 +2281,7 @@ export default function App() {
         </div>
       )}
       
-        <ImportModal
-          isOpen={importPendingData !== null}
-          onMerge={() => { executeImport(true); setImportPendingData(null); }}
-          onOverwrite={() => { executeImport(false); setImportPendingData(null); }}
-          onCancel={() => setImportPendingData(null)}
-          lang={lang}
-        />
+        
         
         <Toast 
           message={toastMessage?.msg || ''} 

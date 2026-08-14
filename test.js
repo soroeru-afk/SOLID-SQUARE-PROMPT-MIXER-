@@ -1,11 +1,27 @@
-const toggle = (text) => {
-  const isVertical = (text.match(/\n/g) || []).length > 0;
-  const items = text.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0);
-  
-  if (isVertical) {
-    return items.join(', ') + (text.trim().endsWith(',') ? ',' : '');
-  } else {
-    return items.join(',\n') + (text.trim().endsWith(',') ? ',' : '');
-  }
-};
-console.log(toggle("photography, realistic, 8K, smile, large, pubic hair,"));
+const lines = [
+  "これはテストです。",
+  "1girl, solo",
+  "This is a test.",
+  "おはよう！",
+  "tag1, tag2"
+];
+
+lines.forEach(line => {
+        let cleanedLine = line
+          .replace(/[\u3000]/g, ' ')
+          .replace(/[ \t]+/g, ' ')
+          .replace(/\.\s*,/g, ',')
+          .replace(/\.\s*$/g, '')
+          .replace(/(^|,\s*)\.(?=$|\s*,)/g, '$1')
+          .replace(/[ \t]+,/g, ',')
+          .replace(/,+/g, ',')
+          .replace(/,[ \t]*,/g, ',')
+          .replace(/,([^\s])/g, ', $1')
+          .trim();
+        if (cleanedLine.length > 0) {
+          if (!/[。！？]$/.test(cleanedLine)) {
+            cleanedLine = cleanedLine.replace(/[\s,]*$/, ',');
+          }
+        }
+        console.log(cleanedLine);
+});

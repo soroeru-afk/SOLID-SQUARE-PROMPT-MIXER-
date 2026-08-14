@@ -1,42 +1,46 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/components/AttributeMixer.tsx', 'utf8');
+let appCode = fs.readFileSync('src/App.tsx', 'utf8');
 
-const elseBlockStart = `    } else {
-      categories.forEach(cat => {
-        const selectedIdx = selections[cat.id] ?? 0;
-        if (selectedIdx === 0) return;
+const oldAppStr = `            positiveCursorPos={positiveCursorPos}
+            negativeCursorPos={negativeCursorPos}
+            setPositiveCursorPos={setPositiveCursorPos}
+            setNegativeCursorPos={setNegativeCursorPos}
+            setPositiveSelectionEnd={setPositiveSelectionEnd}
+            setNegativeSelectionEnd={setNegativeSelectionEnd}`;
 
-        const items = presets[cat.id] || DEFAULT_PRESETS[cat.id] || [];
-        const selectedItem = items[selectedIdx];
-        if (!selectedItem || selectedItem.value.trim() === '') return;
+const newAppStr = `            positiveCursorPos={positiveCursorPos}
+            negativeCursorPos={negativeCursorPos}
+            positiveSelectionEnd={positiveSelectionEnd}
+            negativeSelectionEnd={negativeSelectionEnd}
+            setPositiveCursorPos={setPositiveCursorPos}
+            setNegativeCursorPos={setNegativeCursorPos}
+            setPositiveSelectionEnd={setPositiveSelectionEnd}
+            setNegativeSelectionEnd={setNegativeSelectionEnd}`;
 
-        newParts.push({`;
+appCode = appCode.replace(oldAppStr, newAppStr);
+fs.writeFileSync('src/App.tsx', appCode);
 
-const elseBlockReplacement = `    } else {
-      categories.forEach(cat => {
-        const selection = selections[cat.id];
-        const currentIndices = Array.isArray(selection) ? selection : (selection !== undefined ? [selection as number] : [0]);
-        currentIndices.forEach(idx => {
-          if (idx === 0) return;
+let previewCode = fs.readFileSync('src/components/PreviewColumn.tsx', 'utf8');
 
-          const items = presets[cat.id] || DEFAULT_PRESETS[cat.id] || [];
-          const selectedItem = items[idx];
-          if (!selectedItem || selectedItem.value.trim() === '') return;
+const oldPreviewType = `  positiveCursorPos: number | null;
+  negativeCursorPos: number | null;
+  setPositiveCursorPos: (pos: number) => void;
+  setNegativeCursorPos: (pos: number) => void;`;
 
-          newParts.push({`;
+const newPreviewType = `  positiveCursorPos: number | null;
+  negativeCursorPos: number | null;
+  positiveSelectionEnd?: number | null;
+  negativeSelectionEnd?: number | null;
+  setPositiveCursorPos: (pos: number) => void;
+  setNegativeCursorPos: (pos: number) => void;`;
 
-content = content.replace(elseBlockStart, elseBlockReplacement);
+previewCode = previewCode.replace(oldPreviewType, newPreviewType);
 
-const closeBlockStart = `          isNegative: cat.isNegative
-        });
-      });
-    }`;
+const oldPreviewProps = `  activeEditor, setActiveEditor, findText, setFindText, replaceText, setReplaceText, findCursorPos, setFindCursorPos, replaceCursorPos, setReplaceCursorPos, findSelectionEnd, setFindSelectionEnd, replaceSelectionEnd, setReplaceSelectionEnd, positiveCursorPos, negativeCursorPos, setPositiveCursorPos, setNegativeCursorPos, setPositiveSelectionEnd, setNegativeSelectionEnd,`;
 
-const closeBlockReplacement = `          isNegative: cat.isNegative
-          });
-        });
-      });
-    }`;
-content = content.replace(closeBlockStart, closeBlockReplacement);
+const newPreviewProps = `  activeEditor, setActiveEditor, findText, setFindText, replaceText, setReplaceText, findCursorPos, setFindCursorPos, replaceCursorPos, setReplaceCursorPos, findSelectionEnd, setFindSelectionEnd, replaceSelectionEnd, setReplaceSelectionEnd, positiveCursorPos, negativeCursorPos, positiveSelectionEnd, negativeSelectionEnd, setPositiveCursorPos, setNegativeCursorPos, setPositiveSelectionEnd, setNegativeSelectionEnd,`;
 
-fs.writeFileSync('src/components/AttributeMixer.tsx', content);
+previewCode = previewCode.replace(oldPreviewProps, newPreviewProps);
+
+fs.writeFileSync('src/components/PreviewColumn.tsx', previewCode);
+
