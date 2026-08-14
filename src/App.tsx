@@ -1328,7 +1328,7 @@ export default function App() {
   };
 
 
-  const handleExport = async () => {
+  const handleExportOverall = async () => {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
     const formattedDate = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
@@ -1347,7 +1347,7 @@ export default function App() {
     const catsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
     
     const exportData = {
-      title: "Solid Square Prompt Mixer",
+      title: "Solid Square Prompt Mixer (Overall)",
       exportDate: formattedDate,
       ...cleanedData,
       attributeMixerPresets: presetsStr ? JSON.parse(presetsStr) : undefined,
@@ -1358,13 +1358,13 @@ export default function App() {
     };
 
     const jsonString = JSON.stringify(exportData, null, 2);
-
+    
     const fallbackDownload = () => {
       const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Solid_Square_Prompt_Mixer_${dateStr}.json`;
+      a.download = `全体バックアップ_${dateStr}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1376,7 +1376,7 @@ export default function App() {
         let dirHandle = await getFileHandle('export_directory');
         let fileHandle = null;
         let hasDirPermission = false;
-
+        
         if (dirHandle) {
           const permission = await dirHandle.queryPermission({ mode: 'readwrite' });
           if (permission === 'granted') {
@@ -1388,44 +1388,130 @@ export default function App() {
             }
           }
         }
-
+        
         if (hasDirPermission && dirHandle) {
-           fileHandle = await dirHandle.getFileHandle(`Solid_Square_Prompt_Mixer_${dateStr}.json`, { create: true });
+           fileHandle = await dirHandle.getFileHandle(`全体バックアップ_${dateStr}.json`, { create: true });
         } else {
-           // Fallback to showSaveFilePicker if no directory handle
            fileHandle = await (window as any).showSaveFilePicker({
              id: 'prompt_mixer_export',
-             suggestedName: `Solid_Square_Prompt_Mixer_${dateStr}.json`,
+             suggestedName: `全体バックアップ_${dateStr}.json`,
              types: [{
                description: 'JSON Files',
                accept: { 'application/json': ['.json'] },
              }],
            });
         }
-
+        
         if (fileHandle) {
           const writable = await fileHandle.createWritable();
           await writable.write(jsonString);
           await writable.close();
-          setSaveSuccessMessage('セーブ完了！ (Save Completed!)');
+          setSaveSuccessMessage('全体エクスポート完了！');
           setTimeout(() => setSaveSuccessMessage(null), 3000);
         }
       } catch (err: any) {
         if (err.name !== 'AbortError') {
           console.error('File System API Error:', err);
           fallbackDownload();
-          setSaveSuccessMessage('セーブ完了！ (Downloaded)');
+          setSaveSuccessMessage('全体エクスポート完了！ (Downloaded)');
           setTimeout(() => setSaveSuccessMessage(null), 3000);
         }
       }
     } else {
       fallbackDownload();
-      setSaveSuccessMessage('セーブ完了！ (Downloaded)');
+      setSaveSuccessMessage('全体エクスポート完了！ (Downloaded)');
       setTimeout(() => setSaveSuccessMessage(null), 3000);
     }
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExportParts = async () => {
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const formattedDate = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    
+    const presetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
+    const combosStr = localStorage.getItem('attribute_mixer_combinations_v1') || localStorage.getItem('attribute_mixer_combinations');
+    const catsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
+    
+    const exportData = {
+      title: "Solid Square Prompt Mixer (Parts Only)",
+      exportDate: formattedDate,
+      parts: data.parts.map(p => ({ ...p, content: cleanString(p.content) })),
+      customCategories: data.customCategories,
+      attributeMixerPresets: presetsStr ? JSON.parse(presetsStr) : undefined,
+      attributeMixerCombos: combosStr ? JSON.parse(combosStr) : undefined,
+      attributeMixerCategories: catsStr ? JSON.parse(catsStr) : undefined
+    };
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    
+    const fallbackDownload = () => {
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `パーツ_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    if ('showSaveFilePicker' in window && window.self === window.top) {
+      try {
+        let dirHandle = await getFileHandle('export_directory');
+        let fileHandle = null;
+        let hasDirPermission = false;
+        
+        if (dirHandle) {
+          const permission = await dirHandle.queryPermission({ mode: 'readwrite' });
+          if (permission === 'granted') {
+            hasDirPermission = true;
+          } else {
+            const request = await dirHandle.requestPermission({ mode: 'readwrite' });
+            if (request === 'granted') {
+              hasDirPermission = true;
+            }
+          }
+        }
+        
+        if (hasDirPermission && dirHandle) {
+           fileHandle = await dirHandle.getFileHandle(`パーツ_${dateStr}.json`, { create: true });
+        } else {
+           fileHandle = await (window as any).showSaveFilePicker({
+             id: 'prompt_mixer_export_parts',
+             suggestedName: `パーツ_${dateStr}.json`,
+             types: [{
+               description: 'JSON Files',
+               accept: { 'application/json': ['.json'] },
+             }],
+           });
+        }
+        
+        if (fileHandle) {
+          const writable = await fileHandle.createWritable();
+          await writable.write(jsonString);
+          await writable.close();
+          setSaveSuccessMessage('パーツエクスポート完了！');
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('File System API Error:', err);
+          fallbackDownload();
+          setSaveSuccessMessage('パーツエクスポート完了！ (Downloaded)');
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
+        }
+      }
+    } else {
+      fallbackDownload();
+      setSaveSuccessMessage('パーツエクスポート完了！ (Downloaded)');
+      setTimeout(() => setSaveSuccessMessage(null), 3000);
+    }
+  };
+
+  const handleImportOverall = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -1434,9 +1520,65 @@ export default function App() {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed.masters && parsed.parts) {
-          setImportPendingData(parsed);
+          // 直接上書き (Overwrite completely)
+          setData(parsed);
+          
+          if (parsed.attributeMixerCategories) {
+            localStorage.setItem('attribute_mixer_categories_v2', typeof parsed.attributeMixerCategories === 'string' ? parsed.attributeMixerCategories : JSON.stringify(parsed.attributeMixerCategories));
+          }
+          if (parsed.attributeMixerPresets) {
+            localStorage.setItem('attribute_mixer_custom_presets_v7', typeof parsed.attributeMixerPresets === 'string' ? parsed.attributeMixerPresets : JSON.stringify(parsed.attributeMixerPresets));
+          }
+          if (parsed.attributeMixerCombos) {
+            localStorage.setItem('attribute_mixer_combinations_v1', typeof parsed.attributeMixerCombos === 'string' ? parsed.attributeMixerCombos : JSON.stringify(parsed.attributeMixerCombos));
+          }
+          
+          window.dispatchEvent(new Event('attributeMixerDataImported'));
+          setSelectedMasterId(parsed.masters[0]?.id || null);
+          setSaveSuccessMessage(lang === 'en' ? 'Overall Import completed!' : '全体のインポートが完了しました！');
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
         } else {
-          alert('Invalid JSON format.');
+          alert('Invalid JSON format for Overall Import.');
+        }
+      } catch (err) {
+        alert('Failed to parse JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleImportParts = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (parsed.parts) {
+          // PartsとAttributeMixerのみ上書き
+          setData(prev => ({
+            ...prev,
+            parts: parsed.parts,
+            customCategories: parsed.customCategories || []
+          }));
+          
+          if (parsed.attributeMixerCategories) {
+            localStorage.setItem('attribute_mixer_categories_v2', typeof parsed.attributeMixerCategories === 'string' ? parsed.attributeMixerCategories : JSON.stringify(parsed.attributeMixerCategories));
+          }
+          if (parsed.attributeMixerPresets) {
+            localStorage.setItem('attribute_mixer_custom_presets_v7', typeof parsed.attributeMixerPresets === 'string' ? parsed.attributeMixerPresets : JSON.stringify(parsed.attributeMixerPresets));
+          }
+          if (parsed.attributeMixerCombos) {
+            localStorage.setItem('attribute_mixer_combinations_v1', typeof parsed.attributeMixerCombos === 'string' ? parsed.attributeMixerCombos : JSON.stringify(parsed.attributeMixerCombos));
+          }
+          
+          window.dispatchEvent(new Event('attributeMixerDataImported'));
+          setSaveSuccessMessage(lang === 'en' ? 'Parts Import completed!' : 'パーツのインポートが完了しました！');
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
+        } else {
+          alert('Invalid JSON format for Parts Import.');
         }
       } catch (err) {
         alert('Failed to parse JSON file.');
@@ -1835,14 +1977,28 @@ export default function App() {
               </button>
               {loadSuccessMessage && (<div className="mt-1 text-center text-[10px] font-mono text-accent-main animate-pulse font-bold">{loadSuccessMessage}</div>)}
             </div>
-            <div className="flex gap-2">
-              <label className={`flex-1 flex items-center justify-center px-2 py-1.5 bg-border-main hover:bg-border-hover text-[10px] font-mono border border-border-hover rounded transition-colors cursor-pointer ${theme === 'mono' ? 'text-white' : 'text-text-main'}`}>
-                {t('import_json', lang)}
-                <input type="file" accept=".json" className="hidden" onChange={handleImport} />
-              </label>
-              <button onClick={handleExport} className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border rounded text-white transition-opacity cursor-pointer ${theme === 'mono' ? 'bg-gray-600 border-gray-500 hover:bg-gray-500' : 'bg-accent-main border-accent-dim hover:opacity-80'}`}>
-                {t('export_config', lang)}
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="text-[10px] font-mono text-text-dim text-center">▼ {lang === 'en' ? 'Overall (Master, Memos, Parts)' : '全体 (マスター・メモ・パーツ全て)'} ▼</div>
+              <div className="flex gap-2">
+                <label className={`flex-1 flex items-center justify-center px-2 py-1.5 bg-border-main hover:bg-border-hover text-[10px] font-mono border border-border-hover rounded transition-colors cursor-pointer ${theme === 'mono' ? 'text-white' : 'text-text-main'}`}>
+                  {lang === 'en' ? 'Import (Overall)' : 'インポート (全体上書き)'}
+                  <input type="file" accept=".json" className="hidden" onChange={handleImportOverall} />
+                </label>
+                <button onClick={handleExportOverall} className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border rounded text-white transition-opacity cursor-pointer ${theme === 'mono' ? 'bg-gray-600 border-gray-500 hover:bg-gray-500' : 'bg-accent-main border-accent-dim hover:opacity-80'}`}>
+                  {lang === 'en' ? 'Export (Overall)' : 'エクスポート (全体)'}
+                </button>
+              </div>
+
+              <div className="text-[10px] font-mono text-text-dim text-center mt-2">▼ {lang === 'en' ? 'Parts & Mixer Only' : 'パーツ選択・ミキサーのみ'} ▼</div>
+              <div className="flex gap-2">
+                <label className={`flex-1 flex items-center justify-center px-2 py-1.5 bg-border-main hover:bg-border-hover text-[10px] font-mono border border-border-hover rounded transition-colors cursor-pointer ${theme === 'mono' ? 'text-white' : 'text-text-main'}`}>
+                  {lang === 'en' ? 'Import (Parts)' : 'インポート (パーツ)'}
+                  <input type="file" accept=".json" className="hidden" onChange={handleImportParts} />
+                </label>
+                <button onClick={handleExportParts} className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border rounded text-white transition-opacity cursor-pointer ${theme === 'mono' ? 'bg-gray-600 border-gray-500 hover:bg-gray-500' : 'bg-accent-main border-accent-dim hover:opacity-80'}`}>
+                  {lang === 'en' ? 'Export (Parts)' : 'エクスポート (パーツ)'}
+                </button>
+              </div>
             </div>
           </div>
 
