@@ -1364,7 +1364,7 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `全体バックアップ_${dateStr}.json`;
+      a.download = `PM-全体バックアップ_${dateStr}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1390,11 +1390,11 @@ export default function App() {
         }
         
         if (hasDirPermission && dirHandle) {
-           fileHandle = await dirHandle.getFileHandle(`全体バックアップ_${dateStr}.json`, { create: true });
+           fileHandle = await dirHandle.getFileHandle(`PM-全体バックアップ_${dateStr}.json`, { create: true });
         } else {
            fileHandle = await (window as any).showSaveFilePicker({
              id: 'prompt_mixer_export',
-             suggestedName: `全体バックアップ_${dateStr}.json`,
+             suggestedName: `PM-全体バックアップ_${dateStr}.json`,
              types: [{
                description: 'JSON Files',
                accept: { 'application/json': ['.json'] },
@@ -1451,7 +1451,7 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `パーツ_${dateStr}.json`;
+      a.download = `PM-パーツ_${dateStr}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1477,11 +1477,11 @@ export default function App() {
         }
         
         if (hasDirPermission && dirHandle) {
-           fileHandle = await dirHandle.getFileHandle(`パーツ_${dateStr}.json`, { create: true });
+           fileHandle = await dirHandle.getFileHandle(`PM-パーツ_${dateStr}.json`, { create: true });
         } else {
            fileHandle = await (window as any).showSaveFilePicker({
              id: 'prompt_mixer_export_parts',
-             suggestedName: `パーツ_${dateStr}.json`,
+             suggestedName: `PM-パーツ_${dateStr}.json`,
              types: [{
                description: 'JSON Files',
                accept: { 'application/json': ['.json'] },
@@ -1995,7 +1995,7 @@ export default function App() {
                   {lang === 'en' ? 'Import (Parts)' : 'インポート (パーツ)'}
                   <input type="file" accept=".json" className="hidden" onChange={handleImportParts} />
                 </label>
-                <button onClick={handleExportParts} className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border rounded text-white transition-opacity cursor-pointer ${theme === 'mono' ? 'bg-gray-600 border-gray-500 hover:bg-gray-500' : 'bg-accent-main border-accent-dim hover:opacity-80'}`}>
+                <button onClick={handleExportParts} className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border rounded text-white transition-opacity cursor-pointer ${theme === 'mono' ? 'bg-gray-600 border-gray-500 hover:bg-gray-500' : (theme === 'black' ? 'bg-accent-main border-accent-dim hover:opacity-80' : 'bg-teal-600 border-teal-500 hover:opacity-80')}`}>
                   {lang === 'en' ? 'Export (Parts)' : 'エクスポート (パーツ)'}
                 </button>
               </div>
