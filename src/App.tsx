@@ -279,7 +279,7 @@ export default function App() {
     return localStorage.getItem('ui_selected_negative_id');
   });
   const [activePartId, setActivePartId] = useState<string | null>(null);
-  const [tabs, setTabs] = useState<{id: string, name: string, pos: string, neg: string}[]>(() => {
+  const [tabs, setTabs] = useState<{id: string, name: string, pos: string, neg: string, isMemo?: boolean}[]>(() => {
     const saved = localStorage.getItem('ui_editor_tabs');
     if (saved) {
       try {
@@ -675,7 +675,7 @@ export default function App() {
   }, [data]);
 
   const cleanString = (text: string) => {
-    if (!autoOptimize) return text;
+    if (!autoOptimize || activeTab?.isMemo) return text;
     return text
       .split('\n')
       .map(line => {
@@ -688,7 +688,9 @@ export default function App() {
           .replace(/,([^\s])/g, ', $1')
           .trim();
         if (cleanedLine.length > 0) {
-          cleanedLine = cleanedLine.replace(/[\s,]*$/, ',');
+          if (!/[。！？：…・、,」』】）]$/.test(cleanedLine)) {
+            cleanedLine = cleanedLine.replace(/[\s,]*$/, ',');
+          }
         }
         return cleanedLine;
       })
@@ -1748,12 +1750,20 @@ export default function App() {
         if (editorText && editorText.trim().length > 0) {
           const newId = `tab-${Date.now()}`;
           setTabs(prev => {
-            const newTabs = [...prev, { id: newId, name: '', pos: memo.content, neg: '' }];
-            return newTabs.map((t, i) => ({ ...t, name: `TAB ${String(i + 1).padStart(2, '0')}` }));
+            const newTabs = [...prev, { id: newId, name: `📝 ${memo.name}`, pos: memo.content, neg: '', isMemo: true }];
+            let normalCount = 0;
+            return newTabs.map((t) => {
+              if (t.isMemo) return t;
+              normalCount++;
+              return { ...t, name: `TAB ${String(normalCount).padStart(2, '0')}` };
+            });
           });
           setActiveTabId(newId);
         } else {
-          setEditorText(memo.content);
+          setTabs(prev => prev.map(t => {
+            if (t.id === activeTabId) return { ...t, name: `📝 ${memo.name}`, pos: memo.content, isMemo: true };
+            return t;
+          }));
         }
       }
     }
@@ -2019,6 +2029,7 @@ export default function App() {
         {/* Center: Text Editor & Output */}
         <section className="flex-1 flex flex-col bg-bg-base relative min-w-0" style={{ minWidth: '960px' }}>
           <PreviewColumn
+          isMemoTab={activeTab?.isMemo || false}
           selectedMasterId={selectedMasterId}
           selectedMasterName={selectedMasterId ? data.masters.find(m => m.id === selectedMasterId)?.name : undefined}
           selectedNegativeId={selectedNegativeId}

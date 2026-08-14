@@ -10,8 +10,9 @@ import { calculateCursorPos } from '../utils/cursorUtils';
 
 
 interface PreviewColumnProps {
-  tabs?: { id: string, name: string, pos: string, neg: string }[];
+  tabs?: { id: string, name: string, pos: string, neg: string, isMemo?: boolean }[];
   activeTabId?: string;
+  isMemoTab?: boolean;
   onTabChange?: (id: string) => void;
   onTabAdd?: () => void;
   onTabClose?: (id: string) => void;
@@ -22,6 +23,8 @@ interface PreviewColumnProps {
   setNegativeEditorText: React.Dispatch<React.SetStateAction<string>>;
   positiveCursorPos: number | null;
   negativeCursorPos: number | null;
+  positiveSelectionEnd?: number | null;
+  negativeSelectionEnd?: number | null;
   setPositiveCursorPos: (pos: number) => void;
   setNegativeCursorPos: (pos: number) => void;
   setPositiveSelectionEnd?: (pos: number) => void;
@@ -67,13 +70,14 @@ interface PreviewColumnProps {
 export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   tabs = [],
   activeTabId = '',
+  isMemoTab = false,
   onTabChange,
   onTabAdd,
   onTabClose,
   onTabsClear, 
   editorText, setEditorText,
   negativeEditorText, setNegativeEditorText,
-  activeEditor, setActiveEditor, findText, setFindText, replaceText, setReplaceText, findCursorPos, setFindCursorPos, replaceCursorPos, setReplaceCursorPos, findSelectionEnd, setFindSelectionEnd, replaceSelectionEnd, setReplaceSelectionEnd, positiveCursorPos, negativeCursorPos, setPositiveCursorPos, setNegativeCursorPos, setPositiveSelectionEnd, setNegativeSelectionEnd,
+  activeEditor, setActiveEditor, findText, setFindText, replaceText, setReplaceText, findCursorPos, setFindCursorPos, replaceCursorPos, setReplaceCursorPos, findSelectionEnd, setFindSelectionEnd, replaceSelectionEnd, setReplaceSelectionEnd, positiveCursorPos, negativeCursorPos, positiveSelectionEnd, negativeSelectionEnd, setPositiveCursorPos, setNegativeCursorPos, setPositiveSelectionEnd, setNegativeSelectionEnd,
   onSaveAsMaster,
   onSaveAsPart,
   onSaveAsMemo,
@@ -97,6 +101,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   autoOptimize = true,
   onToggleAutoOptimize
 }) => {
+  const effectiveAutoOptimize = isMemoTab ? false : autoOptimize;
   const [copied, setCopied] = useState(false);
   
   const [showFormatOptions, setShowFormatOptions] = useState(false);
@@ -288,6 +293,65 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   };
 
+  const handleFindNext = () => {
+    if (!findText) return;
+
+    const searchFromPos = (text: string, pos: number, ref: React.RefObject<HTMLTextAreaElement>, setActive: () => void, setCursor: (p: number) => void, setSelectionEnd: (p: number) => void) => {
+      const lowerText = text.toLowerCase();
+      const lowerFind = findText.toLowerCase();
+      let index = lowerText.indexOf(lowerFind, pos);
+      if (index === -1) {
+        // Wrap around
+        index = lowerText.indexOf(lowerFind, 0);
+      }
+      if (index !== -1) {
+        setActive();
+        if (ref.current) {
+          ref.current.focus();
+          ref.current.setSelectionRange(index, index + findText.length);
+          // Browsers usually scroll to selection automatically, but just in case:
+          const textBefore = text.substring(0, index);
+          const newLines = (textBefore.match(/\n/g) || []).length;
+          // Approximate scrolling
+          const lineHeight = parseInt(getComputedStyle(ref.current).lineHeight) || 20;
+          ref.current.scrollTop = newLines * lineHeight;
+        }
+        setCursor(index);
+        setSelectionEnd(index + findText.length);
+        return true;
+      }
+      return false;
+    };
+
+    const isNegativeFocused = activeEditor === 'negative';
+    
+    if (isNegativeFocused) {
+       const foundInNeg = searchFromPos(
+         negativeEditorText,
+         negativeSelectionEnd !== null && negativeSelectionEnd !== undefined ? negativeSelectionEnd : (negativeCursorPos || 0),
+         negativeTextRef,
+         () => setActiveEditor('negative'),
+         setNegativeCursorPos,
+         setNegativeSelectionEnd!
+       );
+       if (!foundInNeg) {
+         searchFromPos(editorText, 0, positiveTextRef, () => setActiveEditor('positive'), setPositiveCursorPos, setPositiveSelectionEnd!);
+       }
+    } else {
+       const foundInPos = searchFromPos(
+         editorText,
+         positiveSelectionEnd !== null && positiveSelectionEnd !== undefined ? positiveSelectionEnd : (positiveCursorPos || 0),
+         positiveTextRef,
+         () => setActiveEditor('positive'),
+         setPositiveCursorPos,
+         setPositiveSelectionEnd!
+       );
+       if (!foundInPos) {
+         searchFromPos(negativeEditorText, 0, negativeTextRef, () => setActiveEditor('negative'), setNegativeCursorPos, setNegativeSelectionEnd!);
+       }
+    }
+  };
+
   const handleReplace = () => {
     if (!findText) return;
     const regex = new RegExp(escapeRegExp(findText), 'i');
@@ -302,23 +366,22 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     setNegativeEditorText(prev => prev.replace(regex, replaceText));
   };
   const cleanString = (text: string, force: boolean = false) => {
-    if (!autoOptimize && !force) return text;
+    if (!effectiveAutoOptimize && !force) return text;
     return text
       .split('\n')
       .map(line => {
         let cleanedLine = line
           .replace(/[\u3000]/g, ' ')
           .replace(/[ \t]+/g, ' ')
-          .replace(/\.\s*,/g, ',')
-          .replace(/\.\s*$/g, '')
-          .replace(/(^|,\s*)\.(?=$|\s*,)/g, '$1')
           .replace(/[ \t]+,/g, ',')
           .replace(/,+/g, ',')
           .replace(/,[ \t]*,/g, ',')
           .replace(/,([^\s])/g, ', $1')
           .trim();
         if (cleanedLine.length > 0) {
-          cleanedLine = cleanedLine.replace(/[\s,]*$/, ',');
+          if (!/[。！？：…・、,」』】）]$/.test(cleanedLine)) {
+            cleanedLine = cleanedLine.replace(/[\s,]*$/, ',');
+          }
         }
         return cleanedLine;
       })
@@ -965,7 +1028,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       
       const currentText = isNegative ? negativeEditorText : editorText;
       const rawNewText = currentText.slice(0, start) + content + currentText.slice(end);
-      const newText = cleanString(rawNewText);
+      const newText = rawNewText;
       
       const after = currentText.slice(end);
       const isAtEnd = after.replace(/[\s,]/g, '').length === 0;
@@ -1453,13 +1516,33 @@ const handleResizeStart = (e: React.MouseEvent) => {
     const isLight = paperMode || (theme === 'light' || theme === 'mono') || theme === 'paper' || theme === 'mono';
     const highlightColorClass = isLight ? 'text-[#059669] drop-shadow-sm' : 'text-[#34d399] drop-shadow-sm';
     
-    const parts = text.split(/(\([^)]+\))/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('(') && part.endsWith(')')) {
-        return <span key={i} className={highlightColorClass}>{part}</span>;
-      }
-      return <span key={i}>{part}</span>;
-    });
+    // First, split by findText if it exists
+    if (findText) {
+      const searchRegex = new RegExp(`(${escapeRegExp(findText)})`, 'gi');
+      const searchParts = text.split(searchRegex);
+      
+      return searchParts.map((sPart, j) => {
+        if (sPart.toLowerCase() === findText.toLowerCase()) {
+          return <span key={`find-${j}`} className="bg-blue-400/30 px-[2px] mx-[-2px] rounded-[3px]">{sPart}</span>;
+        }
+        // Further split by parentheses
+        const parts = sPart.split(/(\([^)]+\))/g);
+        return parts.map((part, i) => {
+          if (part.startsWith('(') && part.endsWith(')')) {
+            return <span key={`paren-${j}-${i}`} className={highlightColorClass}>{part}</span>;
+          }
+          return <span key={`text-${j}-${i}`}>{part}</span>;
+        });
+      });
+    } else {
+      const parts = text.split(/(\([^)]+\))/g);
+      return parts.map((part, i) => {
+        if (part.startsWith('(') && part.endsWith(')')) {
+          return <span key={i} className={highlightColorClass}>{part}</span>;
+        }
+        return <span key={i}>{part}</span>;
+      });
+    }
   };
 
   return (
@@ -1469,12 +1552,18 @@ const handleResizeStart = (e: React.MouseEvent) => {
       <div className="p-2 border-b border-border-main flex items-center justify-between bg-bg-panel shrink-0 gap-2">
         <div className="flex items-center gap-3">
           <span className="text-[10px] font-mono text-text-main font-bold uppercase tracking-widest hidden lg:inline">{t('output_synthesis', lang)}</span>
-          <button 
-            onClick={onToggleAutoOptimize}
-            className={`px-2 py-1 text-[9px] font-mono border rounded transition-colors outline-none cursor-pointer ${autoOptimize ? 'border-text-main text-text-main' : 'border-text-dim text-text-dim hover:border-text-main hover:text-text-main'}`}
-          >
-            {t(autoOptimize ? 'auto_optimize_on' : 'auto_optimize_off', lang)}
-          </button>
+          {isMemoTab ? (
+            <div className="px-2 py-1 text-[9px] font-mono border border-text-dim text-text-dim rounded outline-none cursor-default">
+              MEMO MODE
+            </div>
+          ) : (
+            <button 
+              onClick={onToggleAutoOptimize}
+              className={`px-2 py-1 text-[9px] font-mono border rounded transition-colors outline-none cursor-pointer ${autoOptimize ? 'border-text-main text-text-main' : 'border-text-dim text-text-dim hover:border-text-main hover:text-text-main'}`}
+            >
+              {t(autoOptimize ? 'auto_optimize_on' : 'auto_optimize_off', lang)}
+            </button>
+          )}
         </div>
         <div className="flex items-center">
           <span className="text-[9px] text-text-dim font-mono whitespace-nowrap">CHAR: {editorText.length} / 4096</span>
@@ -1511,7 +1600,19 @@ const handleResizeStart = (e: React.MouseEvent) => {
               if (text) setFindText(text);
             }}
             className="bg-bg-input border border-border-main text-[11px] font-mono px-3 py-1.5 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600 w-[120px]"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleFindNext();
+              }
+            }}
           />
+          <button 
+            onClick={handleFindNext}
+            className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          >
+            {lang === 'en' ? 'Find Next' : '次を検索'}
+          </button>
           <input 
             ref={replaceTextRef}
             type="text" 
@@ -1541,13 +1642,13 @@ const handleResizeStart = (e: React.MouseEvent) => {
           />
           <button 
             onClick={handleReplace}
-            className="px-3 py-1.5 bg-bg-surface hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+            className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
           >
             {t('replace', lang)}
           </button>
           <button 
             onClick={handleReplaceAll}
-            className="px-3 py-1.5 bg-bg-surface hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors"
+            className={`px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
           >
             {t('replace_all', lang)}
           </button>
@@ -1555,7 +1656,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           {!showFormatOptions ? (
             <button 
               onClick={() => setShowFormatOptions(true)}
-              className="ml-2 px-3 py-1.5 bg-bg-surface hover:bg-border-main text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors shrink-0"
+              className={`ml-2 px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors shrink-0`}
             >
               {lang === 'en' ? 'Format...' : 'テキスト整理...'}
             </button>
@@ -1765,12 +1866,12 @@ const handleResizeStart = (e: React.MouseEvent) => {
         <div className="flex items-center space-x-1">
           <button 
             onClick={() => setEditorFontSize(s => Math.max(8, s - 1))}
-            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
+            className={`px-2 h-8 whitespace-nowrap shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
           >A-</button>
           <span className="text-[16px] font-bold font-mono text-text-main w-6 text-center shrink-0">{editorFontSize}</span>
           <button 
             onClick={() => setEditorFontSize(s => Math.min(24, s + 1))}
-            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
+            className={`px-2 h-8 whitespace-nowrap shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
           >A+</button>
           
           <select 
@@ -1801,7 +1902,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <button
             onClick={undo}
             disabled={!canUndo}
-            className={`px-3 h-8 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
+            className={`px-3 h-8 whitespace-nowrap shrink-0 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
             title={t('undo', lang)}
           >
             <Undo2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'UNDO' : '前に戻す'}
@@ -1810,7 +1911,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <button
             onClick={redo}
             disabled={!canRedo}
-            className={`px-3 h-8 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
+            className={`px-3 h-8 whitespace-nowrap shrink-0 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
             title={lang === 'en' ? 'REDO' : '次に進む'}
           >
             <Redo2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'REDO' : '次に進む'}
@@ -1818,7 +1919,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           
           <button 
           onClick={() => {            setEditorText('');            setNegativeEditorText('');          }}
-          className={`px-3 h-8  border rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
+          className={`px-3 h-8 whitespace-nowrap shrink-0  border rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
             (theme === 'light' || theme === 'mono')
               ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
               : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
@@ -1869,7 +1970,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   }`}
                   onClick={() => onTabChange(tab.id)}
                 >
-                  {tab.name}
+                  <span className="truncate max-w-[120px]" title={tab.name}>{tab.name}</span>
                   {tabs.length > 1 ? (
                     <button 
                       onClick={(e) => { 
@@ -2063,15 +2164,15 @@ const handleResizeStart = (e: React.MouseEvent) => {
             </button>
             <button 
               onClick={() => handleMoveTextBetweenEditors('down')}
-              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
+              className={`h-8 w-8 whitespace-nowrap shrink-0 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
               title={t('move_to_negative', lang)}
             >
               <ArrowDown size={14} />
             </button>
-            <div className="w-px h-6 bg-border-main my-auto mx-1"></div>
+            <div className="w-px h-6 shrink-0 bg-border-main my-auto mx-1"></div>
             <button 
               onClick={() => handleMoveTextBetweenEditors('up')}
-              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
+              className={`h-8 w-8 whitespace-nowrap shrink-0 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
               title={t('move_to_positive', lang)}
             >
               <ArrowUp size={14} />
