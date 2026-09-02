@@ -903,7 +903,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
 
   const handleMergeDupes = () => {
     const processMerge = (text: string) => {
-      const parts = text.split(',').map(s => s.trim()).filter(Boolean);
+      if (!text || !text.trim()) return text;
+      const isVertical = text.includes('\n');
+      const parts = text.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+      if (parts.length === 0) return text;
+      
       const counts = new Map<string, number>();
       
       parts.forEach(part => {
@@ -914,8 +918,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           cleanPart = match[1].trim();
           weight = parseFloat(match[2]);
         } else if (part.startsWith('(') && part.endsWith(')')) {
-          // If it's just (word), weight is 1.1 in some standard UI, but let's stick to 1 to match existing or keep 1.1?
-          // Existing code sets weight to 1 if not matched by regex.
+          const inner = part.slice(1, -1).trim();
+          if (inner && !inner.includes('(') && !inner.includes(')')) {
+            cleanPart = inner;
+            weight = 1.1;
+          }
         }
         counts.set(cleanPart, (counts.get(cleanPart) || 0) + weight);
       });
@@ -944,14 +951,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
           result.push(`(${part}:${finalCount})`);
         }
       }
-      return cleanString(result.join(', '));
+      const separator = isVertical ? ',\n' : ', ';
+      return result.join(separator);
     };
 
-    if (activeMasterTab === 'master') {
-      setEditorText(prev => processMerge(prev));
-    } else if (activeMasterTab === 'negative') {
-      setNegativeEditorText(prev => processMerge(prev));
-    }
+    applyTransformToSelectionOrAll(processMerge, false);
   };
 
   const handleClearAllWeights = () => {
