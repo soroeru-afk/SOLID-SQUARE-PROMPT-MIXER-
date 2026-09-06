@@ -38,8 +38,8 @@ interface VariationColumnProps {
   onCopyToParts?: (parts: VariationPart[], categories: { name: string, section: number }[]) => { added: number, skipped: number };
   lang: Language;
   theme: string;
-  activeTab?: 'parts' | 'mixer' | 'memo';
-  setActiveTab?: (tab: 'parts' | 'mixer' | 'memo') => void;
+  activeTab?: 'parts' | 'mixer';
+  setActiveTab?: (tab: 'parts' | 'mixer') => void;
   children?: React.ReactNode;
 }
 
@@ -363,14 +363,6 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
               className={`flex-1 flex justify-center items-center gap-1 py-1.5 px-2 border whitespace-nowrap transition-colors ${activeTab === 'mixer' ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') : 'border-transparent text-text-dim hover:text-text-main'}`}
             >
               <User size={12} /> {t('prompt_mixer', lang)}
-            </button>
-          )}
-          {setActiveTab && (
-            <button 
-              onClick={() => setActiveTab('memo')}
-              className={`flex-1 flex justify-center items-center gap-1 py-1.5 px-2 border whitespace-nowrap transition-colors ${activeTab === 'memo' ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') : 'border-transparent text-text-dim hover:text-text-main'}`}
-            >
-              {t('prompt_memo', lang)}
             </button>
           )}
         </div>
