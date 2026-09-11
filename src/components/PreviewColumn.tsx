@@ -17,6 +17,7 @@ interface PreviewColumnProps {
   onTabAdd?: () => void;
   onTabClose?: (id: string) => void;
   onTabsClear?: () => void;
+  onTabReorder?: (from: number, to: number) => void;
   editorText: string;
   setEditorText: React.Dispatch<React.SetStateAction<string>>;
   negativeEditorText: string;
@@ -74,7 +75,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   onTabChange,
   onTabAdd,
   onTabClose,
-  onTabsClear, 
+  onTabsClear, onTabReorder,
   editorText, setEditorText,
   negativeEditorText, setNegativeEditorText,
   activeEditor, setActiveEditor, findText, setFindText, replaceText, setReplaceText, findCursorPos, setFindCursorPos, replaceCursorPos, setReplaceCursorPos, findSelectionEnd, setFindSelectionEnd, replaceSelectionEnd, setReplaceSelectionEnd, positiveCursorPos, negativeCursorPos, positiveSelectionEnd, negativeSelectionEnd, setPositiveCursorPos, setNegativeCursorPos, setPositiveSelectionEnd, setNegativeSelectionEnd,
@@ -105,6 +106,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const [copied, setCopied] = useState(false);
   
   const [showFormatOptions, setShowFormatOptions] = useState(false);
+  const [draggedTabIndex, setDraggedTabIndex] = useState<number | null>(null);
+  const [dragOverTabIndex, setDragOverTabIndex] = useState<number | null>(null);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
   const [searchSelectionActive, setSearchSelectionActive] = useState(false);
   const [appliedFindText, setAppliedFindText] = useState('');
@@ -1614,13 +1617,13 @@ const handleResizeStart = (e: React.MouseEvent) => {
               const activeStyle = 'bg-blue-600 text-white';
 
               return (
-                <span key={`find-${i}-${j}`} className={`${activeStyle} rounded-[2px] z-10 relative`}>
+                <span key={`find-${i}-${j}`} className={`${activeStyle} ] z-10 relative`}>
                   {sPart}
                 </span>
               );
             } else {
               return (
-                <span key={`find-${i}-${j}`} className={`bg-amber-500/40 rounded-[2px] ${baseClass}`}>
+                <span key={`find-${i}-${j}`} className={`bg-amber-500/40 ] ${baseClass}`}>
                   {sPart}
                 </span>
               );
@@ -1648,7 +1651,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <span className="text-[10px] font-mono text-text-main font-bold uppercase tracking-widest hidden lg:inline">{t('output_synthesis', lang)}</span>
           <button 
             onClick={onToggleAutoOptimize}
-            className={`px-2 py-1 text-[9px] font-mono border rounded outline-none transition-colors bg-transparent ${autoOptimize 
+            className={`px-2 py-1 text-[9px] font-mono border  outline-none transition-colors bg-transparent ${autoOptimize 
               ? 'border-border-main text-text-main' 
               : 'border-border-main/50 text-text-dim hover:text-text-main'}`}
           >
@@ -1703,7 +1706,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                     setActiveEditor('find');
                   }
                 }}
-                className={`w-28 pl-2 pr-6 py-1.5 ${theme === 'mono' ? 'bg-bg-input text-text-main hover:bg-gray-500' : 'bg-bg-input text-text-main border-border-main hover:border-border-hover'} text-[10px] font-mono border rounded outline-none transition-colors`}
+                className={`w-28 pl-2 pr-6 py-1.5 ${theme === 'mono' ? 'bg-bg-input text-text-main hover:bg-gray-500' : 'bg-bg-input text-text-main border-border-main hover:border-border-hover'} text-[10px] font-mono border outline-none transition-colors`}
               />
               {findText && (
                 <button
@@ -1726,7 +1729,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   if (!findText) return;
                   handleFindNext();
                 }}
-                className={`shrink-0 flex items-center justify-center px-2 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] border border-border-hover rounded-l text-text-dim transition-colors`}
+                className={`shrink-0 flex items-center justify-center px-2 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] border border-border-hover text-text-dim transition-colors`}
                 title={lang === 'en' ? 'Search' : '検索'}
               >
                 <Search className="w-3.5 h-3.5" />
@@ -1740,7 +1743,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               </button>
               <button 
                 onClick={handleFindNext}
-                className={`shrink-0 whitespace-nowrap px-2 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded-r text-text-dim transition-colors`}
+                className={`shrink-0 whitespace-nowrap px-2 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
                 title="Enter"
               >
                 {lang === 'en' ? 'Next' : '次へ'}
@@ -1774,17 +1777,17 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 const text = e.dataTransfer.getData('text/plain');
                 if (text) setReplaceText(text);
               }}
-              className="bg-bg-input border border-border-main text-[11px] font-mono px-3 py-1.5 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600 w-[120px] shrink-0"
+              className="bg-bg-input border border-border-main text-[11px] font-mono px-3 py-1.5 focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600 w-[120px] shrink-0"
             />
             <button 
               onClick={handleReplace}
-              className={`shrink-0 whitespace-nowrap px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
             >
               {t('replace', lang)}
             </button>
             <button 
               onClick={handleReplaceAll}
-              className={`shrink-0 whitespace-nowrap px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
             >
               {t('replace_all', lang)}
             </button>
@@ -1793,37 +1796,37 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <div className="relative flex items-center shrink-0 ml-2">
             <button 
               onClick={() => setShowFormatOptions(!showFormatOptions)}
-              className={`shrink-0 whitespace-nowrap px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded ${showFormatOptions ? 'text-text-main bg-border-main/50' : 'text-text-dim'} transition-colors shrink-0`}
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 ${theme === 'mono' ? 'bg-bg-surface hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} text-[10px] font-mono border border-border-hover ${showFormatOptions ? 'text-text-main bg-border-main/50' : 'text-text-dim'} transition-colors shrink-0`}
             >
               {lang === 'en' ? 'Format...' : 'テキスト整理...'}
             </button>
             
             {showFormatOptions && (
-              <div className="absolute top-[calc(100%+4px)] left-0 bg-bg-panel border border-border-main rounded-md shadow-xl flex flex-col gap-1.5 p-2 z-[100] min-w-[200px]">
+              <div className="absolute top-[calc(100%+4px)] left-0 bg-bg-panel border border-border-main shadow-xl flex flex-col gap-1.5 p-2 z-[100] min-w-[200px]">
                 <button 
                   onClick={handleFormatComma}
-                  className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-2`}
+                  className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover transition-colors flex items-center justify-center gap-2`}
                   title="Toggle periods and commas"
                 >
-                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
+                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-text-main">.</span>
                   <ArrowRightLeft className="w-3.5 h-3.5 text-text-dim opacity-80" />
-                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">,</span>
+                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-text-main">,</span>
                 </button>
                 <button 
                   onClick={handleFormatHyphen}
-                  className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-2`}
+                  className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover transition-colors flex items-center justify-center gap-2`}
                   title="Toggle periods and hyphens"
                 >
-                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.</span>
+                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-text-main">.</span>
                   <ArrowRightLeft className="w-3.5 h-3.5 text-text-dim opacity-80" />
-                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">-</span>
+                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-text-main">-</span>
                 </button>
                 <button 
                   onClick={handleStripPunctuation}
-                  className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover rounded transition-colors flex items-center justify-center gap-2`}
+                  className={`px-3 h-[28px] ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} font-mono border border-border-hover transition-colors flex items-center justify-center gap-2`}
                   title="Toggle punctuation and spaces"
                 >
-                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-main">.,</span>
+                  <span className="text-[12px] font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-text-main">.,</span>
                   <ArrowRightLeft className="w-3.5 h-3.5 text-text-dim opacity-80" />
                   <span className="text-[10px] font-bold text-text-dim leading-none">{lang === 'en' ? 'SPACE' : '空白'}</span>
                 </button>
@@ -1839,19 +1842,19 @@ const handleResizeStart = (e: React.MouseEvent) => {
           </span>
           <button 
             onClick={() => handleCopy('main')}
-            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
           >
             {t('copy_main', lang)}
           </button>
           <button 
             onClick={() => handleCopy('negative')}
-            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
           >
             {t('copy_negative_only', lang)}
           </button>
           <button 
             onClick={() => handleCopy('all')}
-            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold rounded transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
           >
             {t('copy_all', lang)}
           </button>
@@ -1866,7 +1869,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           return (
             <button 
               onClick={handleFormatVertical}
-              className={`w-[124px] h-8 px-3 text-[10px] whitespace-nowrap font-bold font-mono border-2 ${theme === 'light' || theme === 'mono' ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400' : 'border-white text-white bg-bg-input hover:bg-white hover:text-black'} rounded transition-colors flex items-center justify-center gap-1.5`}
+              className={`w-[124px] h-8 px-3 text-[10px] whitespace-nowrap font-bold font-mono border-2 ${theme === 'light' || theme === 'mono' ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400' : 'border-white text-white bg-bg-input hover:bg-white hover:text-black'} transition-colors flex items-center justify-center gap-1.5`}
               title={lang === 'en' ? "Toggle vertical/horizontal list" : "縦/横リストの切り替え"}
             >
               <List size={14} className={`${theme === 'light' || theme === 'mono' ? 'text-black' : ''}`} />
@@ -1877,7 +1880,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
         <div className="w-px h-6 bg-border-main mx-1"></div>
         <button 
           onClick={handleMergeDupes}
-          className={`px-3 h-8 text-[10px] font-mono border rounded transition-colors ${
+          className={`px-3 h-8 text-[10px] font-mono border  transition-colors ${
             (theme === 'light' || theme === 'mono') 
               ? 'bg-[#3b5323]/10 hover:bg-[#3b5323]/20 border-[#3b5323]/60 text-[#3b5323]' 
               : 'bg-[#7a9a5a]/10 hover:bg-[#7a9a5a]/20 border-[#7a9a5a]/50 text-[#9bb87d]'
@@ -1888,7 +1891,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
         </button>
         <button 
           onClick={handleClearAllWeights}
-          className={`px-3 h-8 text-[10px] font-mono border rounded transition-colors ${
+          className={`px-3 h-8 text-[10px] font-mono border  transition-colors ${
             (theme === 'light' || theme === 'mono') 
               ? 'bg-[#991b1b]/10 hover:bg-[#991b1b]/20 border-[#991b1b]/60 text-[#991b1b]' 
               : 'bg-[#fca5a5]/10 hover:bg-[#fca5a5]/20 border-[#fca5a5]/50 text-[#fca5a5]'
@@ -1897,18 +1900,18 @@ const handleResizeStart = (e: React.MouseEvent) => {
         >
           {t('clear_all_weights', lang)}
         </button>
-        <div className="flex items-center space-x-1 px-2 h-8 box-border bg-bg-input border border-border-main rounded shrink-0">
+        <div className="flex items-center space-x-1 px-2 h-8 box-border bg-bg-input border border-border-main shrink-0">
           <span className="text-[10px] font-mono text-text-dim pr-1">{t('global_weight', lang)}</span>
           <button 
             onClick={() => handleAdjustWeights(-0.1)}
-            className="px-2 py-0.5 bg-bg-surface hover:bg-blue-500/10 text-[12px] font-mono border border-blue-500/50 rounded text-blue-500 transition-colors"
+            className="px-2 py-0.5 bg-bg-surface hover:bg-blue-500/10 text-[12px] font-mono border border-blue-500/50 text-blue-500 transition-colors"
             title="Decrease weight by 0.1 (applies to selection or all)"
           >
             -0.1
           </button>
           <button 
             onClick={() => handleAdjustWeights(0.1)}
-            className="px-2 py-0.5 bg-bg-surface hover:bg-red-500/10 text-[12px] font-mono border border-red-500/50 rounded text-red-500 transition-colors"
+            className="px-2 py-0.5 bg-bg-surface hover:bg-red-500/10 text-[12px] font-mono border border-red-500/50 text-red-500 transition-colors"
             title="Increase weight by 0.1 (applies to selection or all)"
           >
             +0.1
@@ -1917,28 +1920,28 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
         <button 
           onClick={() => handleMoveSelection('start')}
-          className={`px-3 h-8 ml-2 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          className={`px-3 h-8 ml-2 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
           title={t('move_to_front_tooltip', lang)}
         >
           {t('move_to_front', lang)}
         </button>
         <button 
           onClick={() => handleMoveSelectionStep('left')}
-          className={`h-8 px-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center`}
+          className={`h-8 px-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-text-dim transition-colors flex items-center justify-center`}
           title={t('move_left', lang)}
         >
           <ChevronLeft size={12} />
         </button>
         <button 
           onClick={() => handleMoveSelectionStep('right')}
-          className={`h-8 px-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-text-dim transition-colors flex items-center justify-center`}
+          className={`h-8 px-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-text-dim transition-colors flex items-center justify-center`}
           title={t('move_right', lang)}
         >
           <ChevronRight size={12} />
         </button>
         <button 
           onClick={() => handleMoveSelection('end')}
-          className={`px-3 h-8  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          className={`px-3 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
           title={t('move_to_back_tooltip', lang)}
         >
           {t('move_to_back', lang)}
@@ -1947,7 +1950,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
         <div className="flex items-center space-x-1">
           <button 
             onClick={handleEmphasizeAdd}
-            className={`px-2 h-8 text-[10px] font-mono border rounded transition-colors ${
+            className={`px-2 h-8 text-[10px] font-mono border  transition-colors ${
               (theme === 'light' || theme === 'mono') || theme === 'paper'
                 ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
                 : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
@@ -1956,7 +1959,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           >+( )</button>
           <button 
             onClick={handleEmphasizeRemove}
-            className={`px-2 h-8 text-[10px] font-mono border rounded transition-colors ${
+            className={`px-2 h-8 text-[10px] font-mono border  transition-colors ${
               (theme === 'light' || theme === 'mono') || theme === 'paper'
                 ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
                 : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
@@ -1965,7 +1968,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           >-( )</button>
           <button 
             onClick={handleEmphasizeClear}
-            className={`px-2 h-8 text-[10px] font-mono border rounded transition-colors ${
+            className={`px-2 h-8 text-[10px] font-mono border  transition-colors ${
               (theme === 'light' || theme === 'mono') || theme === 'paper'
                 ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
                 : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
@@ -1976,7 +1979,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
         <button 
           onClick={handleCleanupChat}
-          className={`px-3 h-8  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          className={`px-3 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
           title="Clean Chat Logs"
         >
           {t('cleanup_chat', lang) || 'CHAT CLEAN'}
@@ -1984,13 +1987,13 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
         <button 
           onClick={handleUppercase}
-          className={`px-3 h-8  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          className={`px-3 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
         >
           {t('uppercase', lang)}
         </button>
         <button 
           onClick={handleLowercase}
-          className={`px-3 h-8  ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim transition-colors`}
+          className={`px-3 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
         >
           {t('lowercase', lang)}
         </button>
@@ -1998,18 +2001,18 @@ const handleResizeStart = (e: React.MouseEvent) => {
         <div className="flex items-center space-x-1">
           <button 
             onClick={() => setEditorFontSize(s => Math.max(8, s - 1))}
-            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
+            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim`}
           >A-</button>
           <span className="text-[16px] font-bold font-mono text-text-main w-6 text-center shrink-0">{editorFontSize}</span>
           <button 
             onClick={() => setEditorFontSize(s => Math.min(24, s + 1))}
-            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover rounded text-text-dim`}
+            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim`}
           >A+</button>
           
           <select 
             value={editorFontWeight}
             onChange={e => setEditorFontWeight(e.target.value)}
-            className={`ml-1 border border-border-main text-[10px] font-mono rounded h-8 px-1 outline-none cursor-pointer uppercase tracking-wider transition-colors shrink-0 ${theme === 'mono' ? 'bg-bg-input text-text-main hover:bg-gray-500 hover:text-white' : 'bg-bg-input text-text-main hover:bg-border-main'}`}
+            className={`ml-1 border border-border-main text-[10px] font-mono h-8 px-1 outline-none cursor-pointer uppercase tracking-wider transition-colors shrink-0 ${theme === 'mono' ? 'bg-bg-input text-text-main hover:bg-gray-500 hover:text-white' : 'bg-bg-input text-text-main hover:bg-border-main'}`}
           >
             <option value="400">{t('font_normal', lang as Language)}</option>
             <option value="700">{t('font_bold', lang as Language)}</option>
@@ -2034,7 +2037,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <button
             onClick={undo}
             disabled={!canUndo}
-            className={`px-3 h-8 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
+            className={`px-3 h-8 border text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
             title={t('undo', lang)}
           >
             <Undo2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'UNDO' : '前に戻す'}
@@ -2043,7 +2046,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <button
             onClick={redo}
             disabled={!canRedo}
-            className={`px-3 h-8 border rounded text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
+            className={`px-3 h-8 border text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
             title={lang === 'en' ? 'REDO' : '次に進む'}
           >
             <Redo2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'REDO' : '次に進む'}
@@ -2051,7 +2054,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           
           <button 
           onClick={() => {            setEditorText('');            setNegativeEditorText('');          }}
-          className={`px-3 h-8  border rounded text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
+          className={`px-3 h-8  border  text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
             (theme === 'light' || theme === 'mono')
               ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
               : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
@@ -2092,24 +2095,59 @@ const handleResizeStart = (e: React.MouseEvent) => {
               className="flex-1 flex items-center overflow-x-auto pl-0 pt-0 pb-1 pr-8 bg-transparent [&::-webkit-scrollbar]:hidden" 
               style={{ gap: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {tabs.map(tab => (
+              {tabs.map((tab, index) => (
                 <div 
                   key={tab.id}
-                  className={`group flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono border rounded cursor-pointer whitespace-nowrap transition-all ${
+                  draggable={true}
+                  onDragStart={(e) => {
+                    setDraggedTabIndex(index);
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', String(index));
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (dragOverTabIndex !== index) {
+                      setDragOverTabIndex(index);
+                    }
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    setDragOverTabIndex(index);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (draggedTabIndex !== null && draggedTabIndex !== index) {
+                      if (onTabReorder) {
+                        onTabReorder(draggedTabIndex, index);
+                      }
+                    }
+                    setDraggedTabIndex(null);
+                    setDragOverTabIndex(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedTabIndex(null);
+                    setDragOverTabIndex(null);
+                  }}
+                  className={`group flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono border cursor-pointer whitespace-nowrap transition-all ${
                     activeTabId === tab.id 
                       ? ((theme === 'light' || theme === 'mono') ? 'bg-gray-700 border-gray-700 text-white shadow-sm' : 'bg-white border-white text-gray-900 shadow-sm') 
                       : 'bg-bg-base border-border-main text-text-dim hover:bg-bg-input hover:text-text-main hover:border-border-hover'
-                  }`}
+                  } ${draggedTabIndex === index ? 'opacity-40' : ''} ${dragOverTabIndex === index ? 'border-blue-500 border-l-2' : ''}`}
                   onClick={() => onTabChange(tab.id)}
                 >
                   <span className="truncate max-w-[120px]" title={tab.name}>{tab.name}</span>
                   {tabs.length > 1 ? (
                     <button 
+                      draggable={false}
                       onClick={(e) => { 
                         e.stopPropagation(); 
                         if (onTabClose) onTabClose(tab.id);
                       }}
-                      className={`ml-1 w-3.5 h-3.5 flex items-center justify-center rounded-sm transition-colors ${
+                      className={`ml-1 w-3.5 h-3.5 flex items-center justify-center transition-colors ${
                         activeTabId === tab.id 
                           ? 'opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400' 
                           : 'opacity-0 group-hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400'
@@ -2138,7 +2176,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           </div>
           <button 
             onClick={onTabAdd} 
-            className="ml-1 px-2 py-1.5 text-text-dim hover:text-text-main hover:bg-bg-input rounded-sm border border-transparent transition-colors flex items-center justify-center shrink-0"
+            className="ml-1 px-2 py-1.5 text-text-dim hover:text-text-main hover:bg-bg-input border border-transparent transition-colors flex items-center justify-center shrink-0"
             title="Add Tab"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -2154,7 +2192,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 setTimeout(() => setConfirmClearTabs(false), 3000);
               }
             }} 
-            className={`ml-auto px-3 py-0.5 text-[9px] font-mono font-bold border rounded-sm transition-colors uppercase shrink-0 ${
+            className={`ml-auto px-3 py-0.5 text-[9px] font-mono font-bold border  transition-colors uppercase shrink-0 ${
               confirmClearTabs 
                 ? 'bg-red-500 text-white border-solid border-red-500 hover:bg-red-600' 
                 : 'text-red-500 hover:text-white bg-transparent hover:bg-red-500/80 border-dashed border-red-500/50 hover:border-red-500/80'
@@ -2166,7 +2204,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
         </div>
       )}
 
-        <div className={`${isPositiveOpen ? 'flex-1 min-h-[100px]' : 'shrink-0'} border border-border-main rounded-lg flex flex-col relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}>
+        <div className={`${isPositiveOpen ? 'flex-1 min-h-[100px]' : 'shrink-0'} border border-border-main flex flex-col relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}>
           <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-wrap border-b border-border-main/30">
             <button 
               onClick={() => setIsPositiveOpen(!isPositiveOpen)}
@@ -2180,19 +2218,19 @@ const handleResizeStart = (e: React.MouseEvent) => {
               
               <button 
                 onClick={() => handleSaveSetClick()}
-                className="flex items-center gap-1 px-2 py-1 bg-accent-main hover:bg-blue-600 border border-accent-dim rounded text-[9px] font-mono text-white transition-colors"
+                className="flex items-center gap-1 px-2 py-1 bg-accent-main hover:bg-blue-600 border border-accent-dim text-[9px] font-mono text-white transition-colors"
               >
                 <Save className="w-3 h-3" /> {t('save_as_set', lang)}
               </button>
               <button 
                 onClick={() => handleSaveMasterClick(false, activeMasterTab === 'negative')}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <Save className="w-3 h-3" /> {t('save_as_master', lang)}
               </button>
               <button 
                 onClick={() => handleSavePartClick(false)}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_part', lang)}
               </button>
@@ -2206,13 +2244,13 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   setSaveMemoDefaultTitle(title);
                   setIsSaveMemoModalOpen(true);
                 }}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_memo', lang)}
               </button>
               <button
                 onClick={() => setEditorText('')}
-                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-red-500/10 hover:text-red-400 border border-border-hover hover:border-red-500/30 rounded text-[9px] font-mono text-text-dim transition-colors ml-1"
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-red-500/10 hover:text-red-400 border border-border-hover hover:border-red-500/30 text-[9px] font-mono text-text-dim transition-colors ml-1"
                 title={t('clear', lang)}
               >
                 <Trash2 className="w-3 h-3" />
@@ -2228,7 +2266,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
             initial={{ opacity: 0, y: -20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.9 }}
-            className="absolute top-4 right-8 z-50 bg-bg-surface text-text-main px-4 py-2 rounded shadow-lg text-[10px] font-mono font-bold flex items-center gap-2 border border-border-main"
+            className="absolute top-4 right-8 z-50 bg-bg-surface text-text-main px-4 py-2 shadow-lg text-[10px] font-mono font-bold flex items-center gap-2 border border-border-main"
           >
             {t('copied', lang)}
           </motion.div>
@@ -2236,7 +2274,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
       </AnimatePresence>
                         <div 
               ref={positiveHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
               aria-hidden="true"
             >
@@ -2272,7 +2310,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               }}
               
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-blue-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-blue-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
@@ -2289,17 +2327,17 @@ const handleResizeStart = (e: React.MouseEvent) => {
             <div className={`w-full h-px ${isResizing ? 'bg-accent-main' : 'bg-transparent group-hover:bg-border-main'} transition-colors`} />
           </div>
 
-          <div className="flex gap-2 bg-bg-panel p-1 rounded-full border border-border-main shadow-sm relative z-20">
+          <div className="flex gap-2 bg-bg-panel p-1 border border-border-main shadow-sm relative z-20">
             <button 
               onClick={() => handleCopyTextBetweenEditors('down')}
-              className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono`}
+              className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} text-text-dim transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono`}
               title={t('copy_to_negative', lang)}
             >
               <Copy size={12} /> <ArrowDown size={12} />
             </button>
             <button 
               onClick={() => handleMoveTextBetweenEditors('down')}
-              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
+              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
               title={t('move_to_negative', lang)}
             >
               <ArrowDown size={14} />
@@ -2307,14 +2345,14 @@ const handleResizeStart = (e: React.MouseEvent) => {
             <div className="w-px h-6 bg-border-main my-auto mx-1"></div>
             <button 
               onClick={() => handleMoveTextBetweenEditors('up')}
-              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
+              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
               title={t('move_to_positive', lang)}
             >
               <ArrowUp size={14} />
             </button>
             <button 
               onClick={() => handleCopyTextBetweenEditors('up')}
-              className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} rounded-full text-text-dim transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono`}
+              className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} text-text-dim transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono`}
               title={t('copy_to_positive', lang)}
             >
               <Copy size={12} /> <ArrowUp size={12} />
@@ -2323,7 +2361,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
         </div>
 
         <div 
-          className={`${!isPositiveOpen && isNegativeOpen ? 'flex-1 min-h-[100px]' : 'shrink-0'} border border-border-main rounded-lg flex flex-col relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}
+          className={`${!isPositiveOpen && isNegativeOpen ? 'flex-1 min-h-[100px]' : 'shrink-0'} border border-border-main flex flex-col relative transition-colors ${paperMode ? 'bg-[#f4f4f5] border-gray-300 shadow-inner' : 'bg-bg-base'}`}
           style={{ height: (!isPositiveOpen && isNegativeOpen) ? 'auto' : (isNegativeOpen ? `${negativeHeight}px` : 'auto') }}
         >
           <div className="flex justify-between items-start sm:items-center px-3 pt-2 pb-1 gap-2 flex-wrap border-b border-border-main/30">
@@ -2339,13 +2377,13 @@ const handleResizeStart = (e: React.MouseEvent) => {
               
               <button 
                 onClick={() => handleSaveMasterClick(true)}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <Save className="w-3 h-3" /> {t('save_as_master', lang)}
               </button>
               <button 
                 onClick={() => handleSavePartClick(true)}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_part', lang)}
               </button>
@@ -2359,13 +2397,13 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   setSaveMemoDefaultTitle(title);
                   setIsSaveMemoModalOpen(true);
                 }}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover rounded text-[9px] font-mono text-text-dim transition-colors`}
+                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_memo', lang)}
               </button>
               <button
                 onClick={() => setNegativeEditorText('')}
-                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-red-500/10 hover:text-red-400 border border-border-hover hover:border-red-500/30 rounded text-[9px] font-mono text-text-dim transition-colors ml-1"
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-red-500/10 hover:text-red-400 border border-border-hover hover:border-red-500/30 text-[9px] font-mono text-text-dim transition-colors ml-1"
                 title={t('clear', lang)}
               >
                 <Trash2 className="w-3 h-3" />
@@ -2375,7 +2413,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
               aria-hidden="true"
             >
@@ -2411,7 +2449,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               }}
               
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-red-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-red-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>

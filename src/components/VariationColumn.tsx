@@ -371,13 +371,13 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
       {activeTab === 'parts' ? (
       <>
       <div className="p-4 flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
-        <div className={`flex flex-wrap items-center gap-2 bg-bg-surface p-2 border ${bulkSelectedIds.size > 0 ? 'border-blue-500/30' : 'border-border-main'} rounded shadow-sm shrink-0 min-h-[42px]`}>
-          <span className="text-[10px] font-mono text-text-dim flex-shrink-0 flex items-center justify-center w-6 h-6 bg-bg-input rounded-full font-bold">{bulkSelectedIds.size}</span>
+        <div className={`flex flex-wrap items-center gap-2 bg-bg-surface p-2 border ${bulkSelectedIds.size > 0 ? 'border-blue-500/30' : 'border-border-main'} shadow-sm shrink-0 min-h-[42px]`}>
+          <span className="text-[10px] font-mono text-text-dim flex-shrink-0 flex items-center justify-center w-6 h-6 bg-bg-input font-bold">{bulkSelectedIds.size}</span>
           <select 
             onChange={handleBulkMove}
             value=""
             disabled={bulkSelectedIds.size === 0}
-            className="flex-1 min-w-[70px] bg-bg-input hover:bg-text-main hover:text-bg-base border border-border-main text-text-main text-[13px] font-mono px-2 py-1.5 rounded outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:hover:bg-bg-input disabled:hover:text-text-main"
+            className="flex-1 min-w-[70px] bg-bg-input hover:bg-text-main hover:text-bg-base border border-border-main text-text-main text-[13px] font-mono px-2 py-1.5 outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:hover:bg-bg-input disabled:hover:text-text-main"
           >
             <option value="" disabled className="bg-bg-panel text-text-dim">Move to...</option>
             <option value="copy_to_master" className="bg-bg-panel text-text-main">{t('copy_to_master_prompts', lang)}</option>
@@ -392,14 +392,14 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
           <button 
             onClick={handleBulkDelete}
             disabled={bulkSelectedIds.size === 0}
-            className="flex items-center gap-1 px-2 py-1 bg-transparent hover:bg-red-500/10 border border-red-500/50 rounded text-[10px] font-mono text-red-500 transition-colors whitespace-nowrap disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-1 bg-transparent hover:bg-red-500/10 border border-red-500/50 text-[10px] font-mono text-red-500 transition-colors whitespace-nowrap disabled:opacity-50"
           >
             <Trash2 className="w-3 h-3" /> DELETE
           </button>
           <button 
             onClick={() => setBulkSelectedIds(new Set())} 
             disabled={bulkSelectedIds.size === 0}
-            className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[10px] font-mono text-text-dim transition-colors whitespace-nowrap disabled:opacity-50"
+            className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover text-[10px] font-mono text-text-dim transition-colors whitespace-nowrap disabled:opacity-50"
           >
             {t('clear_selection', lang)}
           </button>
@@ -413,7 +413,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                 placeholder={t('search', lang)}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-bg-input border border-border-main text-[11px] font-mono px-8 py-2 rounded focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600"
+                className="w-full bg-bg-input border border-border-main text-[11px] font-mono px-8 py-2 focus:outline-none focus:border-blue-500 text-text-main placeholder-gray-600"
               />
               <span className="absolute left-2.5 top-2.5 opacity-30 font-mono text-[10px] text-text-main">/</span>
             </div>
@@ -422,7 +422,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
             
             <button 
               onClick={() => setIsDuplicateModalOpen(true)}
-              className="px-2 py-1 text-[10px] border border-border-hover bg-bg-input hover:bg-border-main rounded transition-colors text-text-dim flex items-center justify-center gap-1 shrink-0"
+              className="px-2 py-1 text-[10px] border border-border-hover bg-bg-input hover:bg-border-main transition-colors text-text-dim flex items-center justify-center gap-1 shrink-0"
             >
               <Search size={12} />
               {lang === 'en' ? 'Find Duplicates' : '重複サーチ'}
@@ -436,7 +436,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                 }
                 setIsAllExpanded(!isAllExpanded);
               }} 
-              className={`px-2 py-1 text-[10px] border rounded transition-colors whitespace-nowrap flex items-center justify-center gap-1 shrink-0 ${
+              className={`px-2 py-1 text-[10px] border  transition-colors whitespace-nowrap flex items-center justify-center gap-1 shrink-0 ${
                 (theme === 'light' || theme === 'mono') || theme === 'paper'
                   ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
                   : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
@@ -489,7 +489,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                               setEditingSectionId(null);
                             }
                           }}
-                          className="text-xs font-mono font-bold uppercase bg-bg-input border border-border-main px-1 py-0.5 rounded outline-none w-32 text-text-main"
+                          className="text-xs font-mono font-bold uppercase bg-bg-input border border-border-main px-1 py-0.5 outline-none w-32 text-text-main"
                           autoFocus
                           onBlur={() => {
                             onRenameSection?.(Number(secId), editSectionName);
@@ -513,7 +513,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                   {onAddCategory && (
                     <button 
                       onClick={() => setConfirmAddCategoryData(Number(secId))}
-                      className="px-1.5 py-0.5 bg-transparent border border-transparent hover:border-current rounded opacity-0 group-hover:opacity-100 flex items-center transition-all"
+                      className="px-1.5 py-0.5 bg-transparent border border-transparent hover:border-current opacity-0 group-hover:opacity-100 flex items-center transition-all"
                     >
                       <Plus className="w-3 h-3" />
                       <span className="text-[9px] ml-1 font-mono">CAT</span>
@@ -564,24 +564,24 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                               return (
                                 <div 
                                   key={part.id} 
-                                  className="p-2 rounded bg-bg-input border border-blue-500/50 flex flex-col gap-2"
+                                  className="p-2 bg-bg-input border border-blue-500/50 flex flex-col gap-2"
                                 >
                                   <input 
                                     value={editName}
                                     onChange={e => setEditName(e.target.value)}
-                                    className="bg-bg-base border border-border-main text-xs font-mono p-1.5 rounded text-text-main focus:outline-none focus:border-blue-500 w-full"
+                                    className="bg-bg-base border border-border-main text-xs font-mono p-1.5 text-text-main focus:outline-none focus:border-blue-500 w-full"
                                     placeholder={t('name', lang)}
                                   />
                                   <input 
                                     value={editCategory}
                                     onChange={e => setEditCategory(e.target.value)}
-                                    className="bg-bg-base border border-border-main text-xs font-mono p-1.5 rounded text-text-main focus:outline-none focus:border-blue-500 w-full"
+                                    className="bg-bg-base border border-border-main text-xs font-mono p-1.5 text-text-main focus:outline-none focus:border-blue-500 w-full"
                                     placeholder={t('category', lang)}
                                   />
                                   <textarea 
                                     value={editContent}
                                     onChange={e => setEditContent(e.target.value)}
-                                    className="bg-bg-base border border-border-main text-[11px] font-mono p-1.5 rounded text-text-dim focus:outline-none focus:border-blue-500 resize-y min-h-[64px] h-16 w-full"
+                                    className="bg-bg-base border border-border-main text-[11px] font-mono p-1.5 text-text-dim focus:outline-none focus:border-blue-500 resize-y min-h-[64px] h-16 w-full"
                                     placeholder={t('content', lang)}
                                   />
                                   <div className="flex justify-between items-center mt-1">
@@ -597,7 +597,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                           setCopiedPartId('edit_' + part.id);
                                           setTimeout(() => setCopiedPartId(null), 2000);
                                         }}
-                                        className={`px-3 py-1.5 flex items-center justify-center gap-1.5 bg-transparent hover:bg-bg-input border text-[10px] font-mono transition-colors rounded ${
+                                        className={`px-3 py-1.5 flex items-center justify-center gap-1.5 bg-transparent hover:bg-bg-input border text-[10px] font-mono transition-colors  ${
                                           copiedPartId === 'edit_' + part.id ? 'border-green-500/50 text-green-500 bg-green-500/10' : 'border-border-main text-text-dim hover:text-green-400'
                                         }`}
                                         title={lang === 'en' ? "Copy Prompt Text" : "プロンプトをコピー"}
@@ -606,15 +606,15 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                           <Check className="w-3 h-3" />
                                         ) : (
                                           <div className="relative w-3 h-3 flex items-center justify-center">
-                                            <div className="border border-current rounded-[2px] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
+                                            <div className="border border-current ] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
                                           </div>
                                         )}
                                         COPY
                                       </button>
-                                      <button onClick={() => setEditingId(null)} className="px-3 py-1.5 bg-transparent hover:bg-bg-input border border-transparent hover:border-border-main text-text-dim hover:text-text-main rounded text-[10px] font-mono transition-colors">
+                                      <button onClick={() => setEditingId(null)} className="px-3 py-1.5 bg-transparent hover:bg-bg-input border border-transparent hover:border-border-main text-text-dim hover:text-text-main text-[10px] font-mono transition-colors">
                                         CANCEL
                                       </button>
-                                      <button onClick={() => handleSave(part.id)} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-mono font-bold transition-colors">
+                                      <button onClick={() => handleSave(part.id)} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-mono font-bold transition-colors">
                                         {t('save', lang)}
                                       </button>
                                     </div>
@@ -631,7 +631,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                 onDragEnd={handleDragEnd}
                                 onDragOver={(e) => handleDragOver(e, category)}
                                 onDrop={(e) => handleDrop(e, part.id, category)}
-                                className={`p-2 rounded flex items-center space-x-2 cursor-pointer transition-colors group relative ${isSelected ? (part.isNegative ? 'bg-red-500/10 border border-red-500/50' : 'bg-bg-surface border border-blue-500/30') : (part.isNegative ? 'bg-red-500/5 border border-red-500/30 hover:border-red-500/50' : 'bg-bg-input border border-border-main hover:border-border-hover')}`}
+                                className={`p-2 flex items-center space-x-2 cursor-pointer transition-colors group relative ${isSelected ? (part.isNegative ? 'bg-red-500/10 border border-red-500/50' : 'bg-bg-surface border border-blue-500/30') : (part.isNegative ? 'bg-red-500/5 border border-red-500/30 hover:border-red-500/50' : 'bg-bg-input border border-border-main hover:border-border-hover')}`}
                                 onClick={() => onTogglePart(part.id)}
                               >
                                 <input 
@@ -660,7 +660,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                           setCopiedPartId(part.id);
                                           setTimeout(() => setCopiedPartId(null), 2000);
                                         }}
-                                        className={`opacity-0 group-hover:opacity-100 p-1 bg-bg-panel rounded shadow-sm border border-border-main transition-all ${
+                                        className={`opacity-0 group-hover:opacity-100 p-1 bg-bg-panel  shadow-sm border border-border-main transition-all ${
                                           copiedPartId === part.id 
                                             ? 'text-green-500 bg-green-500/10 opacity-100'
                                             : 'text-text-dim hover:text-green-400'
@@ -671,13 +671,13 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                           <Check className="w-3 h-3" />
                                         ) : (
                                           <div className="relative w-3 h-3 flex items-center justify-center">
-                                            <div className="border border-current rounded-[2px] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
+                                            <div className="border border-current ] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
                                           </div>
                                         )}
                                       </button>
                                       <button 
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedActionId(part.id); }}
-                                        className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-text-main transition-opacity p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                                        className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-text-main transition-opacity p-1 bg-bg-panel shadow-sm border border-border-main"
                                         title={lang === 'en' ? 'More actions' : 'メニュー'}
                                       >
                                         <MoreHorizontal className="w-3 h-3" />
@@ -687,7 +687,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                   
                                   {(expandedActionId === part.id || confirmQuickDeleteId === part.id) && (
                                     <>
-                                      <div className="flex items-center bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden">
+                                      <div className="flex items-center bg-bg-panel shadow-sm border border-border-main overflow-hidden">
                                         <button 
                                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onReorder && index > 0) onReorder(part.id, catParts[0].id); }}
                                           className="p-1 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
@@ -703,21 +703,21 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                       </div>
                                       <button 
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onDuplicate) onDuplicate(part.id); }}
-                                        className="text-text-dim hover:text-blue-400 p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                                        className="text-text-dim hover:text-blue-400 p-1 bg-bg-panel shadow-sm border border-border-main"
                                         title="Duplicate"
                                       >
                                         <Copy className="w-3 h-3" />
                                       </button>
                                       <button 
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onCopyToMaster) onCopyToMaster(part); }}
-                                        className="text-text-dim hover:text-green-400 p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                                        className="text-text-dim hover:text-green-400 p-1 bg-bg-panel shadow-sm border border-border-main"
                                         title="Copy to Master Prompts"
                                       >
                                         <ArrowLeftToLine className="w-3 h-3" />
                                       </button>
                                       <button 
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onCopyToMixer) onCopyToMixer(part); }}
-                                        className="text-text-dim hover:text-blue-400 p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                                        className="text-text-dim hover:text-blue-400 p-1 bg-bg-panel shadow-sm border border-border-main"
                                         title="Copy to Prompt Mixer"
                                       >
                                         <ArrowLeftToLine className="w-3 h-3" style={{ transform: 'rotate(180deg)' }} />
@@ -734,7 +734,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                             setTimeout(() => setConfirmQuickDeleteId(null), 3000);
                                           }
                                         }}
-                                        className={`p-1 bg-bg-panel rounded shadow-sm border border-border-main ${
+                                        className={`p-1 bg-bg-panel  shadow-sm border border-border-main ${
                                           confirmQuickDeleteId === part.id 
                                             ? 'text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20' 
                                             : 'text-text-dim hover:text-red-400 hover:bg-bg-input'
@@ -745,13 +745,13 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                                       </button>
                                       <button 
                                         onClick={(e) => startEdit(part, e)}
-                                        className="text-text-dim hover:text-blue-400 p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                                        className="text-text-dim hover:text-blue-400 p-1 bg-bg-panel shadow-sm border border-border-main"
                                       >
                                         <Pencil className="w-3 h-3" />
                                       </button>
                                       <button 
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedActionId(null); }}
-                                        className="text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                                        className="text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors p-1 bg-bg-panel shadow-sm border border-border-main"
                                         title="Close"
                                       >
                                         <X className="w-3 h-3" />
@@ -828,7 +828,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
       {onDeleteAll && (
         <div className="p-3 bg-bg-panel border-t border-border-main shrink-0">
-          <button onClick={() => setConfirmDeleteAllState(true)} className="w-full py-2 bg-bg-input border border-dashed border-red-500/30 rounded text-[11px] font-mono text-red-500/70 hover:text-red-500 hover:bg-red-500/10 transition-colors">
+          <button onClick={() => setConfirmDeleteAllState(true)} className="w-full py-2 bg-bg-input border border-dashed border-red-500/30 text-[11px] font-mono text-red-500/70 hover:text-red-500 hover:bg-red-500/10 transition-colors">
             {t('delete_all', lang)}
           </button>
         </div>

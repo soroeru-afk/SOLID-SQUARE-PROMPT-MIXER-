@@ -20,7 +20,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onMerge, onOve
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="bg-bg-panel border border-border-main rounded-lg shadow-xl p-6 w-full max-w-sm m-4"
+            className="bg-bg-panel border border-border-main shadow-xl p-6 w-full max-w-sm m-4"
           >
             <h3 className="text-text-main text-base font-bold font-mono mb-4">
               {lang === 'en' ? 'Import Data' : 'データのインポート'}
@@ -33,19 +33,19 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onMerge, onOve
             <div className="flex justify-end space-x-3">
               <button
                 onClick={onCancel}
-                className="px-3 py-2 bg-bg-input hover:bg-border-main text-text-dim text-[11px] font-mono rounded transition-colors"
+                className="px-3 py-2 bg-bg-input hover:bg-border-main text-text-dim text-[11px] font-mono transition-colors"
               >
                 {t('cancel', lang)}
               </button>
               <button
                 onClick={onOverwrite}
-                className="px-3 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-500 border border-red-500/50 text-[11px] font-mono font-bold rounded transition-colors"
+                className="px-3 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-500 border border-red-500/50 text-[11px] font-mono font-bold transition-colors"
               >
                 {lang === 'en' ? 'Overwrite' : '上書きする'}
               </button>
               <button
                 onClick={onMerge}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold rounded transition-colors"
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold transition-colors"
               >
                 {lang === 'en' ? 'Merge (Add)' : 'マージ（結合）'}
               </button>

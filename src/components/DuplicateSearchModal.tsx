@@ -160,7 +160,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className={`w-full max-w-4xl max-h-[90vh] flex flex-col rounded-lg shadow-xl ${theme === 'light' || theme === 'mono' ? 'bg-white' : 'bg-bg-base border border-border-main'}`}>
+      <div className={`w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl ${theme === 'light' || theme === 'mono' ? 'bg-white' : 'bg-bg-base border border-border-main'}`}>
         
         <div className="flex justify-between items-center p-4 border-b border-border-main">
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
@@ -173,7 +173,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
                 // Just toggle isOpen or recalculate manually? Actually we can just force re-render.
                 doSearch();
               }}
-              className="text-[11px] font-mono px-3 py-1.5 rounded bg-bg-input text-text-dim hover:text-text-main hover:bg-border-main flex items-center gap-1 transition-colors"
+              className="text-[11px] font-mono px-3 py-1.5 bg-bg-input text-text-dim hover:text-text-main hover:bg-border-main flex items-center gap-1 transition-colors"
             >
               <Combine className="w-3.5 h-3.5" />
               {lang === 'en' ? 'Refresh' : '再サーチ'}
@@ -230,7 +230,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
                   setAlertMessage(lang === 'en' ? 'No exact duplicates found.' : '完全に一致する重複パーツは見つかりませんでした。（カンマの有無や空白の違いがないかご確認ください）');
                 }
               }}
-              className="text-[11px] font-mono px-3 py-1.5 rounded bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 flex items-center gap-1"
+              className="text-[11px] font-mono px-3 py-1.5 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 flex items-center gap-1"
             >
               <Combine className="w-3.5 h-3.5" />
               {lang === 'en' ? 'Auto-merge Exact Duplicates' : '完全一致を一つにする'}
@@ -243,12 +243,12 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
                 setSelectedIds(new Set());
               }}
               disabled={selectedIds.size === 0}
-              className={`text-[11px] font-mono px-3 py-1.5 rounded flex items-center gap-1 ${selectedIds.size === 0 ? 'opacity-50 cursor-not-allowed text-text-dim bg-bg-base' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'}`}
+              className={`text-[11px] font-mono px-3 py-1.5 flex items-center gap-1 ${selectedIds.size === 0 ? 'opacity-50 cursor-not-allowed text-text-dim bg-bg-base' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'}`}
             >
               <Trash2 className="w-3.5 h-3.5" />
               {lang === 'en' ? 'Delete Selected' : '選択を削除'}
             </button>
-            <button onClick={onClose} className="p-1 hover:bg-bg-panel rounded text-text-dim ml-2 border border-transparent hover:border-border-main transition-colors">
+            <button onClick={onClose} className="p-1 hover:bg-bg-panel text-text-dim ml-2 border border-transparent hover:border-border-main transition-colors">
               <X size={20} />
             </button>
           </div>
@@ -263,7 +263,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
             groups.map((group, i) => {
               const selectedInGroup = group.filter(p => selectedIds.has(p.id));
               return (
-                <div key={i} className="border border-border-main rounded bg-bg-panel overflow-hidden">
+                <div key={i} className="border border-border-main bg-bg-panel overflow-hidden">
                   <div className="p-2 bg-bg-input border-b border-border-main flex justify-between items-center">
                     <span className="text-xs font-mono text-text-dim uppercase font-bold">Group {i + 1}</span>
                     <div className="flex gap-2">
@@ -278,7 +278,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
                             return next;
                           });
                         }}
-                        className={`text-[11px] font-mono px-2 py-1 rounded flex items-center gap-1 ${selectedInGroup.length === 0 ? 'opacity-50 cursor-not-allowed text-text-dim bg-bg-base' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'}`}
+                        className={`text-[11px] font-mono px-2 py-1 flex items-center gap-1 ${selectedInGroup.length === 0 ? 'opacity-50 cursor-not-allowed text-text-dim bg-bg-base' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'}`}
                       >
                         <Trash2 className="w-3 h-3" />
                         {lang === 'en' ? 'Delete Selected' : '選択を削除'}
@@ -286,7 +286,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
                       <button 
                         disabled={selectedInGroup.length < 2}
                         onClick={() => handleMergeClick(group)}
-                        className={`text-[11px] font-mono px-2 py-1 rounded flex items-center gap-1 ${selectedInGroup.length < 2 ? 'opacity-50 cursor-not-allowed text-text-dim bg-bg-base' : 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'}`}
+                        className={`text-[11px] font-mono px-2 py-1 flex items-center gap-1 ${selectedInGroup.length < 2 ? 'opacity-50 cursor-not-allowed text-text-dim bg-bg-base' : 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'}`}
                       >
                         <Combine className="w-3 h-3" />
                         {lang === 'en' ? 'Merge Selected' : '選択をまとめる'}
@@ -304,8 +304,8 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-sm font-bold text-text-main truncate">{p.name}</span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-border-main text-text-dim font-mono truncate max-w-[100px]">{p.category}</span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-border-main text-text-dim font-mono">Sec {p.section}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 border border-border-main text-text-dim font-mono truncate max-w-[100px]">{p.category}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 border border-border-main text-text-dim font-mono">Sec {p.section}</span>
                             </div>
                             <div className="text-xs text-text-dim font-mono break-words whitespace-pre-wrap">{p.content}</div>
                           </div>
@@ -322,13 +322,13 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
 
       {confirmAction && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-bg-panel border border-border-main rounded-lg shadow-xl p-6 w-full max-w-sm m-4">
+          <div className="bg-bg-panel border border-border-main shadow-xl p-6 w-full max-w-sm m-4">
             <p className="text-text-main text-sm font-mono mb-6">{confirmAction.message}</p>
             <div className="flex justify-end space-x-3">
-              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 bg-bg-input hover:bg-border-main text-text-dim text-[11px] font-mono rounded transition-colors">
+              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 bg-bg-input hover:bg-border-main text-text-dim text-[11px] font-mono transition-colors">
                 {lang === 'en' ? 'Cancel' : 'キャンセル'}
               </button>
-              <button onClick={() => { confirmAction.action(); setConfirmAction(null); }} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold rounded transition-colors">
+              <button onClick={() => { confirmAction.action(); setConfirmAction(null); }} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold transition-colors">
                 {lang === 'en' ? 'Confirm' : 'OK'}
               </button>
             </div>
@@ -337,10 +337,10 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
       )}
       {alertMessage && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-bg-panel border border-border-main rounded-lg shadow-xl p-6 w-full max-w-sm m-4">
+          <div className="bg-bg-panel border border-border-main shadow-xl p-6 w-full max-w-sm m-4">
             <p className="text-text-main text-sm font-mono mb-6">{alertMessage}</p>
             <div className="flex justify-end space-x-3">
-              <button onClick={() => setAlertMessage(null)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold rounded transition-colors">
+              <button onClick={() => setAlertMessage(null)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold transition-colors">
                 OK
               </button>
             </div>
@@ -349,7 +349,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
       )}
       {mergingGroupIds && (
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
-          <div className={`w-full max-w-lg p-5 flex flex-col gap-4 rounded-lg shadow-2xl ${theme === 'light' || theme === 'mono' ? 'bg-white' : 'bg-bg-panel border border-border-main'}`}>
+          <div className={`w-full max-w-lg p-5 flex flex-col gap-4 shadow-2xl ${theme === 'light' || theme === 'mono' ? 'bg-white' : 'bg-bg-panel border border-border-main'}`}>
             <h3 className="text-sm font-bold text-text-main uppercase font-mono">
               {lang === 'en' ? 'Merge Parts' : 'パーツをまとめる'}
             </h3>
@@ -360,7 +360,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
                   type="text"
                   value={mergeName}
                   onChange={e => setMergeName(e.target.value)}
-                  className="w-full bg-bg-input border border-border-main text-sm px-2 py-1.5 rounded focus:outline-none focus:border-accent-main text-text-main"
+                  className="w-full bg-bg-input border border-border-main text-sm px-2 py-1.5 focus:outline-none focus:border-accent-main text-text-main"
                 />
               </div>
               <div>
@@ -368,7 +368,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
                 <textarea 
                   value={mergeContent}
                   onChange={e => setMergeContent(e.target.value)}
-                  className="w-full bg-bg-input border border-border-main text-sm font-mono px-2 py-1.5 rounded focus:outline-none focus:border-accent-main text-text-main min-h-[100px] resize-y"
+                  className="w-full bg-bg-input border border-border-main text-sm font-mono px-2 py-1.5 focus:outline-none focus:border-accent-main text-text-main min-h-[100px] resize-y"
                 />
               </div>
             </div>
@@ -376,7 +376,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
               <button onClick={() => setMergingGroupIds(null)} className="px-3 py-1.5 text-xs font-mono text-text-dim hover:text-text-main transition-colors">
                 {lang === 'en' ? 'Cancel' : 'キャンセル'}
               </button>
-              <button onClick={handleMergeSubmit} className="px-3 py-1.5 text-xs font-mono bg-accent-main text-white rounded hover:bg-opacity-90 transition-colors shadow-lg">
+              <button onClick={handleMergeSubmit} className="px-3 py-1.5 text-xs font-mono bg-accent-main text-white hover:bg-opacity-90 transition-colors shadow-lg">
                 {lang === 'en' ? 'Save & Delete Originals' : '保存して元パーツを削除'}
               </button>
             </div>

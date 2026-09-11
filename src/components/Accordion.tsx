@@ -30,7 +30,7 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
   }, [collapseId]);
 
   return (
-    <div className="bg-bg-panel border border-border-main rounded-md overflow-hidden">
+    <div className="bg-bg-panel border border-border-main overflow-hidden">
       <div 
         className="w-full flex items-center justify-between p-2 hover:bg-bg-input transition-colors border-b border-border-main group cursor-pointer"
         onClick={() => !isEditing && setIsOpen(!isOpen)}
@@ -40,7 +40,7 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
             <input
               value={editTitle}
               onChange={e => setEditTitle(e.target.value)}
-              className="bg-bg-base border border-border-main text-xs font-mono p-1 rounded text-text-main focus:outline-none focus:border-blue-500 flex-1 min-w-0"
+              className="bg-bg-base border border-border-main text-xs font-mono p-1 text-text-main focus:outline-none focus:border-blue-500 flex-1 min-w-0"
               autoFocus
               onKeyDown={e => {
                 if (e.key === 'Enter') {
@@ -77,7 +77,7 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <span className="text-xs font-mono font-bold text-text-main uppercase truncate">{title}</span>
             {badge !== undefined && badge > 0 && (
-              <span className="badge-count text-white text-[10px] font-bold px-1.5 py-0.5 rounded leading-none min-w-[20px] text-center shadow-sm">
+              <span className="badge-count text-white text-[10px] font-bold px-1.5 py-0.5 leading-none min-w-[20px] text-center shadow-sm">
                 {badge}
               </span>
             )}
@@ -89,7 +89,7 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
             {onDelete && (
               <button 
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 text-text-dim transition-opacity rounded"
+                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 text-text-dim transition-opacity"
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -97,7 +97,7 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
             {onEdit && (
               <button 
                 onClick={(e) => { e.stopPropagation(); setIsEditing(true); setEditTitle(title); onEditStart?.(); }}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:text-blue-400 text-text-dim transition-opacity rounded"
+                className="opacity-0 group-hover:opacity-100 p-1 hover:text-blue-400 text-text-dim transition-opacity"
               >
                 <Pencil className="w-3 h-3" />
               </button>
@@ -105,14 +105,14 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
             {onAdd && (
               <div 
                 onClick={(e) => { e.stopPropagation(); setIsOpen(true); onAdd(e); }}
-                className="opacity-0 group-hover:opacity-100 px-1.5 py-0.5 flex items-center gap-1 hover:text-blue-400 text-text-dim transition-opacity border border-transparent hover:border-blue-500/30 rounded cursor-pointer"
+                className="opacity-0 group-hover:opacity-100 px-1.5 py-0.5 flex items-center gap-1 hover:text-blue-400 text-text-dim transition-opacity border border-transparent hover:border-blue-500/30 cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span className="text-[9px] font-mono whitespace-nowrap">NEW</span>
               </div>
             )}
             <div 
-              className={`w-3 h-3 border border-border-hover rounded-sm flex items-center justify-center transition-transform duration-300 ${isOpen ? 'rotate-180 bg-bg-surface' : ''}`}
+              className={`w-3 h-3 border border-border-hover flex items-center justify-center transition-transform duration-300 ${isOpen ? 'rotate-180 bg-bg-surface' : ''}`}
             >
                <div className={`w-1 h-1 ${isOpen ? 'bg-blue-500' : 'bg-gray-500'}`} />
             </div>

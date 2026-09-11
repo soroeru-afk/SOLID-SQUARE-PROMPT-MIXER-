@@ -122,7 +122,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                     e.target.nextElementSibling?.classList.add('hidden');
                   }, 150);
                 }}
-                className="w-full flex items-center justify-between bg-bg-input border border-border-main text-text-main p-1.5 rounded focus:outline-none focus:border-blue-500 cursor-pointer text-left"
+                className="w-full flex items-center justify-between bg-bg-input border border-border-main text-text-main p-1.5 focus:outline-none focus:border-blue-500 cursor-pointer text-left"
               >
                 {currentSelectedId ? (() => {
                   const item = currentList.find(i => i.id === currentSelectedId);
@@ -136,7 +136,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                 })() : '-- SELECT --'}
                 <ChevronDown className="w-3 h-3 ml-2 shrink-0" />
               </button>
-              <div className="hidden absolute top-full left-0 right-0 mt-1 max-h-[50vh] overflow-y-auto bg-bg-input border border-border-main rounded shadow-xl z-50">
+              <div className="hidden absolute top-full left-0 right-0 mt-1 max-h-[50vh] overflow-y-auto bg-bg-input border border-border-main shadow-xl z-50">
                 {currentList.map(item => (
                   <div
                     key={item.id}
@@ -154,17 +154,17 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
           ) : (
             <div className="flex-1 text-text-dim flex items-center">{t('master_presets', lang)}</div>
           )}
-          <div className="flex items-center bg-bg-input border border-border-main rounded shrink-0">
+          <div className="flex items-center bg-bg-input border border-border-main shrink-0">
             <button 
               onClick={() => setViewMode('list')} 
-              className={`px-2 py-1 rounded-l transition-colors flex items-center justify-center ${viewMode === 'list' ? 'bg-border-hover text-text-main' : 'text-text-dim hover:bg-border-main'}`}
+              className={`px-2 py-1 transition-colors flex items-center justify-center ${viewMode === 'list' ? 'bg-border-hover text-text-main' : 'text-text-dim hover:bg-border-main'}`}
               title={t('view_list', lang)}
             >
               <List className="w-3 h-3" />
             </button>
             <button 
               onClick={() => setViewMode('dropdown')} 
-              className={`px-2 py-1 rounded-r border-l border-border-main transition-colors flex items-center justify-center ${viewMode === 'dropdown' ? 'bg-border-hover text-text-main' : 'text-text-dim hover:bg-border-main'}`}
+              className={`px-2 py-1 border-l border-border-main transition-colors flex items-center justify-center ${viewMode === 'dropdown' ? 'bg-border-hover text-text-main' : 'text-text-dim hover:bg-border-main'}`}
               title={t('view_dropdown', lang)}
             >
               <ChevronDown className="w-3 h-3" />
@@ -179,7 +179,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-mono text-text-dim whitespace-nowrap">{bulkSelectedIds.size} selected</span>
               {true && (
-                <div className="flex gap-1 p-0.5 bg-bg-base border border-border-main rounded shrink-0">
+                <div className="flex gap-1 p-0.5 bg-bg-base border border-border-main shrink-0">
                   {['⭐', '✔', '💡', '📌', '⚠️', '❌'].map(m => (
                     <button 
                       key={m}
@@ -187,7 +187,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                         bulkSelectedIds.forEach(id => currentOnUpdate(id, { mark: m === '❌' ? undefined : m }));
                         setBulkSelectedIds(new Set());
                       }}
-                      className={`w-5 h-5 rounded flex items-center justify-center text-xs hover:bg-bg-input ${m === '✔' ? 'text-blue-500' : ''}`}
+                      className={`w-5 h-5 flex items-center justify-center text-xs hover:bg-bg-input ${m === '✔' ? 'text-blue-500' : ''}`}
                       title={m === '❌' ? "Remove Mark" : "Apply Mark"}
                     >
                       {m}
@@ -198,26 +198,26 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
             </div>
             <div className="flex flex-wrap gap-2 items-center justify-end flex-1">
               {currentOnMoveBulk && (
-                <div className="flex gap-1 p-0.5 bg-bg-base border border-border-main rounded shrink-0">
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'top')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move to Top">
+                <div className="flex gap-1 p-0.5 bg-bg-base border border-border-main shrink-0">
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'top')} className="w-5 h-5 flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move to Top">
                     <ChevronsUp className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'up')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move Up">
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'up')} className="w-5 h-5 flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move Up">
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'down')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move Down">
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'down')} className="w-5 h-5 flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move Down">
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'bottom')} className="w-5 h-5 rounded flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move to Bottom">
+                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'bottom')} className="w-5 h-5 flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main" title="Move to Bottom">
                     <ChevronsDown className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
-              <button onClick={() => setBulkSelectedIds(new Set())} className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover rounded text-[10px] font-mono text-text-dim transition-colors">
+              <button onClick={() => setBulkSelectedIds(new Set())} className="px-2 py-1 bg-bg-input hover:bg-border-main border border-border-hover text-[10px] font-mono text-text-dim transition-colors">
                 {t('clear_selection', lang)}
               </button>
               
-              <button onClick={() => setConfirmDeleteBulk(true)} className="flex items-center gap-1 px-2 py-1 bg-transparent hover:bg-red-500/10 border border-red-500/50 rounded text-[10px] font-mono text-red-500 transition-colors">
+              <button onClick={() => setConfirmDeleteBulk(true)} className="flex items-center gap-1 px-2 py-1 bg-transparent hover:bg-red-500/10 border border-red-500/50 text-[10px] font-mono text-red-500 transition-colors">
                 <Trash2 className="w-3 h-3" /> DELETE
               </button>
             </div>
@@ -232,15 +232,15 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
             return (
               <div 
                 key={item.id} 
-                className={`p-3 rounded-lg bg-bg-input border ${isNegative ? 'border-red-500/50' : 'border-blue-500/50'} flex flex-col gap-2`}
+                className={`p-3 bg-bg-input border ${isNegative ? 'border-red-500/50' : 'border-blue-500/50'} flex flex-col gap-2`}
               >
                 {!isNegative && (
-                  <div className="flex gap-2 p-1 bg-bg-base border border-border-main rounded">
+                  <div className="flex gap-2 p-1 bg-bg-base border border-border-main">
                     {['⭐', '✔', '💡', '📌', '⚠️'].map(m => (
                       <button 
                         key={m}
                         onClick={() => setEditMark(prev => prev === m ? undefined : m)}
-                        className={`w-6 h-6 rounded flex items-center justify-center text-sm ${editMark === m ? 'bg-bg-surface border border-blue-500/50' : 'hover:bg-bg-input'} ${m === '✔' ? 'text-blue-500' : ''}`}
+                        className={`w-6 h-6 flex items-center justify-center text-sm ${editMark === m ? 'bg-bg-surface border border-blue-500/50' : 'hover:bg-bg-input'} ${m === '✔' ? 'text-blue-500' : ''}`}
                       >
                         {m}
                       </button>
@@ -250,13 +250,13 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                 <input 
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
-                  className={`bg-bg-base border border-border-main text-xs font-mono p-1.5 rounded text-text-main focus:outline-none ${isNegative ? 'focus:border-red-500' : 'focus:border-blue-500'}`}
+                  className={`bg-bg-base border border-border-main text-xs font-mono p-1.5 text-text-main focus:outline-none ${isNegative ? 'focus:border-red-500' : 'focus:border-blue-500'}`}
                   placeholder={t('name', lang)}
                 />
                 <textarea 
                   value={editContent}
                   onChange={e => setEditContent(e.target.value)}
-                  className={`bg-bg-base border border-border-main text-[11px] font-mono p-1.5 rounded text-text-dim focus:outline-none ${isNegative ? 'focus:border-red-500' : 'focus:border-blue-500'} resize-y min-h-[64px] h-16`}
+                  className={`bg-bg-base border border-border-main text-[11px] font-mono p-1.5 text-text-dim focus:outline-none ${isNegative ? 'focus:border-red-500' : 'focus:border-blue-500'} resize-y min-h-[64px] h-16`}
                   placeholder={t('content', lang)}
                 />
                 <div className="flex justify-between items-center mt-1">
@@ -281,7 +281,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                         <Check className="w-3 h-3" />
                       ) : (
                         <div className="relative w-3 h-3 flex items-center justify-center">
-                          <div className="border border-current rounded-[2px] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
+                          <div className="border border-current ] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
                         </div>
                       )}
                     </button>
@@ -305,7 +305,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`block p-3 rounded-lg group cursor-pointer transition-colors relative ${(theme === 'light' || theme === 'mono') ? 'bg-white shadow-sm' : (isSelected ? 'bg-bg-input' : 'bg-transparent')} ${isSelected ? 'border border-blue-500/50' : 'border border-border-main hover:border-border-hover'}`}
+              className={`block p-3 group cursor-pointer transition-colors relative ${(theme === 'light' || theme === 'mono') ? 'bg-white shadow-sm' : (isSelected ? 'bg-bg-input' : 'bg-transparent')} ${isSelected ? 'border border-blue-500/50' : 'border border-border-main hover:border-border-hover'}`}
               onClick={(e) => {
                 e.preventDefault();
                 currentOnSelect(item.id);
@@ -327,7 +327,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                     {item.name.toUpperCase()}
                   </div>
                 </div>
-                <div className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? (isNegative ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]' : 'bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,1)]') : 'bg-transparent border border-gray-600'}`}></div>
+                <div className={`w-2 h-2 shrink-0 ${isSelected ? (isNegative ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]' : 'bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,1)]') : 'bg-transparent border border-gray-600'}`}></div>
               </div>
               <div className={`mt-1 text-[10px] font-mono truncate ${isSelected ? 'text-text-dim' : 'text-text-dim'}`}>
                 {item.content}
@@ -343,7 +343,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                         setCopiedItemId(item.id);
                         setTimeout(() => setCopiedItemId(null), 2000);
                       }}
-                      className={`opacity-0 group-hover:opacity-100 p-1 bg-bg-panel rounded shadow-sm border border-border-main transition-all ${
+                      className={`opacity-0 group-hover:opacity-100 p-1 bg-bg-panel  shadow-sm border border-border-main transition-all ${
                         copiedItemId === item.id 
                           ? 'text-green-500 bg-green-500/10 opacity-100'
                           : 'text-text-dim hover:text-green-400'
@@ -354,13 +354,13 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                         <Check className="w-3 h-3" />
                       ) : (
                         <div className="relative w-3 h-3 flex items-center justify-center">
-                          <div className="border border-current rounded-[2px] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
+                          <div className="border border-current ] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
                         </div>
                       )}
                     </button>
                     <button 
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedActionId(item.id); }}
-                      className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-text-main transition-opacity p-1 bg-bg-panel rounded shadow-sm border border-border-main"
+                      className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-text-main transition-opacity p-1 bg-bg-panel shadow-sm border border-border-main"
                       title={lang === 'en' ? 'More actions' : 'メニュー'}
                     >
                       <MoreHorizontal className="w-3 h-3" />
@@ -370,7 +370,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                 
                 {(expandedActionId === item.id || confirmQuickDeleteId === item.id) && (
                   <>
-                    <div className="flex items-center bg-bg-panel rounded shadow-sm border border-border-main overflow-hidden">
+                    <div className="flex items-center bg-bg-panel shadow-sm border border-border-main overflow-hidden">
                       <button 
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnReorder && index > 0) currentOnReorder(index, 0); }}
                         className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
@@ -386,7 +386,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                     </div>
                     <button 
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onDuplicate) onDuplicate(item.id); }}
-                      className="p-1.5 text-text-dim hover:text-blue-400 bg-bg-panel rounded shadow-sm border border-border-main"
+                      className="p-1.5 text-text-dim hover:text-blue-400 bg-bg-panel shadow-sm border border-border-main"
                       title="Duplicate"
                     ><Copy className="w-3 h-3" /></button>
                     <button 
@@ -401,7 +401,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                           setTimeout(() => setConfirmQuickDeleteId(null), 3000);
                         }
                       }}
-                      className={`p-1.5 bg-bg-panel rounded shadow-sm border border-border-main ${
+                      className={`p-1.5 bg-bg-panel  shadow-sm border border-border-main ${
                         confirmQuickDeleteId === item.id 
                           ? 'text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 opacity-100' 
                           : 'text-text-dim hover:text-red-400 hover:bg-bg-input'
@@ -410,11 +410,11 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
                     ><Trash2 className="w-3 h-3" /></button>
                     <button 
                       onClick={(e) => startEdit(item, e)}
-                      className="p-1.5 text-text-dim hover:text-blue-400 bg-bg-panel rounded shadow-sm border border-border-main transition-colors"
+                      className="p-1.5 text-text-dim hover:text-blue-400 bg-bg-panel shadow-sm border border-border-main transition-colors"
                     ><Pencil className="w-3 h-3" /></button>
                     <button 
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedActionId(null); }}
-                      className="p-1.5 text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors bg-bg-panel rounded shadow-sm border border-border-main"
+                      className="p-1.5 text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors bg-bg-panel shadow-sm border border-border-main"
                       title="Close"
                     ><X className="w-3 h-3" /></button>
                   </>
@@ -425,11 +425,11 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
         })}
       </div>
       <div className="p-3 bg-bg-panel border-t border-border-main flex gap-2">
-        <button onClick={() => setConfirmAdd(true)} className="flex-1 py-2 bg-bg-input border border-dashed border-border-hover rounded text-[11px] font-mono text-text-dim hover:text-text-main transition-colors">
+        <button onClick={() => setConfirmAdd(true)} className="flex-1 py-2 bg-bg-input border border-dashed border-border-hover text-[11px] font-mono text-text-dim hover:text-text-main transition-colors">
           {t('add_memo', lang)}
         </button>
         {currentOnDeleteAll && (
-          <button onClick={() => setConfirmDeleteAllState(true)} className="py-2 px-3 bg-bg-input border border-dashed border-red-500/30 rounded text-[11px] font-mono text-red-500/70 hover:text-red-500 hover:bg-red-500/10 transition-colors">
+          <button onClick={() => setConfirmDeleteAllState(true)} className="py-2 px-3 bg-bg-input border border-dashed border-red-500/30 text-[11px] font-mono text-red-500/70 hover:text-red-500 hover:bg-red-500/10 transition-colors">
             {t('delete_all', lang)}
           </button>
         )}

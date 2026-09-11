@@ -1789,7 +1789,7 @@ export default function App() {
       <header className="flex items-center justify-between px-4 py-2 border-b border-border-main bg-bg-panel h-14 shrink-0">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-text-main rounded-full opacity-80"></div>
+            <div className="w-2 h-2 bg-text-main opacity-80"></div>
             <h1 className="font-mono font-bold text-lg tracking-widest text-text-main">{t('app_title', lang)}</h1>
           </div>
           <div className="h-4 w-px bg-border-main"></div>
@@ -1798,14 +1798,14 @@ export default function App() {
         <div className="flex items-center space-x-2">
           <button 
             onClick={toggleFullscreen}
-            className={`w-7 h-7 bg-bg-input border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
+            className={`w-7 h-7 bg-bg-input border border-border-main transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
           <button 
             onClick={() => setSidebarPosition(pos => pos === 'left' ? 'right' : 'left')}
-            className={`h-7 px-2.5 bg-bg-input border border-border-main rounded transition-colors flex items-center gap-1.5 text-[10px] font-mono shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
+            className={`h-7 px-2.5 bg-bg-input border border-border-main transition-colors flex items-center gap-1.5 text-[10px] font-mono shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
             title={sidebarPosition === 'left' ? (lang === 'en' ? 'Move Sidebar to Right' : 'サイドバーを右側に配置') : (lang === 'en' ? 'Move Sidebar to Left' : 'サイドバーを左側に配置')}
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -1815,19 +1815,19 @@ export default function App() {
           </button>
           <button 
             onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'light' : t === 'light' ? 'mono' : t === 'mono' ? 'navy' : t === 'navy' ? 'dark' : 'light')}
-            className={`h-7 w-[130px] bg-bg-input border border-border-main text-[10px] font-mono rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
+            className={`h-7 w-[130px] bg-bg-input border border-border-main text-[10px] font-mono transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
           >
             {t('theme', lang)}: {t(`theme_${theme}` as keyof typeof translations, lang)}
           </button>
           <button 
             onClick={() => setPaperMode(!paperMode)}
-            className={`h-7 w-[120px] text-[10px] font-mono border rounded transition-colors flex items-center justify-center shrink-0 ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-bold' : theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white border-border-main text-text-main' : 'bg-bg-input hover:bg-border-main border-border-main text-text-main'}`}
+            className={`h-7 w-[120px] text-[10px] font-mono border transition-colors flex items-center justify-center shrink-0 ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-bold' : theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white border-border-main text-text-main' : 'bg-bg-input hover:bg-border-main border-border-main text-text-main'}`}
           >
             {t('paper_mode', lang)}: {paperMode ? 'ON' : 'OFF'}
           </button>
           <button 
             onClick={() => setLang(l => l === 'en' ? 'ja' : 'en')}
-            className={`h-7 px-2.5 bg-bg-input text-[10px] font-mono border border-border-main rounded transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
+            className={`h-7 px-2.5 bg-bg-input text-[10px] font-mono border border-border-main transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
           >
             {lang === 'en' ? 'JP' : 'EN'}
           </button>
@@ -1854,13 +1854,13 @@ export default function App() {
 
               {/* Sidebar Header: Main Navigation Tabs */}
               <div className="p-2 bg-bg-panel border-b border-border-main shrink-0 overflow-x-auto">
-                <div className="flex w-full bg-bg-base border border-border-main p-1 gap-1 text-[11px] font-mono uppercase tracking-wider rounded">
+                <div className="flex w-full bg-bg-base border border-border-main p-1 gap-1 text-[11px] font-mono uppercase tracking-wider">
                   <button 
                     onClick={() => {
                       setSidebarTab('parts');
                       setActiveVariationTab('parts');
                     }}
-                    className={`flex-1 py-1.5 px-2 border rounded font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 px-2 border  font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
                       sidebarTab === 'parts' 
                         ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main shadow-sm') 
                         : 'border-transparent text-text-dim hover:text-text-main'
@@ -1871,7 +1871,7 @@ export default function App() {
                   </button>
                   <button 
                     onClick={() => setSidebarTab('master')}
-                    className={`flex-1 py-1.5 px-2 border rounded font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 px-2 border  font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
                       sidebarTab === 'master' 
                         ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main shadow-sm') 
                         : 'border-transparent text-text-dim hover:text-text-main'
@@ -1884,7 +1884,7 @@ export default function App() {
                     onClick={() => {
                       setSidebarTab('memo');
                     }}
-                    className={`flex-1 py-1.5 px-2 border rounded font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 px-2 border  font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
                       sidebarTab === 'memo' 
                         ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main shadow-sm') 
                         : 'border-transparent text-text-dim hover:text-text-main'
@@ -1993,7 +1993,7 @@ export default function App() {
               <div className="border-t border-border-main bg-bg-panel shrink-0 flex flex-col">
                 {isDataManagementOpen && (
                   <div className="p-3 border-b border-border-main flex flex-col gap-2.5 bg-bg-panel max-h-[320px] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
-                    <div className="bg-bg-input border border-border-main rounded p-2 flex flex-col">
+                    <div className="bg-bg-input border border-border-main p-2 flex flex-col">
                       <div className="flex justify-between items-center mb-1.5">
                         <span className="text-[10px] font-mono text-text-main font-bold tracking-widest">{t('drive_destination', lang)}</span>
                         <div className="flex space-x-1">
@@ -2008,7 +2008,7 @@ export default function App() {
                       </div>
                       <button 
                         onClick={handleChangeExportDir}
-                        className={`w-full text-center px-2 py-1.5 bg-bg-panel border border-border-main rounded text-[10px] font-mono truncate transition-colors ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
+                        className={`w-full text-center px-2 py-1.5 bg-bg-panel border border-border-main text-[10px] font-mono truncate transition-colors ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
                       >
                         {exportDirectoryName || t('not_set', lang)}
                       </button>
@@ -2017,7 +2017,7 @@ export default function App() {
                     <div className="flex flex-col gap-2">
                       <div className="text-[10px] font-mono text-text-dim text-center">▼ {lang === 'en' ? 'Overall (Master, Memos, Parts)' : '全体 (マスター・メモ・パーツ全て)'} ▼</div>
                       <div className="flex gap-2">
-                        <label className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border rounded transition-colors cursor-pointer ${
+                        <label className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border  transition-colors cursor-pointer ${
                           theme === 'mono' 
                             ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700' 
                             : theme === 'light'
@@ -2029,7 +2029,7 @@ export default function App() {
                         </label>
                         <button 
                           onClick={handleExportOverall} 
-                          className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border rounded transition-all cursor-pointer ${
+                          className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border  transition-all cursor-pointer ${
                             theme === 'mono' 
                               ? 'bg-neutral-600 hover:bg-neutral-500 text-white border-neutral-500' 
                               : theme === 'light'
@@ -2043,7 +2043,7 @@ export default function App() {
 
                       <div className="text-[10px] font-mono text-text-dim text-center mt-1">▼ {lang === 'en' ? 'Parts & Mixer Only' : 'パーツ選択・ミキサーのみ'} ▼</div>
                       <div className="flex gap-2">
-                        <label className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border rounded transition-colors cursor-pointer ${
+                        <label className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border  transition-colors cursor-pointer ${
                           theme === 'mono' 
                             ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700' 
                             : theme === 'light'
@@ -2055,7 +2055,7 @@ export default function App() {
                         </label>
                         <button 
                           onClick={handleExportParts} 
-                          className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border rounded transition-all cursor-pointer ${
+                          className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border  transition-all cursor-pointer ${
                             theme === 'mono' 
                               ? 'bg-neutral-600 hover:bg-neutral-500 text-white border-neutral-500' 
                               : theme === 'light'
@@ -2093,7 +2093,7 @@ export default function App() {
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className={`self-center shrink-0 z-20 flex items-center justify-center w-5 h-24 bg-bg-panel hover:bg-bg-input text-text-main border border-border-main shadow-md transition-colors ${
-                sidebarPosition === 'left' ? 'border-l-0 rounded-r-md' : 'border-r-0 rounded-l-md'
+                sidebarPosition === 'left' ? 'border-l-0 ' : 'border-r-0 '
               }`}
               title={isSidebarOpen ? (lang === 'en' ? 'Collapse Sidebar' : 'サイドバーを閉じる') : (lang === 'en' ? 'Open Sidebar' : 'サイドバーを開く')}
             >
@@ -2121,6 +2121,7 @@ export default function App() {
                 onTabAdd={handleTabAdd}
                 onTabClose={handleTabClose}
                 onTabsClear={handleTabsClear}
+            onTabReorder={handleTabReorder}
                 editorText={editorText}
                 setEditorText={setEditorText}
                 negativeEditorText={negativeEditorText}
@@ -2282,7 +2283,7 @@ export default function App() {
         </div>
       </footer>
       {saveSuccessMessage && (
-        <div className="fixed bottom-10 right-10 bg-accent-main text-white px-4 py-2 rounded shadow-lg text-sm font-bold font-mono z-50 flex items-center space-x-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed bottom-10 right-10 bg-accent-main text-white px-4 py-2 shadow-lg text-sm font-bold font-mono z-50 flex items-center space-x-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <Check className="w-4 h-4" />
           <span>{saveSuccessMessage}</span>
         </div>
@@ -2290,7 +2291,7 @@ export default function App() {
       
       {iframeWarning && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-bg-panel border border-border-main p-6 rounded-lg max-w-md w-full shadow-2xl">
+          <div className="bg-bg-panel border border-border-main p-6 max-w-md w-full shadow-2xl">
             <h3 className="text-sm font-bold text-text-main mb-4 uppercase">機能制限のお知らせ</h3>
             <p className="text-xs text-text-main leading-relaxed mb-6">
               AI Studioのプレビュー画面（iframe）の中では、セキュリティの制限によりフォルダを選択するダイアログを表示することができません。
@@ -2300,7 +2301,7 @@ export default function App() {
             <div className="flex justify-end">
               <button
                 onClick={() => setIframeWarning(false)}
-                className="px-4 py-2 bg-accent-main text-text-main text-xs rounded hover:opacity-80 transition-opacity"
+                className="px-4 py-2 bg-accent-main text-text-main text-xs hover:opacity-80 transition-opacity"
               >
                 閉じる
               </button>
