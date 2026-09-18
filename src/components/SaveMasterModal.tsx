@@ -51,7 +51,7 @@ export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, conten
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Title"
-                  className="w-full bg-bg-input border border-border-main text-text-main text-xs font-mono p-2 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-bg-input border border-border-main text-text-main text-xs font-mono p-2 focus:outline-none focus:border-border-hover"
                   autoFocus
                 />
               </div>
@@ -81,14 +81,14 @@ export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, conten
             <div className="flex justify-end space-x-3 mt-4">
               <button
                 onClick={onCancel}
-                className="px-4 py-2 bg-bg-input hover:bg-border-main text-text-dim text-[11px] font-mono transition-colors"
+                className="px-4 py-2 bg-bg-input hover:bg-border-main text-text-dim text-[11px] font-mono border border-border-main transition-colors"
               >
                 {t('cancel', lang)}
               </button>
               {selectedId && !isBulk && (
                 <button
                   onClick={() => onConfirm(title.trim() || selectedName || '', content || '', isNegative, items, negativeContent, true)}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-mono font-bold transition-colors"
+                  className="px-4 py-2 bg-bg-input hover:bg-border-main text-text-main border border-border-hover text-[11px] font-mono font-bold transition-colors"
                   title={`Update: ${selectedName}`}
                 >
                   {t('update_current', lang)}
@@ -97,7 +97,7 @@ export const SaveMasterModal: React.FC<SaveMasterModalProps> = ({ isOpen, conten
               <button
                 onClick={() => onConfirm(title.trim(), content || '', isNegative, items, negativeContent, false)}
                 disabled={!isBulk && !title.trim()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-text-main text-bg-base hover:opacity-90 text-[11px] font-mono font-bold transition-colors disabled:opacity-50"
               >
                 {t('save_as_new', lang)}
               </button>

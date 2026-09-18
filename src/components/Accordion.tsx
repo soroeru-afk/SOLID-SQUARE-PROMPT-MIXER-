@@ -40,7 +40,7 @@ export const Accordion: React.FC<AccordionProps> = ({ title, badge, defaultOpen 
             <input
               value={editTitle}
               onChange={e => setEditTitle(e.target.value)}
-              className="bg-bg-base border border-border-main text-xs font-mono p-1 text-text-main focus:outline-none focus:border-blue-500 flex-1 min-w-0"
+              className="bg-bg-base border border-border-main text-xs font-mono p-1 text-text-main focus:outline-none focus:border-border-hover flex-1 min-w-0"
               autoFocus
               onKeyDown={e => {
                 if (e.key === 'Enter') {

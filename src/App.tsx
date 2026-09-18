@@ -7,100 +7,91 @@ import { MemoColumn } from './components/MemoColumn';
 import { SavePartModal } from './components/SavePartModal';
 import { SaveMasterModal } from './components/SaveMasterModal';
 import { SaveMixerModal } from './components/SaveMixerModal';
+import { ColorSettingsModal } from './components/ColorSettingsModal';
 import { Toast } from './components/Toast';
 import { initialData } from './data';
 import { AppData, MasterPrompt, VariationPart } from './types';
 import { Language, t, translations } from './i18n';
-import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight, Check, Maximize, Minimize, Layers, FileText, Bookmark, HardDrive, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight, Check, Maximize, Minimize, Layers, FileText, Bookmark, HardDrive, ChevronDown, ChevronUp, Palette } from 'lucide-react';
 import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 import { calculateCursorPos } from './utils/cursorUtils';
+import { applyThemeColors } from './utils/themeColors';
 
 const STORAGE_KEY = 'prompt_console_data';
 
 
-const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
-  const fileTime = parsed.exportDate ? new Date(parsed.exportDate).getTime() : 0;
-
+const mergeMixerData = (parsed: any) => {
   // Categories
   if (parsed.attributeMixerCategories) {
-    const localUpdated = Number(localStorage.getItem('attribute_mixer_categories_updated_at') || 0);
-    if (!isAutoLoad || localUpdated <= fileTime) {
-      const incomingCats = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
-      
-      // Get existing
-      const existingCatsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
-      let existingCats = [];
-      if (existingCatsStr) {
-        try { existingCats = JSON.parse(existingCatsStr); } catch(e) {}
-      }
-      
-      // Merge
-      const mergedCats = [...existingCats];
-      const existingIds = new Set(existingCats.map((c: any) => c.id));
-      for (const cat of incomingCats) {
-        if (!existingIds.has(cat.id)) {
-          mergedCats.push(cat);
-          existingIds.add(cat.id);
-        }
-      }
-      
-      localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(mergedCats));
+    const incomingCats = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
+    
+    // Get existing
+    const existingCatsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
+    let existingCats = [];
+    if (existingCatsStr) {
+      try { existingCats = JSON.parse(existingCatsStr); } catch(e) {}
     }
+    
+    // Merge
+    const mergedCats = [...existingCats];
+    const existingIds = new Set(existingCats.map((c: any) => c.id));
+    for (const cat of incomingCats) {
+      if (!existingIds.has(cat.id)) {
+        mergedCats.push(cat);
+        existingIds.add(cat.id);
+      }
+    }
+    
+    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(mergedCats));
   }
   
   // Presets
   if (parsed.attributeMixerPresets) {
-    const localUpdated = Number(localStorage.getItem('attribute_mixer_presets_updated_at') || 0);
-    if (!isAutoLoad || localUpdated <= fileTime) {
-      const incomingPresets = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
-      
-      const existingPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
-      let existingPresets: any = {};
-      if (existingPresetsStr) {
-        try { existingPresets = JSON.parse(existingPresetsStr); } catch(e) {}
-      }
-      
-      const mergedPresets = { ...existingPresets };
-      for (const catId in incomingPresets) {
-        if (!mergedPresets[catId]) {
-          mergedPresets[catId] = incomingPresets[catId];
-        } else {
-          const existingValues = new Set(mergedPresets[catId].map((i: any) => i.value));
-          const newItems = incomingPresets[catId].filter((i: any) => !existingValues.has(i.value));
-          mergedPresets[catId] = [...mergedPresets[catId], ...newItems];
-        }
-      }
-      localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(mergedPresets));
+    const incomingPresets = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
+    
+    const existingPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
+    let existingPresets: any = {};
+    if (existingPresetsStr) {
+      try { existingPresets = JSON.parse(existingPresetsStr); } catch(e) {}
     }
+    
+    const mergedPresets = { ...existingPresets };
+    for (const catId in incomingPresets) {
+      if (!mergedPresets[catId]) {
+        mergedPresets[catId] = incomingPresets[catId];
+      } else {
+        const existingValues = new Set(mergedPresets[catId].map((i: any) => i.value));
+        const newItems = incomingPresets[catId].filter((i: any) => !existingValues.has(i.value));
+        mergedPresets[catId] = [...mergedPresets[catId], ...newItems];
+      }
+    }
+    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(mergedPresets));
   }
 
   // Combos
   if (parsed.attributeMixerCombos) {
-    const localUpdated = Number(localStorage.getItem('attribute_mixer_combos_updated_at') || 0);
-    if (!isAutoLoad || localUpdated <= fileTime) {
-      const incomingCombos = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
-      
-      const existingCombosStr = localStorage.getItem('attribute_mixer_combinations_v1') || localStorage.getItem('attribute_mixer_combinations');
-      let existingCombos = [];
-      if (existingCombosStr) {
-        try { existingCombos = JSON.parse(existingCombosStr); } catch(e) {}
-      }
-      
-      const mergedCombos = [...existingCombos];
-      const existingComboIds = new Set(existingCombos.map((c: any) => c.id));
-      for (const combo of incomingCombos) {
-        if (!existingComboIds.has(combo.id)) {
-          mergedCombos.push(combo);
-          existingComboIds.add(combo.id);
-        }
-      }
-      localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(mergedCombos));
+    const incomingCombos = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
+    
+    const existingCombosStr = localStorage.getItem('attribute_mixer_combinations_v1') || localStorage.getItem('attribute_mixer_combinations');
+    let existingCombos = [];
+    if (existingCombosStr) {
+      try { existingCombos = JSON.parse(existingCombosStr); } catch(e) {}
     }
+    
+    const mergedCombos = [...existingCombos];
+    const existingComboIds = new Set(existingCombos.map((c: any) => c.id));
+    for (const combo of incomingCombos) {
+      if (!existingComboIds.has(combo.id)) {
+        mergedCombos.push(combo);
+        existingComboIds.add(combo.id);
+      }
+    }
+    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(mergedCombos));
   }
   
   if (parsed.uiEditorTabs) {
     const incomingTabs = typeof parsed.uiEditorTabs === 'string' ? JSON.parse(parsed.uiEditorTabs) : parsed.uiEditorTabs;
-    localStorage.setItem('ui_editor_tabs', JSON.stringify(incomingTabs));
+    localStorage.setItem('ui_editor_tabs', JSON.stringify(incomingTabs)); // Tabs might be okay to overwrite
   }
   if (parsed.variationSectionOrder) {
     const incomingOrder = typeof parsed.variationSectionOrder === 'string' ? JSON.parse(parsed.variationSectionOrder) : parsed.variationSectionOrder;
@@ -257,18 +248,11 @@ export default function App() {
   }, []);
 
 
+  const [isColorSettingsOpen, setIsColorSettingsOpen] = useState(false);
+
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      let color = '#0A0A0B';
-      if (theme === 'light') color = '#f9fafb';
-      else if (theme === 'black') color = '#000000';
-      else if (theme === 'red') color = '#140505';
-      else if (theme === 'navy') color = '#060913';
-      else if (theme === 'mono') color = '#ffffff';
-      metaThemeColor.setAttribute('content', color);
-    }
+    applyThemeColors(theme);
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
@@ -563,17 +547,6 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
-  const saveTimerRef = useRef<number | null>(null);
-  const showSaveToast = useCallback((msg: string) => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-    setSaveSuccessMessage(msg);
-    saveTimerRef.current = window.setTimeout(() => {
-      setSaveSuccessMessage(null);
-      saveTimerRef.current = null;
-    }, 2000);
-  }, []);
   useEffect(() => {
     getFileHandle('export_directory').then(async handle => {
       if (handle && handle.name) {
@@ -599,13 +572,7 @@ export default function App() {
       if (latestFile) {
         const text = await latestFile.text();
         const parsed = JSON.parse(text);
-        if (parsed.masters && parsed.parts) {
-          setData(parsed);
-          mergeMixerData(parsed, true);
-          setSelectedMasterId(parsed.masters[0]?.id || null);
-          setSaveSuccessMessage(`Resumed from ${latestFile.name}`);
-          setTimeout(() => setSaveSuccessMessage(null), 3000);
-        }
+        applyOverallImport(parsed, latestFile.name);
       } else {
         setSaveSuccessMessage('No JSON files found in directory');
         setTimeout(() => setSaveSuccessMessage(null), 3000);
@@ -1022,7 +989,6 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = '', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -1053,7 +1019,6 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = '') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
-    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -1313,7 +1278,6 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = '') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4 | 5, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
-    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -1342,6 +1306,174 @@ export default function App() {
 
 
 
+  const applyOverallImport = useCallback((parsed: any, filename?: string) => {
+    try {
+      const root = parsed.data || parsed.prompt_console_data || parsed.state || parsed;
+
+      // Extract raw arrays from possible naming variants
+      const rawMasters = root.masters || root.masterPrompts || root.master || root.prompts || root.positivePrompts;
+      const rawNegatives = root.negatives || root.negativePrompts || root.negative || root.neg;
+      const rawMemos = root.memos || root.promptMemos || root.memoList || root.memo || root.notes;
+      const rawParts = root.parts || root.variationParts || root.partList;
+      const rawCustomCats = root.customCategories || root.categories;
+      const rawSectionNames = root.customSectionNames || root.sectionNames;
+
+      let hasAnyData = false;
+
+      let normalizedMasters: MasterPrompt[] | null = null;
+      if (Array.isArray(rawMasters) && rawMasters.length > 0) {
+        hasAnyData = true;
+        normalizedMasters = rawMasters.map((m: any, idx: number) => ({
+          id: String(m.id || `m_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 6)}`),
+          name: String(m.name || m.title || `Master ${idx + 1}`),
+          content: String(m.content || m.value || m.prompt || ''),
+          negativeContent: m.negativeContent !== undefined ? String(m.negativeContent) : (m.neg !== undefined ? String(m.neg) : (m.negative !== undefined ? String(m.negative) : undefined)),
+          mark: m.mark
+        }));
+      }
+
+      let normalizedNegatives: MasterPrompt[] | null = null;
+      if (Array.isArray(rawNegatives) && rawNegatives.length > 0) {
+        hasAnyData = true;
+        normalizedNegatives = rawNegatives.map((n: any, idx: number) => ({
+          id: String(n.id || `n_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 6)}`),
+          name: String(n.name || n.title || `Negative ${idx + 1}`),
+          content: String(n.content || n.value || n.prompt || ''),
+          mark: n.mark
+        }));
+      }
+
+      let normalizedMemos: MasterPrompt[] | null = null;
+      if (Array.isArray(rawMemos) && rawMemos.length > 0) {
+        hasAnyData = true;
+        normalizedMemos = rawMemos.map((memo: any, idx: number) => ({
+          id: String(memo.id || `memo_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 6)}`),
+          name: String(memo.name || memo.title || `Memo ${idx + 1}`),
+          content: String(memo.content || memo.value || memo.text || memo.prompt || ''),
+          mark: memo.mark
+        }));
+      }
+
+      let normalizedParts: VariationPart[] | null = null;
+      if (Array.isArray(rawParts) && rawParts.length > 0) {
+        hasAnyData = true;
+        normalizedParts = rawParts.map((p: any, idx: number) => ({
+          id: String(p.id || `p_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 6)}`),
+          section: (Number(p.section) || 1) as 1 | 2 | 3 | 4 | 5,
+          category: String(p.category || 'General'),
+          name: String(p.name || p.title || `Part ${idx + 1}`),
+          content: String(p.content || p.value || ''),
+          isPinned: Boolean(p.isPinned),
+          isNegative: Boolean(p.isNegative)
+        }));
+      }
+
+      let normalizedCustomCategories: { name: string, section: 1 | 2 | 3 | 4 | 5 }[] | null = null;
+      if (Array.isArray(rawCustomCats) && rawCustomCats.length > 0) {
+        hasAnyData = true;
+        normalizedCustomCategories = rawCustomCats.map((c: any) => ({
+          name: String(c.name || c.category || ''),
+          section: (Number(c.section) || 1) as 1 | 2 | 3 | 4 | 5
+        })).filter(c => c.name.trim().length > 0);
+      }
+
+      let normalizedSectionNames: Record<number, string> | null = null;
+      if (rawSectionNames && typeof rawSectionNames === 'object') {
+        hasAnyData = true;
+        normalizedSectionNames = rawSectionNames;
+      }
+
+      const mixerPresets = root.attributeMixerPresets || root.mixerPresets || root.presets;
+      const mixerCombos = root.attributeMixerCombos || root.mixerCombos || root.combos || root.combinations;
+      const mixerCategories = root.attributeMixerCategories || root.mixerCategories;
+      const tabsData = root.uiEditorTabs || root.tabs;
+      const sectionOrder = root.variationSectionOrder || root.sectionOrder;
+
+      if (mixerPresets || mixerCombos || mixerCategories || tabsData || sectionOrder) {
+        hasAnyData = true;
+      }
+
+      if (!hasAnyData) {
+        alert(lang === 'en' ? 'No recognized data found in JSON file.' : '有効なデータが見つかりませんでした。');
+        return false;
+      }
+
+      // Update App Data State
+      setData(prev => ({
+        ...prev,
+        masters: normalizedMasters !== null ? normalizedMasters : prev.masters,
+        negatives: normalizedNegatives !== null ? normalizedNegatives : (prev.negatives || []),
+        memos: normalizedMemos !== null ? normalizedMemos : (prev.memos || []),
+        parts: normalizedParts !== null ? normalizedParts : prev.parts,
+        customCategories: normalizedCustomCategories !== null ? normalizedCustomCategories : (prev.customCategories || []),
+        customSectionNames: normalizedSectionNames !== null ? normalizedSectionNames : (prev.customSectionNames || {})
+      }));
+
+      // Update mixer storage
+      if (mixerCategories) {
+        const catData = typeof mixerCategories === 'string' ? mixerCategories : JSON.stringify(mixerCategories);
+        localStorage.setItem('attribute_mixer_categories_v2', catData);
+        localStorage.setItem('attribute_mixer_categories_v1', catData);
+        localStorage.setItem('attribute_mixer_categories', catData);
+      }
+
+      if (mixerPresets) {
+        const presetData = typeof mixerPresets === 'string' ? mixerPresets : JSON.stringify(mixerPresets);
+        localStorage.setItem('attribute_mixer_custom_presets_v7', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v6', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v5', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v4', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v3', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v2', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v1', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets', presetData);
+      }
+
+      if (mixerCombos) {
+        const comboData = typeof mixerCombos === 'string' ? mixerCombos : JSON.stringify(mixerCombos);
+        localStorage.setItem('attribute_mixer_combinations_v1', comboData);
+        localStorage.setItem('attribute_mixer_combinations', comboData);
+      }
+
+      if (sectionOrder) {
+        const orderData = typeof sectionOrder === 'string' ? sectionOrder : JSON.stringify(sectionOrder);
+        localStorage.setItem('variation_section_order', orderData);
+      }
+
+      if (tabsData && Array.isArray(tabsData) && tabsData.length > 0) {
+        setTabs(tabsData);
+        setActiveTabId(tabsData[0].id);
+        localStorage.setItem('ui_editor_tabs', JSON.stringify(tabsData));
+        localStorage.setItem('ui_active_tab_id', tabsData[0].id);
+      }
+
+      if (normalizedMasters && normalizedMasters.length > 0) {
+        setSelectedMasterId(normalizedMasters[0].id);
+      }
+      if (normalizedNegatives && normalizedNegatives.length > 0) {
+        setSelectedNegativeId(normalizedNegatives[0].id);
+      }
+      if (normalizedMemos && normalizedMemos.length > 0) {
+        setSelectedMemoId(normalizedMemos[0].id);
+      }
+
+      window.dispatchEvent(new Event('attributeMixerDataImported'));
+      window.dispatchEvent(new Event('mixer_presets_updated'));
+      window.dispatchEvent(new Event('mixer_categories_updated'));
+
+      const msg = filename 
+        ? `Resumed from ${filename}` 
+        : (lang === 'en' ? 'Overall Import completed!' : '全体のインポートが完了しました！');
+      setSaveSuccessMessage(msg);
+      setTimeout(() => setSaveSuccessMessage(null), 3000);
+      return true;
+    } catch (err) {
+      console.error('Failed to import overall data', err);
+      alert(lang === 'en' ? 'Failed to parse overall JSON file.' : 'JSONファイルの解析に失敗しました。');
+      return false;
+    }
+  }, [lang, setSaveSuccessMessage]);
+
   const handleExportOverall = async () => {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -1350,10 +1482,12 @@ export default function App() {
     
     // Sanitize data before export
     const cleanedData = {
-      ...data,
-      masters: data.masters.map(m => ({ ...m, content: cleanString(m.content) })),
-      negatives: data.negatives?.map(n => ({ ...n, content: cleanString(n.content) })),
-      parts: data.parts.map(p => ({ ...p, content: cleanString(p.content) }))
+      masters: (data.masters || []).map(m => ({ ...m, content: cleanString(m.content) })),
+      negatives: (data.negatives || []).map(n => ({ ...n, content: cleanString(n.content) })),
+      memos: (data.memos || []).map(m => ({ ...m, content: cleanString(m.content) })),
+      parts: (data.parts || []).map(p => ({ ...p, content: cleanString(p.content) })),
+      customCategories: data.customCategories || [],
+      customSectionNames: data.customSectionNames || {}
     };
 
     const presetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
@@ -1451,8 +1585,8 @@ export default function App() {
     const exportData = {
       title: "Solid Square Prompt Mixer (Parts Only)",
       exportDate: formattedDate,
-      parts: data.parts.map(p => ({ ...p, content: cleanString(p.content) })),
-      customCategories: data.customCategories,
+      parts: (data.parts || []).map(p => ({ ...p, content: cleanString(p.content) })),
+      customCategories: data.customCategories || [],
       attributeMixerPresets: presetsStr ? JSON.parse(presetsStr) : undefined,
       attributeMixerCombos: combosStr ? JSON.parse(combosStr) : undefined,
       attributeMixerCategories: catsStr ? JSON.parse(catsStr) : undefined
@@ -1533,44 +1667,7 @@ export default function App() {
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
-        if (parsed.masters && parsed.parts) {
-          setData(prev => {
-            const hasExistingParts = prev.parts && prev.parts.length > 0;
-            const hasExistingCategories = prev.customCategories && prev.customCategories.length > 0;
-            const hasExistingSectionNames = prev.customSectionNames && Object.keys(prev.customSectionNames).length > 0;
-            
-            return {
-              ...parsed,
-              // パーツデータが既に存在する場合は上書きせず保護する
-              parts: hasExistingParts ? prev.parts : parsed.parts,
-              customCategories: hasExistingCategories ? prev.customCategories : (parsed.customCategories || []),
-              customSectionNames: hasExistingSectionNames ? prev.customSectionNames : (parsed.customSectionNames || {}),
-            };
-          });
-          
-          // ミキサーのデータも、既存データがある場合は上書きせず保護する
-          const existingCategories = localStorage.getItem('attribute_mixer_categories_v2');
-          if ((!existingCategories || existingCategories === '[]') && parsed.attributeMixerCategories) {
-            localStorage.setItem('attribute_mixer_categories_v2', typeof parsed.attributeMixerCategories === 'string' ? parsed.attributeMixerCategories : JSON.stringify(parsed.attributeMixerCategories));
-          }
-          
-          const existingPresets = localStorage.getItem('attribute_mixer_custom_presets_v7');
-          if ((!existingPresets || existingPresets === '[]') && parsed.attributeMixerPresets) {
-            localStorage.setItem('attribute_mixer_custom_presets_v7', typeof parsed.attributeMixerPresets === 'string' ? parsed.attributeMixerPresets : JSON.stringify(parsed.attributeMixerPresets));
-          }
-          
-          const existingCombos = localStorage.getItem('attribute_mixer_combinations_v1');
-          if ((!existingCombos || existingCombos === '[]') && parsed.attributeMixerCombos) {
-            localStorage.setItem('attribute_mixer_combinations_v1', typeof parsed.attributeMixerCombos === 'string' ? parsed.attributeMixerCombos : JSON.stringify(parsed.attributeMixerCombos));
-          }
-          
-          window.dispatchEvent(new Event('attributeMixerDataImported'));
-          setSelectedMasterId(parsed.masters[0]?.id || null);
-          setSaveSuccessMessage(lang === 'en' ? 'Overall Import completed!' : '全体のインポートが完了しました！');
-          setTimeout(() => setSaveSuccessMessage(null), 3000);
-        } else {
-          alert('Invalid JSON format for Overall Import.');
-        }
+        applyOverallImport(parsed);
       } catch (err) {
         alert('Failed to parse JSON file.');
       }
@@ -1587,30 +1684,67 @@ export default function App() {
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
-        if (parsed.parts) {
-          // PartsとAttributeMixerのみ上書き
+        const root = parsed.data || parsed.prompt_console_data || parsed.state || parsed;
+        const rawParts = root.parts || root.variationParts || root.partList;
+        const rawCustomCats = root.customCategories || root.categories;
+        const mixerPresets = root.attributeMixerPresets || root.mixerPresets || root.presets;
+        const mixerCombos = root.attributeMixerCombos || root.mixerCombos || root.combos || root.combinations;
+        const mixerCategories = root.attributeMixerCategories || root.mixerCategories;
+
+        if (Array.isArray(rawParts) && rawParts.length > 0) {
+          const normalizedParts: VariationPart[] = rawParts.map((p: any, idx: number) => ({
+            id: String(p.id || `p_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 6)}`),
+            section: (Number(p.section) || 1) as 1 | 2 | 3 | 4 | 5,
+            category: String(p.category || 'General'),
+            name: String(p.name || p.title || `Part ${idx + 1}`),
+            content: String(p.content || p.value || ''),
+            isPinned: Boolean(p.isPinned),
+            isNegative: Boolean(p.isNegative)
+          }));
+
+          let normalizedCustomCategories: { name: string, section: 1 | 2 | 3 | 4 | 5 }[] = [];
+          if (Array.isArray(rawCustomCats)) {
+            normalizedCustomCategories = rawCustomCats.map((c: any) => ({
+              name: String(c.name || c.category || ''),
+              section: (Number(c.section) || 1) as 1 | 2 | 3 | 4 | 5
+            })).filter(c => c.name.trim().length > 0);
+          }
+
           setData(prev => ({
             ...prev,
-            parts: parsed.parts,
-            customCategories: parsed.customCategories || []
+            parts: normalizedParts,
+            customCategories: normalizedCustomCategories.length > 0 ? normalizedCustomCategories : (prev.customCategories || [])
           }));
-          
-          if (parsed.attributeMixerCategories) {
-            localStorage.setItem('attribute_mixer_categories_v2', typeof parsed.attributeMixerCategories === 'string' ? parsed.attributeMixerCategories : JSON.stringify(parsed.attributeMixerCategories));
-          }
-          if (parsed.attributeMixerPresets) {
-            localStorage.setItem('attribute_mixer_custom_presets_v7', typeof parsed.attributeMixerPresets === 'string' ? parsed.attributeMixerPresets : JSON.stringify(parsed.attributeMixerPresets));
-          }
-          if (parsed.attributeMixerCombos) {
-            localStorage.setItem('attribute_mixer_combinations_v1', typeof parsed.attributeMixerCombos === 'string' ? parsed.attributeMixerCombos : JSON.stringify(parsed.attributeMixerCombos));
-          }
-          
-          window.dispatchEvent(new Event('attributeMixerDataImported'));
-          setSaveSuccessMessage(lang === 'en' ? 'Parts Import completed!' : 'パーツのインポートが完了しました！');
-          setTimeout(() => setSaveSuccessMessage(null), 3000);
-        } else {
-          alert('Invalid JSON format for Parts Import.');
         }
+
+        if (mixerCategories) {
+          const catData = typeof mixerCategories === 'string' ? mixerCategories : JSON.stringify(mixerCategories);
+          localStorage.setItem('attribute_mixer_categories_v2', catData);
+          localStorage.setItem('attribute_mixer_categories_v1', catData);
+          localStorage.setItem('attribute_mixer_categories', catData);
+        }
+        if (mixerPresets) {
+          const presetData = typeof mixerPresets === 'string' ? mixerPresets : JSON.stringify(mixerPresets);
+          localStorage.setItem('attribute_mixer_custom_presets_v7', presetData);
+          localStorage.setItem('attribute_mixer_custom_presets_v6', presetData);
+          localStorage.setItem('attribute_mixer_custom_presets_v5', presetData);
+          localStorage.setItem('attribute_mixer_custom_presets_v4', presetData);
+          localStorage.setItem('attribute_mixer_custom_presets_v3', presetData);
+          localStorage.setItem('attribute_mixer_custom_presets_v2', presetData);
+          localStorage.setItem('attribute_mixer_custom_presets_v1', presetData);
+          localStorage.setItem('attribute_mixer_custom_presets', presetData);
+        }
+        if (mixerCombos) {
+          const comboData = typeof mixerCombos === 'string' ? mixerCombos : JSON.stringify(mixerCombos);
+          localStorage.setItem('attribute_mixer_combinations_v1', comboData);
+          localStorage.setItem('attribute_mixer_combinations', comboData);
+        }
+
+        window.dispatchEvent(new Event('attributeMixerDataImported'));
+        window.dispatchEvent(new Event('mixer_presets_updated'));
+        window.dispatchEvent(new Event('mixer_categories_updated'));
+        setSaveSuccessMessage(lang === 'en' ? 'Parts Import completed!' : 'パーツのインポートが完了しました！');
+        setTimeout(() => setSaveSuccessMessage(null), 3000);
       } catch (err) {
         alert('Failed to parse JSON file.');
       }
@@ -1805,45 +1939,49 @@ export default function App() {
       <header className="flex items-center justify-between px-4 py-2 border-b border-border-main bg-bg-panel h-14 shrink-0">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-text-main opacity-80"></div>
-            <h1 className="font-mono font-bold text-lg tracking-widest text-text-main">{t('app_title', lang)}</h1>
+            <div className="w-2.5 h-2.5 bg-text-main"></div>
+            <h1 className="font-mono font-bold text-sm sm:text-base tracking-widest text-text-main uppercase">{t('app_title', lang)}</h1>
           </div>
           <div className="h-4 w-px bg-border-main"></div>
-          <span className="text-[10px] font-mono opacity-50 text-text-main">{t('local_system_ready', lang)}</span>
+          <span className="text-[10px] font-mono opacity-50 text-text-main hidden md:inline">{t('local_system_ready', lang)}</span>
         </div>
         <div className="flex items-center space-x-2">
           <button 
             onClick={toggleFullscreen}
-            className={`w-7 h-7 bg-bg-input border border-border-main transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
+            className="w-8 h-8 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center shrink-0"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
           <button 
             onClick={() => setSidebarPosition(pos => pos === 'left' ? 'right' : 'left')}
-            className={`h-7 px-2.5 bg-bg-input border border-border-main transition-colors flex items-center gap-1.5 text-[10px] font-mono shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
+            className="h-8 px-2.5 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center gap-1.5 text-[10px] font-mono font-bold shrink-0"
             title={sidebarPosition === 'left' ? (lang === 'en' ? 'Move Sidebar to Right' : 'サイドバーを右側に配置') : (lang === 'en' ? 'Move Sidebar to Left' : 'サイドバーを左側に配置')}
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
-            <span className="font-bold">
-              {sidebarPosition === 'left' ? (lang === 'en' ? 'Sidebar: Left' : 'サイドバー: 左') : (lang === 'en' ? 'Sidebar: Right' : 'サイドバー: 右')}
+            <span>
+              {sidebarPosition === 'left' ? (lang === 'en' ? 'SIDEBAR: L' : 'サイドバー: 左') : (lang === 'en' ? 'SIDEBAR: R' : 'サイドバー: 右')}
             </span>
           </button>
           <button 
             onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'light' : t === 'light' ? 'mono' : t === 'mono' ? 'navy' : t === 'navy' ? 'dark' : 'light')}
-            className={`h-7 w-[130px] bg-bg-input border border-border-main text-[10px] font-mono transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
+            className="h-8 px-3 bg-bg-input hover:bg-bg-surface border border-border-main text-[10px] font-mono font-bold text-text-main transition-colors flex items-center justify-center shrink-0"
           >
             {t('theme', lang)}: {t(`theme_${theme}` as keyof typeof translations, lang)}
           </button>
           <button 
             onClick={() => setPaperMode(!paperMode)}
-            className={`h-7 w-[120px] text-[10px] font-mono border transition-colors flex items-center justify-center shrink-0 ${paperMode ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-bold' : theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white border-border-main text-text-main' : 'bg-bg-input hover:bg-border-main border-border-main text-text-main'}`}
+            className={`h-8 px-3 text-[10px] font-mono font-bold border transition-colors flex items-center justify-center shrink-0 ${
+              paperMode 
+                ? 'bg-text-main text-bg-base border-text-main' 
+                : 'bg-bg-input hover:bg-bg-surface border-border-main text-text-main'
+            }`}
           >
             {t('paper_mode', lang)}: {paperMode ? 'ON' : 'OFF'}
           </button>
           <button 
             onClick={() => setLang(l => l === 'en' ? 'ja' : 'en')}
-            className={`h-7 px-2.5 bg-bg-input text-[10px] font-mono border border-border-main transition-colors flex items-center justify-center shrink-0 ${theme === 'mono' ? 'hover:bg-gray-500 hover:text-white text-text-main' : 'hover:bg-border-main text-text-main'}`}
+            className="h-8 px-3 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main transition-colors flex items-center justify-center shrink-0"
           >
             {lang === 'en' ? 'JP' : 'EN'}
           </button>
@@ -1876,9 +2014,9 @@ export default function App() {
                       setSidebarTab('parts');
                       setActiveVariationTab('parts');
                     }}
-                    className={`flex-1 py-1.5 px-2 border  font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 px-2 border font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
                       sidebarTab === 'parts' 
-                        ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main shadow-sm') 
+                        ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') 
                         : 'border-transparent text-text-dim hover:text-text-main'
                     }`}
                   >
@@ -1887,9 +2025,9 @@ export default function App() {
                   </button>
                   <button 
                     onClick={() => setSidebarTab('master')}
-                    className={`flex-1 py-1.5 px-2 border  font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 px-2 border font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
                       sidebarTab === 'master' 
-                        ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main shadow-sm') 
+                        ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') 
                         : 'border-transparent text-text-dim hover:text-text-main'
                     }`}
                   >
@@ -1900,9 +2038,9 @@ export default function App() {
                     onClick={() => {
                       setSidebarTab('memo');
                     }}
-                    className={`flex-1 py-1.5 px-2 border  font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 px-2 border font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
                       sidebarTab === 'memo' 
-                        ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main shadow-sm') 
+                        ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') 
                         : 'border-transparent text-text-dim hover:text-text-main'
                     }`}
                   >
@@ -2031,53 +2169,29 @@ export default function App() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <div className="text-[10px] font-mono text-text-dim text-center">▼ {lang === 'en' ? 'Overall (Master, Memos, Parts)' : '全体 (マスター・メモ・パーツ全て)'} ▼</div>
+                      <div className="text-[10px] font-mono text-text-dim text-center uppercase tracking-wider">▼ {lang === 'en' ? 'Overall (Master, Memos, Parts)' : '全体 (マスター・メモ・パーツ全て)'} ▼</div>
                       <div className="flex gap-2">
-                        <label className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border  transition-colors cursor-pointer ${
-                          theme === 'mono' 
-                            ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700' 
-                            : theme === 'light'
-                              ? 'bg-white hover:bg-gray-50 text-gray-800 border-gray-300 shadow-xs'
-                              : 'bg-border-main hover:bg-border-hover text-text-main border-border-hover'
-                        }`}>
+                        <label className="flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border transition-colors cursor-pointer bg-bg-input hover:bg-bg-surface text-text-main border-border-main">
                           {lang === 'en' ? 'Import (Overall)' : 'インポート (全体上書き)'}
                           <input type="file" accept=".json" className="hidden" onChange={handleImportOverall} />
                         </label>
                         <button 
                           onClick={handleExportOverall} 
-                          className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border  transition-all cursor-pointer ${
-                            theme === 'mono' 
-                              ? 'bg-neutral-600 hover:bg-neutral-500 text-white border-neutral-500' 
-                              : theme === 'light'
-                                ? 'bg-gray-600 hover:bg-gray-700 text-white border-gray-600 shadow-xs'
-                                : 'bg-accent-main border-accent-dim hover:opacity-80 text-white'
-                          }`}
+                          className="flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border transition-colors cursor-pointer bg-text-main text-bg-base border-text-main hover:opacity-80"
                         >
                           {lang === 'en' ? 'Export (Overall)' : 'エクスポート (全体)'}
                         </button>
                       </div>
 
-                      <div className="text-[10px] font-mono text-text-dim text-center mt-1">▼ {lang === 'en' ? 'Parts & Mixer Only' : 'パーツ選択・ミキサーのみ'} ▼</div>
+                      <div className="text-[10px] font-mono text-text-dim text-center uppercase tracking-wider mt-1">▼ {lang === 'en' ? 'Parts & Mixer Only' : 'パーツ選択・ミキサーのみ'} ▼</div>
                       <div className="flex gap-2">
-                        <label className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono border  transition-colors cursor-pointer ${
-                          theme === 'mono' 
-                            ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700' 
-                            : theme === 'light'
-                              ? 'bg-white hover:bg-gray-50 text-gray-800 border-gray-300 shadow-xs'
-                              : 'bg-border-main hover:bg-border-hover text-text-main border-border-hover'
-                        }`}>
+                        <label className="flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border transition-colors cursor-pointer bg-bg-input hover:bg-bg-surface text-text-main border-border-main">
                           {lang === 'en' ? 'Import (Parts)' : 'インポート (パーツ)'}
                           <input type="file" accept=".json" className="hidden" onChange={handleImportParts} />
                         </label>
                         <button 
                           onClick={handleExportParts} 
-                          className={`flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border  transition-all cursor-pointer ${
-                            theme === 'mono' 
-                              ? 'bg-neutral-600 hover:bg-neutral-500 text-white border-neutral-500' 
-                              : theme === 'light'
-                                ? 'bg-gray-500 hover:bg-gray-600 text-white border-gray-500 shadow-xs'
-                                : (theme === 'black' ? 'bg-accent-main border-accent-dim hover:opacity-80 text-white' : 'bg-teal-600 border-teal-500 hover:opacity-80 text-white')
-                          }`}
+                          className="flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border transition-colors cursor-pointer bg-text-main text-bg-base border-text-main hover:opacity-80"
                         >
                           {lang === 'en' ? 'Export (Parts)' : 'エクスポート (パーツ)'}
                         </button>
@@ -2086,21 +2200,31 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Always-fixed bottom bar so the toggle button never moves position */}
-                <button 
-                  onClick={() => setIsDataManagementOpen(!isDataManagementOpen)}
-                  className="w-full px-3 py-2.5 flex items-center justify-between text-[11px] font-mono font-bold text-text-main hover:bg-border-main/50 transition-colors bg-bg-input/60 select-none cursor-pointer"
-                  title={isDataManagementOpen ? (lang === 'en' ? 'Collapse Data Management' : 'データ管理を閉じる') : (lang === 'en' ? 'Expand Data Management' : 'データ管理を開く')}
-                >
-                  <span className="flex items-center gap-2 tracking-wide">
-                    <HardDrive className="w-4 h-4 text-accent-main" />
-                    <span>{lang === 'en' ? 'Data Management & Drive' : 'データ管理・ドライブ設定'}</span>
-                  </span>
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-text-dim">
-                    <span>{isDataManagementOpen ? (lang === 'en' ? '[CLOSE]' : '[閉じる]') : (lang === 'en' ? '[OPEN]' : '[開く]')}</span>
-                    {isDataManagementOpen ? <ChevronDown className="w-4 h-4 text-text-main" /> : <ChevronUp className="w-4 h-4 text-text-main" />}
-                  </div>
-                </button>
+                {/* Always-fixed bottom bar with Data Management and Color Settings */}
+                <div className="w-full flex items-stretch border-t border-border-main bg-bg-input/60">
+                  <button 
+                    onClick={() => setIsDataManagementOpen(!isDataManagementOpen)}
+                    className="flex-1 px-3 py-2.5 flex items-center justify-between text-[11px] font-mono font-bold text-text-main hover:bg-border-main/50 transition-colors select-none cursor-pointer border-r border-border-main"
+                    title={isDataManagementOpen ? (lang === 'en' ? 'Collapse Data Management' : 'データ管理を閉じる') : (lang === 'en' ? 'Expand Data Management' : 'データ管理を開く')}
+                  >
+                    <span className="flex items-center gap-1.5 tracking-wide truncate">
+                      <HardDrive className="w-4 h-4 text-accent-main shrink-0" />
+                      <span className="truncate">{lang === 'en' ? 'Data & Drive' : 'データ・ドライブ'}</span>
+                    </span>
+                    <div className="flex items-center gap-1 text-[10px] font-mono text-text-dim shrink-0">
+                      <span>{isDataManagementOpen ? (lang === 'en' ? '[CLOSE]' : '[閉じる]') : (lang === 'en' ? '[OPEN]' : '[開く]')}</span>
+                      {isDataManagementOpen ? <ChevronDown className="w-3.5 h-3.5 text-text-main" /> : <ChevronUp className="w-3.5 h-3.5 text-text-main" />}
+                    </div>
+                  </button>
+                  <button 
+                    onClick={() => setIsColorSettingsOpen(true)}
+                    className="px-3 py-2.5 flex items-center justify-center gap-1.5 text-[11px] font-mono font-bold text-text-main hover:bg-border-main/50 transition-colors select-none cursor-pointer shrink-0"
+                    title={lang === 'en' ? 'Theme & Icon Color Settings' : 'テーマ別 アイコン・マーク色設定'}
+                  >
+                    <Palette className="w-4 h-4 text-accent-main shrink-0" />
+                    <span>{lang === 'en' ? 'Colors' : '色設定'}</span>
+                  </button>
+                </div>
               </div>
             </aside>
           );
@@ -2108,9 +2232,7 @@ export default function App() {
           const toggleButton = (
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className={`self-center shrink-0 z-20 flex items-center justify-center w-5 h-24 bg-bg-panel hover:bg-bg-input text-text-main border border-border-main shadow-md transition-colors ${
-                sidebarPosition === 'left' ? 'border-l-0 ' : 'border-r-0 '
-              }`}
+              className="self-center shrink-0 z-20 flex items-center justify-center w-5 h-24 bg-bg-panel hover:bg-bg-input text-text-main border border-border-main shadow-md transition-colors"
               title={isSidebarOpen ? (lang === 'en' ? 'Collapse Sidebar' : 'サイドバーを閉じる') : (lang === 'en' ? 'Open Sidebar' : 'サイドバーを開く')}
             >
               {sidebarPosition === 'left' ? (
@@ -2137,7 +2259,7 @@ export default function App() {
                 onTabAdd={handleTabAdd}
                 onTabClose={handleTabClose}
                 onTabsClear={handleTabsClear}
-            onTabReorder={handleTabReorder}
+                onTabReorder={handleTabReorder}
                 editorText={editorText}
                 setEditorText={setEditorText}
                 negativeEditorText={negativeEditorText}
@@ -2291,6 +2413,14 @@ export default function App() {
         <div className="flex items-center space-x-4">
           <span className="text-[9px] font-mono text-green-500">● {t('local_system_ready', lang)}</span>
           <span className="text-[9px] font-mono text-text-dim">{t('latency', lang)}: 0.04ms</span>
+          <button
+            onClick={() => setIsColorSettingsOpen(true)}
+            className="flex items-center gap-1 text-[9px] font-mono text-text-dim hover:text-text-main px-1.5 py-0.5 border border-border-main hover:border-border-hover bg-bg-surface/50 transition-colors cursor-pointer"
+            title={lang === 'en' ? 'Theme & Icon Color Settings' : 'テーマ別 アイコン・マーク色設定'}
+          >
+            <Palette className="w-3 h-3 text-accent-main" />
+            <span>{lang === 'en' ? 'Colors' : '色設定'}</span>
+          </button>
         </div>
         <div className="flex space-x-4">
           <span className="text-[9px] font-mono text-text-dim uppercase">{t('cpu', lang)}: 12%</span>
@@ -2317,7 +2447,7 @@ export default function App() {
             <div className="flex justify-end">
               <button
                 onClick={() => setIframeWarning(false)}
-                className="px-4 py-2 bg-accent-main text-text-main text-xs hover:opacity-80 transition-opacity"
+                className="px-4 py-2 bg-text-main text-bg-base text-xs hover:opacity-80 transition-opacity"
               >
                 閉じる
               </button>
@@ -2326,13 +2456,21 @@ export default function App() {
         </div>
       )}
       
+      <ColorSettingsModal
+        isOpen={isColorSettingsOpen}
+        onClose={() => setIsColorSettingsOpen(false)}
+        currentTheme={theme}
+        lang={lang}
+        onColorsUpdated={() => {
+          applyThemeColors(theme);
+        }}
+      />
         
-        
-        <Toast 
-          message={toastMessage?.msg || ''} 
-          isVisible={toastMessage !== null} 
-          onClose={() => setToastMessage(null)} 
-        />
+      <Toast 
+        message={toastMessage?.msg || ''} 
+        isVisible={toastMessage !== null} 
+        onClose={() => setToastMessage(null)} 
+      />
 
     </div>
   );

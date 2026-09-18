@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trash2, ChevronDown, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, RotateCcw, ArrowDown, ArrowUp, Copy, Plus, X, List, ArrowRightLeft, Search } from 'lucide-react';
+import { Trash2, ChevronDown, Save, PlusSquare, Undo2, Redo2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RotateCcw, ArrowDown, ArrowUp, Copy, Plus, X, List, ArrowRightLeft, Search } from 'lucide-react';
 import { Language, t } from '../i18n';
 import { SavePartModal } from './SavePartModal';
 import { SaveMasterModal } from './SaveMasterModal';
@@ -17,7 +17,7 @@ interface PreviewColumnProps {
   onTabAdd?: () => void;
   onTabClose?: (id: string) => void;
   onTabsClear?: () => void;
-  onTabReorder?: (from: number, to: number) => void;
+  onTabReorder?: (fromIndex: number, toIndex: number) => void;
   editorText: string;
   setEditorText: React.Dispatch<React.SetStateAction<string>>;
   negativeEditorText: string;
@@ -75,7 +75,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   onTabChange,
   onTabAdd,
   onTabClose,
-  onTabsClear, onTabReorder,
+  onTabsClear, 
+  onTabReorder,
   editorText, setEditorText,
   negativeEditorText, setNegativeEditorText,
   activeEditor, setActiveEditor, findText, setFindText, replaceText, setReplaceText, findCursorPos, setFindCursorPos, replaceCursorPos, setReplaceCursorPos, findSelectionEnd, setFindSelectionEnd, replaceSelectionEnd, setReplaceSelectionEnd, positiveCursorPos, negativeCursorPos, positiveSelectionEnd, negativeSelectionEnd, setPositiveCursorPos, setNegativeCursorPos, setPositiveSelectionEnd, setNegativeSelectionEnd,
@@ -106,11 +107,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const [copied, setCopied] = useState(false);
   
   const [showFormatOptions, setShowFormatOptions] = useState(false);
-  const [draggedTabIndex, setDraggedTabIndex] = useState<number | null>(null);
-  const [dragOverTabIndex, setDragOverTabIndex] = useState<number | null>(null);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
   const [searchSelectionActive, setSearchSelectionActive] = useState(false);
   const [appliedFindText, setAppliedFindText] = useState('');
+  const [draggedTabIndex, setDraggedTabIndex] = useState<number | null>(null);
+  const [dragOverTabIndex, setDragOverTabIndex] = useState<number | null>(null);
 
   const positiveHighlightRef = useRef<HTMLDivElement>(null);
   const negativeHighlightRef = useRef<HTMLDivElement>(null);
@@ -1617,13 +1618,13 @@ const handleResizeStart = (e: React.MouseEvent) => {
               const activeStyle = 'bg-blue-600 text-white';
 
               return (
-                <span key={`find-${i}-${j}`} className={`${activeStyle} ] z-10 relative`}>
+                <span key={`find-${i}-${j}`} className={`${activeStyle} z-10 relative`}>
                   {sPart}
                 </span>
               );
             } else {
               return (
-                <span key={`find-${i}-${j}`} className={`bg-amber-500/40 ] ${baseClass}`}>
+                <span key={`find-${i}-${j}`} className={`bg-amber-500/40 ${baseClass}`}>
                   {sPart}
                 </span>
               );
@@ -1651,7 +1652,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <span className="text-[10px] font-mono text-text-main font-bold uppercase tracking-widest hidden lg:inline">{t('output_synthesis', lang)}</span>
           <button 
             onClick={onToggleAutoOptimize}
-            className={`px-2 py-1 text-[9px] font-mono border  outline-none transition-colors bg-transparent ${autoOptimize 
+            className={`px-2 py-1 text-[9px] font-mono border outline-none transition-colors bg-transparent ${autoOptimize 
               ? 'border-border-main text-text-main' 
               : 'border-border-main/50 text-text-dim hover:text-text-main'}`}
           >
@@ -1842,19 +1843,19 @@ const handleResizeStart = (e: React.MouseEvent) => {
           </span>
           <button 
             onClick={() => handleCopy('main')}
-            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-opacity bg-text-main text-bg-base border border-text-main hover:opacity-80 text-center"
           >
             {t('copy_main', lang)}
           </button>
           <button 
             onClick={() => handleCopy('negative')}
-            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-opacity bg-text-main text-bg-base border border-text-main hover:opacity-80 text-center"
           >
             {t('copy_negative_only', lang)}
           </button>
           <button 
             onClick={() => handleCopy('all')}
-            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-colors bg-gray-500 hover:bg-gray-400 active:bg-gray-600 text-white text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-opacity bg-text-main text-bg-base border border-text-main hover:opacity-80 text-center"
           >
             {t('copy_all', lang)}
           </button>
@@ -1869,10 +1870,10 @@ const handleResizeStart = (e: React.MouseEvent) => {
           return (
             <button 
               onClick={handleFormatVertical}
-              className={`w-[124px] h-8 px-3 text-[10px] whitespace-nowrap font-bold font-mono border-2 ${theme === 'light' || theme === 'mono' ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400' : 'border-white text-white bg-bg-input hover:bg-white hover:text-black'} transition-colors flex items-center justify-center gap-1.5`}
+              className="w-[124px] h-8 px-3 text-[10px] whitespace-nowrap font-bold font-mono border border-border-main bg-bg-input hover:bg-bg-surface text-text-main transition-colors flex items-center justify-center gap-1.5"
               title={lang === 'en' ? "Toggle vertical/horizontal list" : "縦/横リストの切り替え"}
             >
-              <List size={14} className={`${theme === 'light' || theme === 'mono' ? 'text-black' : ''}`} />
+              <List size={14} />
               {lang === 'en' ? (isVertical ? 'To Horizontal' : 'To Vertical') : (isVertical ? '横並びに戻す' : '縦リストに変換')}
             </button>
           );
@@ -1880,38 +1881,30 @@ const handleResizeStart = (e: React.MouseEvent) => {
         <div className="w-px h-6 bg-border-main mx-1"></div>
         <button 
           onClick={handleMergeDupes}
-          className={`px-3 h-8 text-[10px] font-mono border  transition-colors ${
-            (theme === 'light' || theme === 'mono') 
-              ? 'bg-[#3b5323]/10 hover:bg-[#3b5323]/20 border-[#3b5323]/60 text-[#3b5323]' 
-              : 'bg-[#7a9a5a]/10 hover:bg-[#7a9a5a]/20 border-[#7a9a5a]/50 text-[#9bb87d]'
-          }`}
+          className="px-3 h-8 text-[10px] font-mono font-bold border border-border-main bg-bg-input hover:bg-bg-surface text-text-main transition-colors"
           title="Merge duplicate phrases"
         >
           {t('merge_dupes', lang)}
         </button>
         <button 
           onClick={handleClearAllWeights}
-          className={`px-3 h-8 text-[10px] font-mono border  transition-colors ${
-            (theme === 'light' || theme === 'mono') 
-              ? 'bg-[#991b1b]/10 hover:bg-[#991b1b]/20 border-[#991b1b]/60 text-[#991b1b]' 
-              : 'bg-[#fca5a5]/10 hover:bg-[#fca5a5]/20 border-[#fca5a5]/50 text-[#fca5a5]'
-          }`}
+          className="px-3 h-8 text-[10px] font-mono font-bold border border-border-main bg-bg-input hover:bg-bg-surface text-text-main transition-colors"
           title="Clear all emphasis weights from text"
         >
           {t('clear_all_weights', lang)}
         </button>
         <div className="flex items-center space-x-1 px-2 h-8 box-border bg-bg-input border border-border-main shrink-0">
-          <span className="text-[10px] font-mono text-text-dim pr-1">{t('global_weight', lang)}</span>
+          <span className="text-[10px] font-mono text-text-dim pr-1 font-bold">{t('global_weight', lang)}</span>
           <button 
             onClick={() => handleAdjustWeights(-0.1)}
-            className="px-2 py-0.5 bg-bg-surface hover:bg-blue-500/10 text-[12px] font-mono border border-blue-500/50 text-blue-500 transition-colors"
+            className="px-2 py-0.5 bg-bg-surface hover:bg-border-main text-[11px] font-mono font-bold border border-border-main text-text-main transition-colors"
             title="Decrease weight by 0.1 (applies to selection or all)"
           >
             -0.1
           </button>
           <button 
             onClick={() => handleAdjustWeights(0.1)}
-            className="px-2 py-0.5 bg-bg-surface hover:bg-red-500/10 text-[12px] font-mono border border-red-500/50 text-red-500 transition-colors"
+            className="px-2 py-0.5 bg-bg-surface hover:bg-border-main text-[11px] font-mono font-bold border border-border-main text-text-main transition-colors"
             title="Increase weight by 0.1 (applies to selection or all)"
           >
             +0.1
@@ -1920,28 +1913,28 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
         <button 
           onClick={() => handleMoveSelection('start')}
-          className={`px-3 h-8 ml-2 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
+          className="px-3 h-8 ml-2 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main transition-colors"
           title={t('move_to_front_tooltip', lang)}
         >
           {t('move_to_front', lang)}
         </button>
         <button 
           onClick={() => handleMoveSelectionStep('left')}
-          className={`h-8 px-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-text-dim transition-colors flex items-center justify-center`}
+          className="h-8 px-2 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center"
           title={t('move_left', lang)}
         >
-          <ChevronLeft size={12} />
+          <ChevronLeft size={13} />
         </button>
         <button 
           onClick={() => handleMoveSelectionStep('right')}
-          className={`h-8 px-1.5 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-text-dim transition-colors flex items-center justify-center`}
+          className="h-8 px-2 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center"
           title={t('move_right', lang)}
         >
-          <ChevronRight size={12} />
+          <ChevronRight size={13} />
         </button>
         <button 
           onClick={() => handleMoveSelection('end')}
-          className={`px-3 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
+          className="px-3 h-8 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main transition-colors"
           title={t('move_to_back_tooltip', lang)}
         >
           {t('move_to_back', lang)}
@@ -1950,36 +1943,24 @@ const handleResizeStart = (e: React.MouseEvent) => {
         <div className="flex items-center space-x-1">
           <button 
             onClick={handleEmphasizeAdd}
-            className={`px-2 h-8 text-[10px] font-mono border  transition-colors ${
-              (theme === 'light' || theme === 'mono') || theme === 'paper'
-                ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
-                : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
-            }`}
+            className="px-2.5 h-8 text-[10px] font-mono font-bold border border-border-main bg-bg-input hover:bg-bg-surface text-text-main transition-colors"
             title="Add Emphasis ()"
           >+( )</button>
           <button 
             onClick={handleEmphasizeRemove}
-            className={`px-2 h-8 text-[10px] font-mono border  transition-colors ${
-              (theme === 'light' || theme === 'mono') || theme === 'paper'
-                ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
-                : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
-            }`}
+            className="px-2.5 h-8 text-[10px] font-mono font-bold border border-border-main bg-bg-input hover:bg-bg-surface text-text-main transition-colors"
             title="Remove 1 Layer of Emphasis"
           >-( )</button>
           <button 
             onClick={handleEmphasizeClear}
-            className={`px-2 h-8 text-[10px] font-mono border  transition-colors ${
-              (theme === 'light' || theme === 'mono') || theme === 'paper'
-                ? 'bg-[#b45309]/5 hover:bg-[#b45309]/10 border-[#b45309]/40 text-[#b45309]'
-                : 'bg-bg-surface hover:bg-amber-500/10 border-amber-500/40 text-amber-500'
-            }`}
+            className="px-2.5 h-8 text-[10px] font-mono font-bold border border-border-main bg-bg-input hover:bg-bg-surface text-text-main transition-colors"
             title="Clear All Emphasis"
           >{t('emphasize_clear', lang)}</button>
         </div>
 
         <button 
           onClick={handleCleanupChat}
-          className={`px-3 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
+          className="px-3 h-8 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main transition-colors"
           title="Clean Chat Logs"
         >
           {t('cleanup_chat', lang) || 'CHAT CLEAN'}
@@ -1987,13 +1968,13 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
         <button 
           onClick={handleUppercase}
-          className={`px-3 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
+          className="px-3 h-8 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main transition-colors"
         >
           {t('uppercase', lang)}
         </button>
         <button 
           onClick={handleLowercase}
-          className={`px-3 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim transition-colors`}
+          className="px-3 h-8 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main transition-colors"
         >
           {t('lowercase', lang)}
         </button>
@@ -2001,18 +1982,18 @@ const handleResizeStart = (e: React.MouseEvent) => {
         <div className="flex items-center space-x-1">
           <button 
             onClick={() => setEditorFontSize(s => Math.max(8, s - 1))}
-            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim`}
+            className="px-2 h-8 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main"
           >A-</button>
-          <span className="text-[16px] font-bold font-mono text-text-main w-6 text-center shrink-0">{editorFontSize}</span>
+          <span className="text-[14px] font-bold font-mono text-text-main w-6 text-center shrink-0">{editorFontSize}</span>
           <button 
             onClick={() => setEditorFontSize(s => Math.min(24, s + 1))}
-            className={`px-2 h-8 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} text-[10px] font-mono border border-border-hover text-text-dim`}
+            className="px-2 h-8 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main"
           >A+</button>
           
           <select 
             value={editorFontWeight}
             onChange={e => setEditorFontWeight(e.target.value)}
-            className={`ml-1 border border-border-main text-[10px] font-mono h-8 px-1 outline-none cursor-pointer uppercase tracking-wider transition-colors shrink-0 ${theme === 'mono' ? 'bg-bg-input text-text-main hover:bg-gray-500 hover:text-white' : 'bg-bg-input text-text-main hover:bg-border-main'}`}
+            className="ml-1 border border-border-main text-[10px] font-mono font-bold h-8 px-1.5 outline-none cursor-pointer uppercase tracking-wider bg-bg-input hover:bg-bg-surface text-text-main transition-colors shrink-0"
           >
             <option value="400">{t('font_normal', lang as Language)}</option>
             <option value="700">{t('font_bold', lang as Language)}</option>
@@ -2037,7 +2018,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <button
             onClick={undo}
             disabled={!canUndo}
-            className={`px-3 h-8 border text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
+            className="px-3 h-8 border border-border-main bg-bg-input hover:bg-bg-surface text-[11px] font-mono font-bold transition-colors flex items-center gap-1.5 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed text-text-main"
             title={t('undo', lang)}
           >
             <Undo2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'UNDO' : '前に戻す'}
@@ -2046,22 +2027,18 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <button
             onClick={redo}
             disabled={!canRedo}
-            className={`px-3 h-8 border text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-surface hover:bg-border-main'} disabled:opacity-50 disabled:cursor-not-allowed border-border-hover text-text-main font-bold`}
+            className="px-3 h-8 border border-border-main bg-bg-input hover:bg-bg-surface text-[11px] font-mono font-bold transition-colors flex items-center gap-1.5 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed text-text-main"
             title={lang === 'en' ? 'REDO' : '次に進む'}
           >
             <Redo2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'REDO' : '次に進む'}
           </button>
           
           <button 
-          onClick={() => {            setEditorText('');            setNegativeEditorText('');          }}
-          className={`px-3 h-8  border  text-[10px] font-mono transition-colors flex items-center gap-1 shrink-0 ${
-            (theme === 'light' || theme === 'mono')
-              ? 'bg-gray-200 hover:bg-gray-300 text-black border-gray-400 font-bold'
-              : 'bg-transparent hover:bg-white/10 text-white border-white/50 font-bold'
-          }`}
-        >
-          <Trash2 className="w-3 h-3" /> {t('clear_all', lang)}
-        </button>
+            onClick={() => { setEditorText(''); setNegativeEditorText(''); }}
+            className="px-3 h-8 border border-border-main bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold transition-colors flex items-center gap-1 shrink-0 text-text-main"
+          >
+            <Trash2 className="w-3 h-3" /> {t('clear_all', lang)}
+          </button>
         </div>
       </div>
       
@@ -2072,13 +2049,26 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
       {tabs && onTabChange && (
         <div 
-          className="group/tabs flex items-center w-full shrink-0 mb-1"
+          className="group/tabs flex items-center w-full shrink-0 mb-1 gap-1"
           onMouseEnter={() => setShowScrollButtons(true)}
           onMouseLeave={() => {
             setShowScrollButtons(false);
             stopScroll();
           }}
         >
+          <button 
+            onClick={() => {
+              if (tabs && tabs.length > 0 && onTabChange) {
+                onTabChange(tabs[0].id);
+              }
+              tabsScrollRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
+            }} 
+            className="h-7 px-2 bg-bg-input hover:bg-bg-surface text-text-main border border-border-main transition-colors flex items-center justify-center shrink-0"
+            title={lang === 'en' ? 'Jump to first tab' : '最初のタブへ移動'}
+          >
+            <ChevronsLeft className="w-3.5 h-3.5" />
+          </button>
+
           <div className="relative flex-1 flex overflow-hidden">
             {showScrollButtons && (
               <button
@@ -2095,73 +2085,86 @@ const handleResizeStart = (e: React.MouseEvent) => {
               className="flex-1 flex items-center overflow-x-auto pl-0 pt-0 pb-1 pr-8 bg-transparent [&::-webkit-scrollbar]:hidden" 
               style={{ gap: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {tabs.map((tab, index) => (
-                <div 
-                  key={tab.id}
-                  draggable={true}
-                  onDragStart={(e) => {
-                    setDraggedTabIndex(index);
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', String(index));
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    if (dragOverTabIndex !== index) {
-                      setDragOverTabIndex(index);
-                    }
-                  }}
-                  onDragEnter={(e) => {
-                    e.preventDefault();
-                    setDragOverTabIndex(index);
-                  }}
-                  onDragLeave={(e) => {
-                    e.preventDefault();
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (draggedTabIndex !== null && draggedTabIndex !== index) {
-                      if (onTabReorder) {
-                        onTabReorder(draggedTabIndex, index);
+              {tabs.map((tab, index) => {
+                const isDragging = draggedTabIndex === index;
+                const isDragOver = dragOverTabIndex === index && draggedTabIndex !== index;
+
+                return (
+                  <div 
+                    key={tab.id}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedTabIndex(index);
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('text/plain', String(index));
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      if (dragOverTabIndex !== index) {
+                        setDragOverTabIndex(index);
                       }
-                    }
-                    setDraggedTabIndex(null);
-                    setDragOverTabIndex(null);
-                  }}
-                  onDragEnd={() => {
-                    setDraggedTabIndex(null);
-                    setDragOverTabIndex(null);
-                  }}
-                  className={`group flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono border cursor-pointer whitespace-nowrap transition-all ${
-                    activeTabId === tab.id 
-                      ? ((theme === 'light' || theme === 'mono') ? 'bg-gray-700 border-gray-700 text-white shadow-sm' : 'bg-white border-white text-gray-900 shadow-sm') 
-                      : 'bg-bg-base border-border-main text-text-dim hover:bg-bg-input hover:text-text-main hover:border-border-hover'
-                  } ${draggedTabIndex === index ? 'opacity-40' : ''} ${dragOverTabIndex === index ? 'border-blue-500 border-l-2' : ''}`}
-                  onClick={() => onTabChange(tab.id)}
-                >
-                  <span className="truncate max-w-[120px]" title={tab.name}>{tab.name}</span>
-                  {tabs.length > 1 ? (
-                    <button 
-                      draggable={false}
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        if (onTabClose) onTabClose(tab.id);
-                      }}
-                      className={`ml-1 w-3.5 h-3.5 flex items-center justify-center transition-colors ${
-                        activeTabId === tab.id 
-                          ? 'opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400' 
-                          : 'opacity-0 group-hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400'
-                      }`}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  ) : (
-                    <div className="ml-1 w-3.5 h-3.5 flex items-center justify-center opacity-0 pointer-events-none shrink-0">
-                      <X className="w-3 h-3" />
-                    </div>
-                  )}
-                </div>
-              ))}
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      setDragOverTabIndex(index);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (draggedTabIndex !== null && draggedTabIndex !== index) {
+                        if (onTabReorder) {
+                          onTabReorder(draggedTabIndex, index);
+                        }
+                      }
+                      setDraggedTabIndex(null);
+                      setDragOverTabIndex(null);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedTabIndex(null);
+                      setDragOverTabIndex(null);
+                    }}
+                    className={`group flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono border cursor-grab active:cursor-grabbing select-none whitespace-nowrap transition-all ${
+                      isDragging ? 'opacity-40' : ''
+                    } ${
+                      isDragOver 
+                        ? 'border-border-hover bg-bg-surface' 
+                        : activeTabId === tab.id 
+                          ? 'bg-text-main border-text-main text-bg-base font-bold' 
+                          : 'bg-bg-base border-border-main text-text-dim hover:bg-bg-input hover:text-text-main hover:border-border-hover'
+                    }`}
+                    onClick={() => {
+                      if (draggedTabIndex === null && onTabChange) {
+                        onTabChange(tab.id);
+                      }
+                    }}
+                  >
+                    <span className="truncate max-w-[120px]" title={tab.name}>{tab.name}</span>
+                    {tabs.length > 1 ? (
+                      <button 
+                        draggable={false}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          if (onTabClose) onTabClose(tab.id);
+                        }}
+                        className={`ml-1 w-3.5 h-3.5 flex items-center justify-center transition-colors ${
+                          activeTabId === tab.id 
+                            ? 'opacity-100 hover:bg-black/10 dark:hover:bg-white/20 hover:text-red-400' 
+                            : 'opacity-0 group-hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-400'
+                        }`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    ) : (
+                      <div className="ml-1 w-3.5 h-3.5 flex items-center justify-center opacity-0 pointer-events-none shrink-0">
+                        <X className="w-3 h-3" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             {showScrollButtons && (
               <button
@@ -2174,9 +2177,25 @@ const handleResizeStart = (e: React.MouseEvent) => {
               </button>
             )}
           </div>
+
+          <button 
+            onClick={() => {
+              if (tabs && tabs.length > 0 && onTabChange) {
+                onTabChange(tabs[tabs.length - 1].id);
+              }
+              if (tabsScrollRef.current) {
+                tabsScrollRef.current.scrollTo({ left: tabsScrollRef.current.scrollWidth, behavior: 'smooth' });
+              }
+            }} 
+            className="h-7 px-2 bg-bg-input hover:bg-bg-surface text-text-main border border-border-main transition-colors flex items-center justify-center shrink-0"
+            title={lang === 'en' ? 'Jump to last tab' : '最後のタブへ移動'}
+          >
+            <ChevronsRight className="w-3.5 h-3.5" />
+          </button>
+
           <button 
             onClick={onTabAdd} 
-            className="ml-1 px-2 py-1.5 text-text-dim hover:text-text-main hover:bg-bg-input border border-transparent transition-colors flex items-center justify-center shrink-0"
+            className="h-7 px-2 bg-bg-input hover:bg-bg-surface text-text-main border border-border-main transition-colors flex items-center justify-center shrink-0"
             title="Add Tab"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -2192,7 +2211,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 setTimeout(() => setConfirmClearTabs(false), 3000);
               }
             }} 
-            className={`ml-auto px-3 py-0.5 text-[9px] font-mono font-bold border  transition-colors uppercase shrink-0 ${
+            className={`ml-auto px-2.5 h-7 text-[9px] font-mono font-bold border transition-colors uppercase shrink-0 ${
               confirmClearTabs 
                 ? 'bg-red-500 text-white border-solid border-red-500 hover:bg-red-600' 
                 : 'text-red-500 hover:text-white bg-transparent hover:bg-red-500/80 border-dashed border-red-500/50 hover:border-red-500/80'
@@ -2214,23 +2233,21 @@ const handleResizeStart = (e: React.MouseEvent) => {
               PROMPT
             </button>
             <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-              
-              
               <button 
                 onClick={() => handleSaveSetClick()}
-                className="flex items-center gap-1 px-2 py-1 bg-accent-main hover:bg-blue-600 border border-accent-dim text-[9px] font-mono text-white transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 bg-text-main text-bg-base border border-text-main hover:opacity-80 text-[9px] font-mono font-bold transition-opacity"
               >
                 <Save className="w-3 h-3" /> {t('save_as_set', lang)}
               </button>
               <button 
                 onClick={() => handleSaveMasterClick(false, activeMasterTab === 'negative')}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
+                className="flex items-center gap-1 px-2.5 py-1 bg-bg-input hover:bg-bg-surface border border-border-main text-[9px] font-mono font-bold text-text-main transition-colors"
               >
                 <Save className="w-3 h-3" /> {t('save_as_master', lang)}
               </button>
               <button 
                 onClick={() => handleSavePartClick(false)}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
+                className="flex items-center gap-1 px-2.5 py-1 bg-bg-input hover:bg-bg-surface border border-border-main text-[9px] font-mono font-bold text-text-main transition-colors"
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_part', lang)}
               </button>
@@ -2244,13 +2261,13 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   setSaveMemoDefaultTitle(title);
                   setIsSaveMemoModalOpen(true);
                 }}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
+                className="flex items-center gap-1 px-2.5 py-1 bg-bg-input hover:bg-bg-surface border border-border-main text-[9px] font-mono font-bold text-text-main transition-colors"
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_memo', lang)}
               </button>
               <button
                 onClick={() => setEditorText('')}
-                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-red-500/10 hover:text-red-400 border border-border-hover hover:border-red-500/30 text-[9px] font-mono text-text-dim transition-colors ml-1"
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-red-500/20 text-text-dim hover:text-red-400 border border-border-main hover:border-red-500/40 text-[9px] font-mono transition-colors ml-1"
                 title={t('clear', lang)}
               >
                 <Trash2 className="w-3 h-3" />
@@ -2274,7 +2291,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
       </AnimatePresence>
                         <div 
               ref={positiveHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
               aria-hidden="true"
             >
@@ -2310,7 +2327,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               }}
               
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-blue-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-blue-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>
@@ -2327,32 +2344,32 @@ const handleResizeStart = (e: React.MouseEvent) => {
             <div className={`w-full h-px ${isResizing ? 'bg-accent-main' : 'bg-transparent group-hover:bg-border-main'} transition-colors`} />
           </div>
 
-          <div className="flex gap-2 bg-bg-panel p-1 border border-border-main shadow-sm relative z-20">
+          <div className="flex gap-1.5 bg-bg-panel p-1 border border-border-main shadow-sm relative z-20">
             <button 
               onClick={() => handleCopyTextBetweenEditors('down')}
-              className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} text-text-dim transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono`}
+              className="px-2 py-1 bg-bg-input hover:bg-bg-surface text-text-main transition-colors border border-border-main flex items-center justify-center gap-1 text-[9px] font-mono font-bold"
               title={t('copy_to_negative', lang)}
             >
               <Copy size={12} /> <ArrowDown size={12} />
             </button>
             <button 
               onClick={() => handleMoveTextBetweenEditors('down')}
-              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
+              className="h-7 w-7 flex items-center justify-center bg-bg-input hover:bg-bg-surface text-text-main transition-colors border border-border-main"
               title={t('move_to_negative', lang)}
             >
               <ArrowDown size={14} />
             </button>
-            <div className="w-px h-6 bg-border-main my-auto mx-1"></div>
+            <div className="w-px h-5 bg-border-main my-auto mx-0.5"></div>
             <button 
               onClick={() => handleMoveTextBetweenEditors('up')}
-              className={`h-8 w-8 flex items-center justify-center ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} text-text-dim transition-colors border border-border-hover flex items-center justify-center`}
+              className="h-7 w-7 flex items-center justify-center bg-bg-input hover:bg-bg-surface text-text-main transition-colors border border-border-main"
               title={t('move_to_positive', lang)}
             >
               <ArrowUp size={14} />
             </button>
             <button 
               onClick={() => handleCopyTextBetweenEditors('up')}
-              className={`px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main hover:text-text-main'} text-text-dim transition-colors border border-border-hover flex items-center justify-center gap-1 text-[9px] font-mono`}
+              className="px-2 py-1 bg-bg-input hover:bg-bg-surface text-text-main transition-colors border border-border-main flex items-center justify-center gap-1 text-[9px] font-mono font-bold"
               title={t('copy_to_positive', lang)}
             >
               <Copy size={12} /> <ArrowUp size={12} />
@@ -2373,17 +2390,15 @@ const handleResizeStart = (e: React.MouseEvent) => {
             NEGATIVE PROMPT
           </button>
             <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-              
-              
               <button 
                 onClick={() => handleSaveMasterClick(true)}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
+                className="flex items-center gap-1 px-2.5 py-1 bg-bg-input hover:bg-bg-surface border border-border-main text-[9px] font-mono font-bold text-text-main transition-colors"
               >
                 <Save className="w-3 h-3" /> {t('save_as_master', lang)}
               </button>
               <button 
                 onClick={() => handleSavePartClick(true)}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
+                className="flex items-center gap-1 px-2.5 py-1 bg-bg-input hover:bg-bg-surface border border-border-main text-[9px] font-mono font-bold text-text-main transition-colors"
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_part', lang)}
               </button>
@@ -2397,13 +2412,13 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   setSaveMemoDefaultTitle(title);
                   setIsSaveMemoModalOpen(true);
                 }}
-                className={`flex items-center gap-1 px-2 py-1 ${theme === 'mono' ? 'bg-bg-input hover:bg-gray-500 hover:text-white' : 'bg-bg-input hover:bg-border-main'} border border-border-hover text-[9px] font-mono text-text-dim transition-colors`}
+                className="flex items-center gap-1 px-2.5 py-1 bg-bg-input hover:bg-bg-surface border border-border-main text-[9px] font-mono font-bold text-text-main transition-colors"
               >
                 <PlusSquare className="w-3 h-3" /> {t('save_as_memo', lang)}
               </button>
               <button
                 onClick={() => setNegativeEditorText('')}
-                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-red-500/10 hover:text-red-400 border border-border-hover hover:border-red-500/30 text-[9px] font-mono text-text-dim transition-colors ml-1"
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-red-500/20 text-text-dim hover:text-red-400 border border-border-main hover:border-red-500/40 text-[9px] font-mono transition-colors ml-1"
                 title={t('clear', lang)}
               >
                 <Trash2 className="w-3 h-3" />
@@ -2413,7 +2428,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
               aria-hidden="true"
             >
@@ -2449,7 +2464,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
               }}
               
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-red-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-red-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
               spellCheck={false}
             />
           </div>

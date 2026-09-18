@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MasterPrompt } from '../types';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { MoreHorizontal, Pencil, Trash2, Check, X, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Plus, List, ArrowRightToLine, ArrowLeftToLine, Copy } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Check, X, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Plus, List, ArrowRightToLine, ArrowLeftToLine, Copy, Pin, Star, Sparkles, AlertTriangle } from 'lucide-react';
 import { Language, t } from '../i18n';
 
 interface MasterColumnProps {
@@ -37,6 +37,42 @@ interface MasterColumnProps {
   setActiveTab: (tab: 'master' | 'negative') => void;
   lang: Language;
 }
+
+export const MARK_OPTIONS = [
+  { id: 'pin', icon: Pin, label: 'Pin', isSolid: true },
+  { id: 'star', icon: Star, label: 'Star', isSolid: true },
+  { id: 'check', icon: Check, label: 'Check', isSolid: false },
+  { id: 'sparkles', icon: Sparkles, label: 'Idea', isSolid: true },
+  { id: 'alert', icon: AlertTriangle, label: 'Alert', isSolid: false },
+];
+
+export const renderMarkSymbol = (mark?: string) => {
+  if (!mark) return null;
+  let Icon = Pin;
+  let fill = true;
+  if (mark === 'star' || mark === '★' || mark === '⭐') {
+    Icon = Star;
+    fill = true;
+  } else if (mark === 'check' || mark === '✓' || mark === '✔') {
+    Icon = Check;
+    fill = false;
+  } else if (mark === 'sparkles' || mark === 'idea' || mark === '◆' || mark === '✦' || mark === '💡') {
+    Icon = Sparkles;
+    fill = true;
+  } else if (mark === 'alert' || mark === '▲' || mark === '⚠️' || mark === '⚠') {
+    Icon = AlertTriangle;
+    fill = false;
+  } else {
+    Icon = Pin;
+    fill = true;
+  }
+
+  return (
+    <span className="mr-1.5 inline-flex items-center shrink-0" style={{ color: 'var(--mark-color)' }}>
+      <Icon className={`w-3.5 h-3.5 ${fill ? 'fill-current' : ''}`} />
+    </span>
+  );
+};
 
 export const MasterColumn: React.FC<MasterColumnProps> = ({ 
   masters, negatives = [], selectedId, selectedNegativeId, onSelect, onSelectNegative, onAdd, onAddNegative, onUpdate, onUpdateNegative, onDuplicate, onDuplicateNegative, onDelete, onDeleteNegative, onDeleteBulk, onDeleteBulkNegative, onDeleteAll, onDeleteAllNegative, onMoveBulk, onMoveBulkNegative, onReorder, onReorderNegative, onCopyToPart, onCopyBulkToPart, onCopyBulkToPartDirect, uniqueCategories, activeTab, setActiveTab, lang, theme 
@@ -127,16 +163,16 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
   return (
     <>
       <div className="p-2 bg-bg-panel border-b border-border-main shrink-0 overflow-x-auto">
-        <div className="flex w-full gap-1 bg-bg-base border border-border-main p-1.5 text-[10px] font-mono uppercase tracking-widest">
+        <div className="flex w-full gap-1.5 bg-bg-panel text-[10px] font-mono uppercase tracking-widest">
           <button 
             onClick={() => setActiveTab('master')} 
-            className={`flex-1 py-1.5 px-2 border transition-colors whitespace-nowrap ${activeTab === 'master' ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') : 'border-transparent text-text-dim hover:text-text-main'}`}
+            className={`flex-1 py-1.5 px-2 border font-mono font-bold transition-colors whitespace-nowrap ${activeTab === 'master' ? 'bg-text-main text-bg-base border-text-main' : 'bg-bg-input text-text-dim border-border-main hover:text-text-main hover:bg-bg-surface'}`}
           >
             {t('master_prompts', lang)}
           </button>
           <button 
             onClick={() => setActiveTab('negative')} 
-            className={`flex-1 py-1.5 px-2 border transition-colors whitespace-nowrap ${activeTab === 'negative' ? (theme === 'mono' ? 'bg-red-900 text-white border-red-900' : 'bg-bg-surface text-red-500 border-red-500') : 'border-transparent text-text-dim hover:text-red-500'}`}
+            className={`flex-1 py-1.5 px-2 border font-mono font-bold transition-colors whitespace-nowrap ${activeTab === 'negative' ? 'bg-red-500 text-white border-red-500' : 'bg-bg-input text-text-dim border-border-main hover:text-red-400 hover:bg-bg-surface'}`}
           >
             {t('negative_prompts', lang)}
           </button>
@@ -157,14 +193,14 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                     e.target.nextElementSibling?.classList.add('hidden');
                   }, 150);
                 }}
-                className="w-full flex items-center justify-between bg-bg-input border border-border-main text-text-main p-1.5 focus:outline-none focus:border-blue-500 cursor-pointer text-left"
+                className="w-full flex items-center justify-between bg-bg-input border border-border-main text-text-main p-1.5 focus:outline-none focus:border-border-hover cursor-pointer text-left"
               >
                 {currentSelectedId ? (() => {
                   const item = currentList.find(i => i.id === currentSelectedId);
                   if (!item) return '-- SELECT --';
                   return (
-                    <span className="truncate">
-                      {item.mark && <span className={`mr-1 ${item.mark === '✔' ? 'text-blue-500' : ''}`}>{item.mark}</span>}
+                    <span className="truncate flex items-center">
+                      {renderMarkSymbol(item.mark)}
                       {item.name}
                     </span>
                   );
@@ -180,7 +216,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                     }}
                     className={`px-2 py-1.5 cursor-pointer hover:bg-bg-surface transition-colors flex items-center ${item.id === currentSelectedId ? 'bg-bg-surface' : ''}`}
                   >
-                    {item.mark && <span className={`mr-1 shrink-0 ${item.mark === '✔' ? 'text-blue-500' : ''}`}>{item.mark}</span>}
+                    {renderMarkSymbol(item.mark)}
                     <span className="truncate text-text-main">{item.name}</span>
                   </div>
                 ))}
@@ -192,57 +228,102 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
           <div className="flex items-center bg-bg-input border border-border-main shrink-0">
             <button 
               onClick={() => setViewMode('list')} 
-              className={`px-2 py-1 transition-colors flex items-center justify-center ${viewMode === 'list' ? (theme === 'mono' ? 'bg-black text-white' : 'bg-border-hover text-text-main') : (theme === 'mono' ? 'text-text-dim hover:bg-gray-200 hover:text-black' : 'text-text-dim hover:bg-border-main')}`}
+              className={`px-2.5 py-1 transition-colors flex items-center justify-center font-bold ${viewMode === 'list' ? 'bg-text-main text-bg-base' : 'text-text-dim hover:text-text-main hover:bg-bg-surface'}`}
               title={t('view_list', lang)}
             >
-              <List className="w-3 h-3" />
+              <List className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setViewMode('dropdown')} 
-              className={`px-2 py-1 border-l border-border-main transition-colors flex items-center justify-center ${viewMode === 'dropdown' ? (theme === 'mono' ? 'bg-black text-white' : 'bg-border-hover text-text-main') : (theme === 'mono' ? 'text-text-dim hover:bg-gray-200 hover:text-black' : 'text-text-dim hover:bg-border-main')}`}
+              className={`px-2.5 py-1 border-l border-border-main transition-colors flex items-center justify-center font-bold ${viewMode === 'dropdown' ? 'bg-text-main text-bg-base' : 'text-text-dim hover:text-text-main hover:bg-bg-surface'}`}
               title={t('view_dropdown', lang)}
             >
-              <ChevronDown className="w-3 h-3" />
+              <ChevronDown className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </div>
 
       <div className="p-2 border-b border-border-main bg-bg-panel shrink-0 z-10 shadow-sm">
-<div className={`flex flex-wrap items-center gap-2 bg-bg-surface p-2 border ${bulkSelectedIds.size > 0 ? "border-blue-500/30" : "border-border-main"} shadow-sm shrink-0 min-h-[42px]`}>
-              <span className={`text-[10px] font-mono flex-shrink-0 flex items-center justify-center w-6 h-6 font-bold ${bulkSelectedIds.size > 0 ? "text-blue-400 bg-blue-500/10" : "text-text-dim bg-bg-input"}`}>{bulkSelectedIds.size}</span>
+        <div className={`flex flex-wrap items-center gap-2 bg-bg-surface p-2 border ${bulkSelectedIds.size > 0 ? "border-border-hover" : "border-border-main"} shrink-0 min-h-[42px]`}>
+              <span className={`text-[10px] font-mono flex-shrink-0 flex items-center justify-center w-6 h-6 border border-border-main font-bold ${bulkSelectedIds.size > 0 ? "text-text-main bg-bg-input" : "text-text-dim bg-bg-input"}`}>{bulkSelectedIds.size}</span>
               
               {activeTab === 'master' && (
                 <div className="flex gap-1 p-0.5 bg-bg-base border border-border-main shrink-0">
-                  {['⭐', '✔', '💡', '📌', '⚠️', '❌'].map(m => (
+                  {MARK_OPTIONS.map(({ id, icon: Icon, isSolid, label }) => (
                     <button 
-                      key={m}
+                      key={id}
                       onClick={() => {
-                        bulkSelectedIds.forEach(id => currentOnUpdate(id, { mark: m === '❌' ? undefined : m }));
+                        if (bulkSelectedIds.size === 0) return;
+                        bulkSelectedIds.forEach(idVal => currentOnUpdate(idVal, { mark: id }));
                         setBulkSelectedIds(new Set());
                       }}
-                      disabled={bulkSelectedIds.size === 0}
-                      className={`w-5 h-5 flex items-center justify-center text-xs hover:bg-bg-input ${m === "✔" ? "text-blue-500" : ""} disabled:opacity-50`}
-                      title={m === '❌' ? "Remove Mark" : "Apply Mark"}
+                      className="w-5 h-5 flex items-center justify-center hover:bg-bg-input hover:!text-text-main transition-colors"
+                      style={{ color: 'var(--toolbar-icon-color)' }}
+                      title={`Apply ${label}`}
                     >
-                      {m}
+                      <Icon className={`w-3.5 h-3.5 ${isSolid ? 'fill-current' : ''}`} />
                     </button>
                   ))}
+                  <button 
+                    onClick={() => {
+                      if (bulkSelectedIds.size === 0) return;
+                      bulkSelectedIds.forEach(idVal => currentOnUpdate(idVal, { mark: undefined }));
+                      setBulkSelectedIds(new Set());
+                    }}
+                    className="w-5 h-5 flex items-center justify-center hover:bg-bg-input hover:!text-red-400 transition-colors"
+                    style={{ color: 'var(--toolbar-icon-color)' }}
+                    title="Remove Mark"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
 
               {currentOnMoveBulk && (
                 <div className="flex gap-1 p-0.5 bg-bg-base border border-border-main shrink-0">
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'top')} disabled={bulkSelectedIds.size === 0} className="w-5 h-5 flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main disabled:opacity-50" title="Move to Top">
+                  <button 
+                    onClick={() => {
+                      if (bulkSelectedIds.size === 0) return;
+                      currentOnMoveBulk(Array.from(bulkSelectedIds), 'top');
+                    }} 
+                    className="w-5 h-5 flex items-center justify-center hover:bg-bg-input hover:!text-text-main transition-colors" 
+                    style={{ color: 'var(--toolbar-icon-color)' }} 
+                    title="Move to Top"
+                  >
                     <ChevronsUp className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'up')} disabled={bulkSelectedIds.size === 0} className="w-5 h-5 flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main disabled:opacity-50" title="Move Up">
+                  <button 
+                    onClick={() => {
+                      if (bulkSelectedIds.size === 0) return;
+                      currentOnMoveBulk(Array.from(bulkSelectedIds), 'up');
+                    }} 
+                    className="w-5 h-5 flex items-center justify-center hover:bg-bg-input hover:!text-text-main transition-colors" 
+                    style={{ color: 'var(--toolbar-icon-color)' }} 
+                    title="Move Up"
+                  >
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'down')} disabled={bulkSelectedIds.size === 0} className="w-5 h-5 flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main disabled:opacity-50" title="Move Down">
+                  <button 
+                    onClick={() => {
+                      if (bulkSelectedIds.size === 0) return;
+                      currentOnMoveBulk(Array.from(bulkSelectedIds), 'down');
+                    }} 
+                    className="w-5 h-5 flex items-center justify-center hover:bg-bg-input hover:!text-text-main transition-colors" 
+                    style={{ color: 'var(--toolbar-icon-color)' }} 
+                    title="Move Down"
+                  >
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => currentOnMoveBulk(Array.from(bulkSelectedIds), 'bottom')} disabled={bulkSelectedIds.size === 0} className="w-5 h-5 flex items-center justify-center hover:bg-bg-input text-text-dim hover:text-text-main disabled:opacity-50" title="Move to Bottom">
+                  <button 
+                    onClick={() => {
+                      if (bulkSelectedIds.size === 0) return;
+                      currentOnMoveBulk(Array.from(bulkSelectedIds), 'bottom');
+                    }} 
+                    className="w-5 h-5 flex items-center justify-center hover:bg-bg-input hover:!text-text-main transition-colors" 
+                    style={{ color: 'var(--toolbar-icon-color)' }} 
+                    title="Move to Bottom"
+                  >
                     <ChevronsDown className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -301,31 +382,37 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
             return (
               <div 
                 key={item.id} 
-                className={`p-3 bg-bg-input border ${isNegative ? 'border-red-500/50' : 'border-blue-500/50'} flex flex-col gap-2`}
+                className={`p-3 bg-bg-input border ${isNegative ? 'border-red-500/50' : 'border-border-hover'} flex flex-col gap-2`}
               >
                 {!isNegative && (
-                  <div className="flex gap-2 p-1 bg-bg-base border border-border-main">
-                    {['⭐', '✔', '💡', '📌', '⚠️'].map(m => (
-                      <button 
-                        key={m}
-                        onClick={() => setEditMark(prev => prev === m ? undefined : m)}
-                        className={`w-6 h-6 flex items-center justify-center text-sm ${editMark === m ? 'bg-bg-surface border border-blue-500/50' : 'hover:bg-bg-input'} ${m === '✔' ? 'text-blue-500' : ''}`}
-                      >
-                        {m}
-                      </button>
-                    ))}
+                  <div className="flex gap-1.5 p-1 bg-bg-base border border-border-main">
+                    {MARK_OPTIONS.map(({ id, icon: Icon, isSolid, label }) => {
+                      const isSelected = editMark === id || (id === 'pin' && (editMark === '📌' || editMark === '●')) || (id === 'star' && (editMark === '★' || editMark === '⭐')) || (id === 'check' && (editMark === '✓' || editMark === '✔')) || (id === 'sparkles' && (editMark === '◆' || editMark === '✦' || editMark === '💡')) || (id === 'alert' && (editMark === '▲' || editMark === '⚠️' || editMark === '⚠'));
+
+                      return (
+                        <button 
+                          key={id}
+                          onClick={() => setEditMark(prev => isSelected ? undefined : id)}
+                          className={`w-6 h-6 flex items-center justify-center transition-colors ${isSelected ? 'bg-bg-surface border border-border-hover' : 'hover:bg-bg-input hover:!text-text-main'}`}
+                          style={{ color: isSelected ? 'var(--mark-color)' : 'var(--toolbar-icon-color)' }}
+                          title={label}
+                        >
+                          <Icon className={`w-3.5 h-3.5 ${isSolid ? 'fill-current' : ''}`} />
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
                 <input 
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
-                  className={`bg-bg-base border border-border-main text-xs font-mono p-1.5 text-text-main focus:outline-none ${isNegative ? 'focus:border-red-500' : 'focus:border-blue-500'}`}
+                  className={`bg-bg-base border border-border-main text-xs font-mono p-1.5 text-text-main focus:outline-none ${isNegative ? 'focus:border-red-500' : 'focus:border-border-hover'}`}
                   placeholder={t('name', lang)}
                 />
                 <textarea 
                   value={editContent}
                   onChange={e => setEditContent(e.target.value)}
-                  className={`bg-bg-base border border-border-main text-[11px] font-mono p-1.5 text-text-dim focus:outline-none ${isNegative ? 'focus:border-red-500' : 'focus:border-blue-500'} resize-y min-h-[64px] h-16`}
+                  className={`bg-bg-base border border-border-main text-[11px] font-mono p-1.5 text-text-dim focus:outline-none ${isNegative ? 'focus:border-red-500' : 'focus:border-border-hover'} resize-y min-h-[64px] h-16`}
                   placeholder={t('content', lang)}
                 />
                 {!isNegative && (
@@ -349,7 +436,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                         setCopiedItemId('edit_' + item.id);
                         setTimeout(() => setCopiedItemId(null), 2000);
                       }}
-                      className={`px-3 py-1.5 flex items-center justify-center gap-1.5 bg-transparent hover:bg-bg-input border text-[10px] font-mono transition-colors  ${
+                      className={`px-3 py-1.5 flex items-center justify-center gap-1.5 bg-transparent hover:bg-bg-input border text-[10px] font-mono transition-colors ${
                         copiedItemId === 'edit_' + item.id ? 'border-green-500/50 text-green-500 bg-green-500/10' : 'border-border-main text-text-dim hover:text-green-400'
                       }`}
                       title={lang === 'en' ? "Copy Prompt Text" : "プロンプトをコピー"}
@@ -358,7 +445,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                         <Check className="w-3 h-3" />
                       ) : (
                         <div className="relative w-3 h-3 flex items-center justify-center">
-                          <div className="border border-current ] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
+                          <div className="border border-current w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
                         </div>
                       )}
                       COPY
@@ -366,7 +453,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                     <button onClick={() => setEditingId(null)} className="px-3 py-1.5 bg-transparent hover:bg-bg-input border border-transparent hover:border-border-main text-text-dim hover:text-text-main text-[10px] font-mono transition-colors">
                       CANCEL
                     </button>
-                    <button onClick={() => handleSave(item.id)} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-mono font-bold transition-colors">
+                    <button onClick={() => handleSave(item.id)} className="px-4 py-1.5 bg-text-main text-bg-base hover:opacity-85 border border-text-main text-[10px] font-mono font-bold transition-opacity">
                       {t('save', lang)}
                     </button>
                   </div>
@@ -383,7 +470,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`block p-3 group cursor-pointer transition-colors relative ${(theme === 'light' || theme === 'mono') ? (isNegative ? 'bg-red-50' : 'bg-white shadow-sm') : (isSelected ? (isNegative ? 'bg-red-500/10' : 'bg-bg-input') : (isNegative ? 'bg-red-500/5' : 'bg-transparent'))} ${isSelected ? (isNegative ? 'border border-red-500/50' : 'border border-blue-500/50') : (isNegative ? 'border border-red-500/30 hover:border-red-500/50' : 'border border-border-main hover:border-border-hover')}`}
+              className={`block p-3 group cursor-pointer transition-colors relative ${(theme === 'light' || theme === 'mono') ? (isNegative ? 'bg-red-50' : 'bg-white shadow-sm') : (isSelected ? (isNegative ? 'bg-red-500/10' : 'bg-bg-input') : (isNegative ? 'bg-red-500/5' : 'bg-transparent'))} ${isSelected ? (isNegative ? 'border border-red-500/50' : 'border border-border-hover') : (isNegative ? 'border border-red-500/30 hover:border-red-500/50' : 'border border-border-main hover:border-border-hover')}`}
               onClick={(e) => {
                 e.preventDefault();
                 currentOnSelect(item.id);
@@ -397,16 +484,16 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                       checked={bulkSelectedIds.has(item.id)}
                       onChange={(e) => handleToggleBulk(item.id, e as any)}
                       onClick={(e) => e.stopPropagation()}
-                      className="mt-0.5 cursor-pointer"
+                      className="mt-0.5 cursor-pointer accent-gray-600"
                     />
                   )}
-                  <div className={`text-[13px] font-bold font-mono pr-6 ${isSelected ? 'text-text-main' : 'text-text-dim'}`}>
-                    {item.mark && <span className={`mr-1 ${item.mark === '✔' ? 'text-blue-500' : ''}`}>{item.mark}</span>}
+                  <div className={`text-[13px] font-bold font-mono pr-6 flex items-center flex-wrap ${isSelected ? 'text-text-main' : 'text-text-dim'}`}>
+                    {renderMarkSymbol(item.mark)}
                     {item.name.toUpperCase()}
                     {item.negativeContent !== undefined && <span className="ml-2 text-[8px] bg-accent-main text-white px-1 py-0.5">SET</span>}
                   </div>
                 </div>
-                <div className={`w-2 h-2 shrink-0 ${isSelected ? (isNegative ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]' : 'bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,1)]') : 'bg-transparent border border-gray-600'}`}></div>
+                <div className={`w-2 h-2 shrink-0 ${isSelected ? (isNegative ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]' : 'bg-gray-400') : 'bg-transparent border border-gray-600'}`}></div>
               </div>
               <div className={`mt-1 text-[10px] font-mono truncate ${isSelected ? 'text-text-dim' : 'text-text-dim'}`}>
                 {item.content || <span className="opacity-40">----- (No Content) -----</span>}
@@ -422,7 +509,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                         setCopiedItemId(item.id);
                         setTimeout(() => setCopiedItemId(null), 2000);
                       }}
-                      className={`opacity-0 group-hover:opacity-100 p-1 bg-bg-panel  shadow-sm border border-border-main transition-all ${
+                      className={`opacity-0 group-hover:opacity-100 p-1 bg-bg-panel border border-border-main transition-all ${
                         copiedItemId === item.id 
                           ? 'text-green-500 bg-green-500/10 opacity-100'
                           : 'text-text-dim hover:text-green-400'
@@ -433,13 +520,13 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                         <Check className="w-3 h-3" />
                       ) : (
                         <div className="relative w-3 h-3 flex items-center justify-center">
-                          <div className="border border-current ] w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
+                          <div className="border border-current w-full h-full flex items-center justify-center font-mono text-[9px] font-bold leading-none">P</div>
                         </div>
                       )}
                     </button>
                     <button 
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedActionId(item.id); }}
-                      className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-text-main transition-opacity p-1 bg-bg-panel shadow-sm border border-border-main"
+                      className="opacity-0 group-hover:opacity-100 text-text-dim hover:text-text-main transition-opacity p-1 bg-bg-panel border border-border-main"
                       title={lang === 'en' ? 'More actions' : 'メニュー'}
                     >
                       <MoreHorizontal className="w-3 h-3" />
@@ -449,7 +536,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                 
                 {(expandedActionId === item.id || confirmQuickDeleteId === item.id) && (
                   <>
-                    <div className="flex items-center bg-bg-panel shadow-sm border border-border-main overflow-hidden">
+                    <div className="flex items-center bg-bg-panel border border-border-main overflow-hidden">
                       <button 
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnReorder && index > 0) currentOnReorder(index, 0); }}
                         className="p-1.5 text-text-dim hover:text-text-main hover:bg-bg-input transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
@@ -465,12 +552,12 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                     </div>
                     <button 
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentOnDuplicate) currentOnDuplicate(item.id); }}
-                      className="p-1.5 text-text-dim hover:text-blue-400 bg-bg-panel shadow-sm border border-border-main"
+                      className="p-1.5 text-text-dim hover:text-text-main bg-bg-panel border border-border-main"
                       title="Duplicate"
                     ><Copy className="w-3 h-3" /></button>
                     <button 
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onCopyToPart) onCopyToPart(item); }}
-                      className="p-1.5 text-text-dim hover:text-green-400 bg-bg-panel shadow-sm border border-border-main"
+                      className="p-1.5 text-text-dim hover:text-text-main bg-bg-panel border border-border-main"
                       title="Copy to Variation Parts"
                     ><ArrowRightToLine className="w-3 h-3" /></button>
                     <button 
@@ -485,7 +572,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                           setTimeout(() => setConfirmQuickDeleteId(null), 3000);
                         }
                       }}
-                      className={`p-1.5 bg-bg-panel  shadow-sm border border-border-main ${
+                      className={`p-1.5 bg-bg-panel border border-border-main ${
                         confirmQuickDeleteId === item.id 
                           ? 'text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 opacity-100' 
                           : 'text-text-dim hover:text-red-400 hover:bg-bg-input'
@@ -494,11 +581,11 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
                     ><Trash2 className="w-3 h-3" /></button>
                     <button 
                       onClick={(e) => startEdit(item, e)}
-                      className="p-1.5 text-text-dim hover:text-blue-400 bg-bg-panel shadow-sm border border-border-main"
+                      className="p-1.5 text-text-dim hover:text-text-main bg-bg-panel border border-border-main"
                     ><Pencil className="w-3 h-3" /></button>
                     <button 
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedActionId(null); }}
-                      className="p-1.5 text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors bg-bg-panel shadow-sm border border-border-main"
+                      className="p-1.5 text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors bg-bg-panel border border-border-main"
                       title="Close"
                     ><X className="w-3 h-3" /></button>
                   </>
@@ -509,11 +596,11 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
         })}
       </div>
       <div className="p-3 bg-bg-panel border-t border-border-main flex gap-2">
-        <button onClick={() => setConfirmAdd(true)} className="flex-1 py-2 bg-bg-input border border-dashed border-border-hover text-[11px] font-mono text-text-dim hover:text-text-main transition-colors">
-          {t('add_master', lang)}
+        <button onClick={() => setConfirmAdd(true)} className="flex-1 py-2 bg-bg-input hover:bg-bg-surface border border-border-main text-[11px] font-mono font-bold text-text-main transition-colors flex items-center justify-center gap-1.5">
+          <Plus className="w-3.5 h-3.5" /> {t('add_master', lang)}
         </button>
         {currentOnDeleteAll && (
-          <button onClick={() => setConfirmDeleteAllState(true)} className="py-2 px-3 bg-bg-input border border-dashed border-red-500/30 text-[11px] font-mono text-red-500/70 hover:text-red-500 hover:bg-red-500/10 transition-colors">
+          <button onClick={() => setConfirmDeleteAllState(true)} className="py-2 px-3 bg-bg-input border border-red-500/40 text-[11px] font-mono font-bold text-red-500 hover:text-white hover:bg-red-500 transition-colors">
             {t('delete_all', lang)}
           </button>
         )}

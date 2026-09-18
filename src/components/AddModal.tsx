@@ -39,7 +39,7 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, title, onConfirm, on
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  className="bg-bg-base border border-border-main text-sm font-mono p-2 text-text-main focus:outline-none focus:border-blue-500 w-full"
+                  className="bg-bg-base border border-border-main text-sm font-mono p-2 text-text-main focus:outline-none focus:border-border-hover w-full"
                   placeholder={t('name', lang)}
                   autoFocus
                   onKeyDown={e => {
@@ -53,7 +53,7 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, title, onConfirm, on
                 <textarea
                   value={content}
                   onChange={e => setContent(e.target.value)}
-                  className="bg-bg-base border border-border-main text-sm font-mono p-2 text-text-main focus:outline-none focus:border-blue-500 w-full h-24 resize-none"
+                  className="bg-bg-base border border-border-main text-sm font-mono p-2 text-text-main focus:outline-none focus:border-border-hover w-full h-24 resize-none"
                   placeholder={t('placeholder', lang)}
                   onKeyDown={e => {
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && name.trim()) {
@@ -68,7 +68,7 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, title, onConfirm, on
               <input
                 value={name}
               onChange={e => setName(e.target.value)}
-              className="bg-bg-base border border-border-main text-sm font-mono p-2 text-text-main focus:outline-none focus:border-blue-500 w-full mb-6"
+              className="bg-bg-base border border-border-main text-sm font-mono p-2 text-text-main focus:outline-none focus:border-border-hover w-full mb-6"
               placeholder={t('name', lang)}
               autoFocus
               onKeyDown={e => {
@@ -83,7 +83,7 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, title, onConfirm, on
             <div className="flex justify-end space-x-3">
               <button
                 onClick={onCancel}
-                className="px-4 py-2 bg-bg-input hover:bg-border-main text-text-dim text-[11px] font-mono transition-colors"
+                className="px-4 py-2 bg-bg-input hover:bg-border-main text-text-dim text-[11px] font-mono border border-border-main transition-colors"
               >
                 {t('cancel', lang)}
               </button>
@@ -92,7 +92,7 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, title, onConfirm, on
                   if (name.trim()) onConfirm(name.trim(), showContentField ? content : undefined);
                 }}
                 disabled={!name.trim()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-text-main text-bg-base hover:opacity-90 text-[11px] font-mono font-bold transition-colors disabled:opacity-50"
               >
                 {t('confirm', lang)}
               </button>

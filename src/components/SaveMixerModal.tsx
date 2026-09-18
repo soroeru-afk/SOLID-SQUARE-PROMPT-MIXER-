@@ -44,7 +44,7 @@ export const SaveMixerModal: React.FC<SaveMixerModalProps> = ({ isOpen, items, o
                 <select
                   value={selectedMixerCat}
                   onChange={(e) => setSelectedMixerCat(e.target.value)}
-                  className="w-full bg-bg-input border border-border-main text-text-main text-xs font-mono p-2 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-bg-input border border-border-main text-text-main text-xs font-mono p-2 focus:outline-none focus:border-border-hover"
                 >
                   {mixerCategories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -60,7 +60,7 @@ export const SaveMixerModal: React.FC<SaveMixerModalProps> = ({ isOpen, items, o
             <div className="flex justify-end space-x-3 mt-4">
               <button
                 onClick={onCancel}
-                className="px-4 py-2 bg-bg-input hover:bg-border-main text-text-dim text-[11px] font-mono transition-colors"
+                className="px-4 py-2 bg-bg-input hover:bg-border-main text-text-dim text-[11px] font-mono border border-border-main transition-colors"
               >
                 {t('cancel', lang)}
               </button>
@@ -71,7 +71,7 @@ export const SaveMixerModal: React.FC<SaveMixerModalProps> = ({ isOpen, items, o
                   }
                 }}
                 disabled={!selectedMixerCat || !isBulk}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-mono font-bold transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-text-main text-bg-base hover:opacity-90 text-[11px] font-mono font-bold transition-colors disabled:opacity-50"
               >
                 {lang === 'en' ? 'Copy (コピー)' : 'コピー (Copy)'}
               </button>
