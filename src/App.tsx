@@ -253,6 +253,20 @@ export default function App() {
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
     applyThemeColors(theme);
+    
+    // Update meta theme-color to match header background (bg-panel)
+    const themeColorMap: Record<string, string> = {
+      dark: '#14161A',
+      black: '#050505',
+      red: '#1c0a0a',
+      light: '#e4e4e7',
+      mono: '#f4f4f5',
+      navy: '#0d1222'
+    };
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', themeColorMap[theme] || '#14161A');
+    }
   }, [theme]);
 
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(() => {
