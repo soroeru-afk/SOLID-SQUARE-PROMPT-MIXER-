@@ -1961,16 +1961,9 @@ export default function App() {
         </div>
         <div className="flex items-center space-x-2">
           <button 
-            onClick={toggleFullscreen}
-            className="w-8 h-8 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center shrink-0"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-          >
-            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-          </button>
-          <button 
             onClick={() => setSidebarPosition(pos => pos === 'left' ? 'right' : 'left')}
-            className="h-8 px-2.5 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center gap-1.5 text-[10px] font-mono font-bold shrink-0"
-            title={sidebarPosition === 'left' ? (lang === 'en' ? 'Move Sidebar to Right' : 'サイドバーを右側に配置') : (lang === 'en' ? 'Move Sidebar to Left' : 'サイドバーを左側に配置')}
+            className="h-8 w-[102px] px-2.5 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center gap-1.5 text-[10px] font-mono font-bold shrink-0"
+            title={sidebarPosition === 'left' ? (lang === 'en' ? 'Move Sidebar to Right' : 'サイドバー右へ配置') : (lang === 'en' ? 'Move Sidebar to Left' : 'サイドバー左へ配置')}
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
             <span>
@@ -1979,13 +1972,13 @@ export default function App() {
           </button>
           <button 
             onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'light' : t === 'light' ? 'mono' : t === 'mono' ? 'navy' : t === 'navy' ? 'dark' : 'light')}
-            className="h-8 px-3 bg-bg-input hover:bg-bg-surface border border-border-main text-[10px] font-mono font-bold text-text-main transition-colors flex items-center justify-center shrink-0"
+            className="h-8 w-[114px] px-3 bg-bg-input hover:bg-bg-surface border border-border-main text-[10px] font-mono font-bold text-text-main transition-colors flex items-center justify-center shrink-0"
           >
             {t('theme', lang)}: {t(`theme_${theme}` as keyof typeof translations, lang)}
           </button>
           <button 
             onClick={() => setPaperMode(!paperMode)}
-            className={`h-8 px-3 text-[10px] font-mono font-bold border transition-colors flex items-center justify-center shrink-0 ${
+            className={`h-8 w-[130px] px-3 text-[10px] font-mono font-bold border transition-colors flex items-center justify-center shrink-0 ${
               paperMode 
                 ? 'bg-text-main text-bg-base border-text-main' 
                 : 'bg-bg-input hover:bg-bg-surface border-border-main text-text-main'
@@ -1998,6 +1991,13 @@ export default function App() {
             className="h-8 px-3 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main transition-colors flex items-center justify-center shrink-0"
           >
             {lang === 'en' ? 'JP' : 'EN'}
+          </button>
+          <button 
+            onClick={toggleFullscreen}
+            className="w-8 h-8 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center shrink-0"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
         </div>
       </header>
