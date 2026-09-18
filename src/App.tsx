@@ -1962,23 +1962,23 @@ export default function App() {
         <div className="flex items-center space-x-2">
           <button 
             onClick={() => setSidebarPosition(pos => pos === 'left' ? 'right' : 'left')}
-            className="h-8 w-[102px] px-2.5 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center gap-1.5 text-[10px] font-mono font-bold shrink-0"
+            className="h-8 w-[116px] px-2.5 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center gap-1 text-[10px] font-mono font-bold shrink-0 whitespace-nowrap"
             title={sidebarPosition === 'left' ? (lang === 'en' ? 'Move Sidebar to Right' : 'サイドバー右へ配置') : (lang === 'en' ? 'Move Sidebar to Left' : 'サイドバー左へ配置')}
           >
-            <ArrowLeftRight className="w-3.5 h-3.5" />
+            <ArrowLeftRight className="w-3.5 h-3.5 shrink-0" />
             <span>
               {sidebarPosition === 'left' ? (lang === 'en' ? 'SIDEBAR: L' : 'サイドバー: 左') : (lang === 'en' ? 'SIDEBAR: R' : 'サイドバー: 右')}
             </span>
           </button>
           <button 
             onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'light' : t === 'light' ? 'mono' : t === 'mono' ? 'navy' : t === 'navy' ? 'dark' : 'light')}
-            className="h-8 w-[114px] px-3 bg-bg-input hover:bg-bg-surface border border-border-main text-[10px] font-mono font-bold text-text-main transition-colors flex items-center justify-center shrink-0"
+            className="h-8 w-[128px] px-2 bg-bg-input hover:bg-bg-surface border border-border-main text-[10px] font-mono font-bold text-text-main transition-colors flex items-center justify-center shrink-0 whitespace-nowrap"
           >
             {t('theme', lang)}: {t(`theme_${theme}` as keyof typeof translations, lang)}
           </button>
           <button 
             onClick={() => setPaperMode(!paperMode)}
-            className={`h-8 w-[130px] px-3 text-[10px] font-mono font-bold border transition-colors flex items-center justify-center shrink-0 ${
+            className={`h-8 w-[130px] px-2 text-[10px] font-mono font-bold border transition-colors flex items-center justify-center shrink-0 whitespace-nowrap ${
               paperMode 
                 ? 'bg-text-main text-bg-base border-text-main' 
                 : 'bg-bg-input hover:bg-bg-surface border-border-main text-text-main'
