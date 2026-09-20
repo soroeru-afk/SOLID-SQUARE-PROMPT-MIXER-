@@ -471,8 +471,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const applyTransformToSelectionOrAll = (transformFn: (text: string) => string, skipClean: boolean = false) => {
     const isPositive = activeEditor !== 'negative';
     const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
+    const highlightEl = isPositive ? positiveHighlightRef.current : negativeHighlightRef.current;
     
     if (textarea) {
+      const savedScrollTop = textarea.scrollTop;
+      const savedScrollLeft = textarea.scrollLeft;
       const start = textarea.selectionStart;
       let end = textarea.selectionEnd;
       
@@ -498,7 +501,13 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         setTimeout(() => {
           if (textarea) {
             textarea.setSelectionRange(start, start + transformedText.length);
-            textarea.focus();
+            textarea.focus({ preventScroll: true });
+            textarea.scrollTop = savedScrollTop;
+            textarea.scrollLeft = savedScrollLeft;
+            if (highlightEl) {
+              highlightEl.scrollTop = savedScrollTop;
+              highlightEl.scrollLeft = savedScrollLeft;
+            }
           }
         }, 0);
         return;
@@ -516,8 +525,11 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const applyTransformToSelectionOrWord = (transformFn: (text: string) => string) => {
     const isPositive = activeEditor !== 'negative';
     const textarea = isPositive ? positiveTextRef.current : negativeTextRef.current;
+    const highlightEl = isPositive ? positiveHighlightRef.current : negativeHighlightRef.current;
     
     if (textarea) {
+      const savedScrollTop = textarea.scrollTop;
+      const savedScrollLeft = textarea.scrollLeft;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       const text = isPositive ? editorText : negativeEditorText;
@@ -564,15 +576,21 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
       const newText = text.substring(0, selStart) + transformedText + text.substring(selEnd);
       
       if (isPositive) {
-        setEditorText(cleanString(newText));
+        setEditorText(newText);
       } else {
-        setNegativeEditorText(cleanString(newText));
+        setNegativeEditorText(newText);
       }
       
       setTimeout(() => {
         if (textarea) {
           textarea.setSelectionRange(selStart, selStart + transformedText.length);
-          textarea.focus();
+          textarea.focus({ preventScroll: true });
+          textarea.scrollTop = savedScrollTop;
+          textarea.scrollLeft = savedScrollLeft;
+          if (highlightEl) {
+            highlightEl.scrollTop = savedScrollTop;
+            highlightEl.scrollLeft = savedScrollLeft;
+          }
         }
       }, 0);
     }
@@ -1590,7 +1608,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
   const renderHighlightedText = (text: string, isNegative: boolean) => {
     const isLight = paperMode || (theme === 'light' || theme === 'mono') || theme === 'paper';
-    const highlightColorClass = isLight ? 'text-[#059669] drop-shadow-sm' : 'text-[#34d399] drop-shadow-sm';
+    const highlightColorClass = isLight ? 'text-[#059669]' : 'text-[#34d399]';
     const highlightBgClass = isLight ? 'bg-[#059669]' : 'bg-[#34d399]';
 
     let currentGlobalIndex = 0;
@@ -1642,6 +1660,9 @@ const handleResizeStart = (e: React.MouseEvent) => {
 
   const charCount = (editorText?.length || 0) + (negativeEditorText?.length || 0);
   const MAX_CHARS = 4096;
+
+  const isEditorLightBg = paperMode || theme === 'light' || theme === 'mono';
+  const editorCaretColor = isEditorLightBg ? '#000000' : '#ffffff';
 
   return (
     <>
@@ -2291,7 +2312,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
       </AnimatePresence>
                         <div 
               ref={positiveHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono [&::-webkit-scrollbar]:hidden [scrollbar-width:none] ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
               aria-hidden="true"
             >
@@ -2326,8 +2347,8 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 }
               }}
               
-              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-blue-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight, caretColor: editorCaretColor }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-blue-600 selection:text-white'} bg-transparent text-transparent outline-none resize-none`}
               spellCheck={false}
             />
           </div>
@@ -2428,7 +2449,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono [&::-webkit-scrollbar]:hidden [scrollbar-width:none] ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
               style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
               aria-hidden="true"
             >
@@ -2463,8 +2484,8 @@ const handleResizeStart = (e: React.MouseEvent) => {
                 }
               }}
               
-              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-red-600 selection:text-white'} bg-transparent text-transparent caret-text-main outline-none resize-none`}
+              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight, caretColor: editorCaretColor }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-red-600 selection:text-white'} bg-transparent text-transparent outline-none resize-none`}
               spellCheck={false}
             />
           </div>

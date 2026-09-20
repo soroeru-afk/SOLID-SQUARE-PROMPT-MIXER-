@@ -20,78 +20,89 @@ import { applyThemeColors } from './utils/themeColors';
 const STORAGE_KEY = 'prompt_console_data';
 
 
-const mergeMixerData = (parsed: any) => {
+const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
+  const fileTime = parsed.exportDate ? new Date(parsed.exportDate).getTime() : 0;
+
   // Categories
   if (parsed.attributeMixerCategories) {
-    const incomingCats = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
-    
-    // Get existing
-    const existingCatsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
-    let existingCats = [];
-    if (existingCatsStr) {
-      try { existingCats = JSON.parse(existingCatsStr); } catch(e) {}
-    }
-    
-    // Merge
-    const mergedCats = [...existingCats];
-    const existingIds = new Set(existingCats.map((c: any) => c.id));
-    for (const cat of incomingCats) {
-      if (!existingIds.has(cat.id)) {
-        mergedCats.push(cat);
-        existingIds.add(cat.id);
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_categories_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incomingCats = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
+      
+      // Get existing
+      const existingCatsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
+      let existingCats = [];
+      if (existingCatsStr) {
+        try { existingCats = JSON.parse(existingCatsStr); } catch(e) {}
       }
+      
+      // Merge
+      const mergedCats = [...existingCats];
+      const existingIds = new Set(existingCats.map((c: any) => c.id));
+      for (const cat of incomingCats) {
+        if (!existingIds.has(cat.id)) {
+          mergedCats.push(cat);
+          existingIds.add(cat.id);
+        }
+      }
+      
+      localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(mergedCats));
     }
-    
-    localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(mergedCats));
   }
   
   // Presets
   if (parsed.attributeMixerPresets) {
-    const incomingPresets = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
-    
-    const existingPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
-    let existingPresets: any = {};
-    if (existingPresetsStr) {
-      try { existingPresets = JSON.parse(existingPresetsStr); } catch(e) {}
-    }
-    
-    const mergedPresets = { ...existingPresets };
-    for (const catId in incomingPresets) {
-      if (!mergedPresets[catId]) {
-        mergedPresets[catId] = incomingPresets[catId];
-      } else {
-        const existingValues = new Set(mergedPresets[catId].map((i: any) => i.value));
-        const newItems = incomingPresets[catId].filter((i: any) => !existingValues.has(i.value));
-        mergedPresets[catId] = [...mergedPresets[catId], ...newItems];
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_presets_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incomingPresets = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
+      
+      const existingPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
+      let existingPresets: any = {};
+      if (existingPresetsStr) {
+        try { existingPresets = JSON.parse(existingPresetsStr); } catch(e) {}
       }
+      
+      const mergedPresets = { ...existingPresets };
+      for (const catId in incomingPresets) {
+        if (!mergedPresets[catId]) {
+          mergedPresets[catId] = incomingPresets[catId];
+        } else {
+          const existingValues = new Set(mergedPresets[catId].map((i: any) => i.value));
+          const newItems = incomingPresets[catId].filter((i: any) => !existingValues.has(i.value));
+          mergedPresets[catId] = [...mergedPresets[catId], ...newItems];
+        }
+      }
+      localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(mergedPresets));
     }
-    localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(mergedPresets));
   }
 
   // Combos
   if (parsed.attributeMixerCombos) {
-    const incomingCombos = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
-    
-    const existingCombosStr = localStorage.getItem('attribute_mixer_combinations_v1') || localStorage.getItem('attribute_mixer_combinations');
-    let existingCombos = [];
-    if (existingCombosStr) {
-      try { existingCombos = JSON.parse(existingCombosStr); } catch(e) {}
-    }
-    
-    const mergedCombos = [...existingCombos];
-    const existingComboIds = new Set(existingCombos.map((c: any) => c.id));
-    for (const combo of incomingCombos) {
-      if (!existingComboIds.has(combo.id)) {
-        mergedCombos.push(combo);
-        existingComboIds.add(combo.id);
+    const localUpdated = Number(localStorage.getItem('attribute_mixer_combos_updated_at') || 0);
+    if (!isAutoLoad || localUpdated <= fileTime) {
+      const incomingCombos = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
+      
+      const existingCombosStr = localStorage.getItem('attribute_mixer_combinations_v1') || localStorage.getItem('attribute_mixer_combinations');
+      let existingCombos = [];
+      if (existingCombosStr) {
+        try { existingCombos = JSON.parse(existingCombosStr); } catch(e) {}
       }
+      
+      const mergedCombos = [...existingCombos];
+      const existingComboIds = new Set(existingCombos.map((c: any) => c.id));
+      for (const combo of incomingCombos) {
+        if (!existingComboIds.has(combo.id)) {
+          mergedCombos.push(combo);
+          existingComboIds.add(combo.id);
+        }
+      }
+      localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(mergedCombos));
     }
-    localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(mergedCombos));
   }
   
   if (parsed.uiEditorTabs) {
     const incomingTabs = typeof parsed.uiEditorTabs === 'string' ? JSON.parse(parsed.uiEditorTabs) : parsed.uiEditorTabs;
-    localStorage.setItem('ui_editor_tabs', JSON.stringify(incomingTabs)); // Tabs might be okay to overwrite
+    localStorage.setItem('ui_editor_tabs', JSON.stringify(incomingTabs));
   }
   if (parsed.variationSectionOrder) {
     const incomingOrder = typeof parsed.variationSectionOrder === 'string' ? JSON.parse(parsed.variationSectionOrder) : parsed.variationSectionOrder;
@@ -253,19 +264,15 @@ export default function App() {
   useEffect(() => {
     document.documentElement.className = `theme-${theme}`;
     applyThemeColors(theme);
-    
-    // Update meta theme-color to match header background (bg-panel)
-    const themeColorMap: Record<string, string> = {
-      dark: '#14161A',
-      black: '#050505',
-      red: '#1c0a0a',
-      light: '#e4e4e7',
-      mono: '#f4f4f5',
-      navy: '#0d1222'
-    };
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', themeColorMap[theme] || '#14161A');
+      let color = '#0A0A0B';
+      if (theme === 'light') color = '#f9fafb';
+      else if (theme === 'black') color = '#000000';
+      else if (theme === 'red') color = '#140505';
+      else if (theme === 'navy') color = '#060913';
+      else if (theme === 'mono') color = '#ffffff';
+      metaThemeColor.setAttribute('content', color);
     }
   }, [theme]);
 
@@ -561,6 +568,17 @@ export default function App() {
   const [exportDirectoryName, setExportDirectoryName] = useState<string>('');
   const [iframeWarning, setIframeWarning] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+  const showSaveToast = useCallback((msg: string) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    setSaveSuccessMessage(msg);
+    saveTimerRef.current = window.setTimeout(() => {
+      setSaveSuccessMessage(null);
+      saveTimerRef.current = null;
+    }, 2000);
+  }, []);
   useEffect(() => {
     getFileHandle('export_directory').then(async handle => {
       if (handle && handle.name) {
@@ -1003,6 +1021,7 @@ export default function App() {
   const handleAddMaster = (name: string = 'NEW_MASTER', content: string = '', negativeContent?: string) => {
     const newMaster: MasterPrompt = { id: `m_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, negativeContent };
     setData(prev => ({ ...prev, masters: [newMaster, ...prev.masters] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleUpdateNegative = (id: string, updates: Partial<MasterPrompt>) => {
@@ -1033,6 +1052,7 @@ export default function App() {
   const handleAddNegative = (name: string = 'NEW_NEGATIVE', content: string = '') => {
     const newNegative: MasterPrompt = { id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content };
     setData(prev => ({ ...prev, negatives: [newNegative, ...(prev.negatives || [])] }));
+    showSaveToast("セーブ完了！");
   };
 
   const uniqueCategories = useMemo(() => {
@@ -1292,6 +1312,7 @@ export default function App() {
   const handleAddPart = (category: string, section: number, name: string = 'NEW_PART', content: string = '') => {
     const newPart: VariationPart = { id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, name, content, category, section: section as 1 | 2 | 3 | 4 | 5, isPinned: false };
     setData(prev => ({ ...prev, parts: [newPart, ...prev.parts] }));
+    showSaveToast("セーブ完了！");
   };
 
   const handleReorderMasters = (startIndex: number, endIndex: number) => {
@@ -1962,40 +1983,43 @@ export default function App() {
         <div className="flex items-center space-x-2">
           <button 
             onClick={() => setSidebarPosition(pos => pos === 'left' ? 'right' : 'left')}
-            className="h-8 w-[116px] px-2.5 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center gap-1 text-[10px] font-mono font-bold shrink-0 whitespace-nowrap"
-            title={sidebarPosition === 'left' ? (lang === 'en' ? 'Move Sidebar to Right' : 'サイドバー右へ配置') : (lang === 'en' ? 'Move Sidebar to Left' : 'サイドバー左へ配置')}
+            className="h-8 w-[116px] bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center gap-1.5 text-[10px] font-mono font-bold shrink-0"
+            title={sidebarPosition === 'left' ? (lang === 'en' ? 'Move Sidebar to Right' : 'サイドバーを右側に配置') : (lang === 'en' ? 'Move Sidebar to Left' : 'サイドバーを左側に配置')}
           >
-            <ArrowLeftRight className="w-3.5 h-3.5 shrink-0" />
+            <ArrowLeftRight className="w-3.5 h-3.5" />
             <span>
               {sidebarPosition === 'left' ? (lang === 'en' ? 'SIDEBAR: L' : 'サイドバー: 左') : (lang === 'en' ? 'SIDEBAR: R' : 'サイドバー: 右')}
             </span>
           </button>
           <button 
             onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'light' : t === 'light' ? 'mono' : t === 'mono' ? 'navy' : t === 'navy' ? 'dark' : 'light')}
-            className="h-8 w-[128px] px-2 bg-bg-input hover:bg-bg-surface border border-border-main text-[10px] font-mono font-bold text-text-main transition-colors flex items-center justify-center shrink-0 whitespace-nowrap"
+            className="h-8 w-[128px] bg-bg-input hover:bg-bg-surface border border-border-main text-[10px] font-mono font-bold text-text-main transition-colors flex items-center justify-center shrink-0"
+            title={lang === 'en' ? 'Switch Theme' : 'テーマ切り替え'}
           >
             {t('theme', lang)}: {t(`theme_${theme}` as keyof typeof translations, lang)}
           </button>
           <button 
             onClick={() => setPaperMode(!paperMode)}
-            className={`h-8 w-[130px] px-2 text-[10px] font-mono font-bold border transition-colors flex items-center justify-center shrink-0 whitespace-nowrap ${
+            className={`h-8 w-[138px] text-[10px] font-mono font-bold border transition-colors flex items-center justify-center shrink-0 ${
               paperMode 
                 ? 'bg-text-main text-bg-base border-text-main' 
                 : 'bg-bg-input hover:bg-bg-surface border-border-main text-text-main'
             }`}
+            title={lang === 'en' ? 'Toggle Paper Mode' : 'ペーパーモード切り替え'}
           >
             {t('paper_mode', lang)}: {paperMode ? 'ON' : 'OFF'}
           </button>
           <button 
             onClick={() => setLang(l => l === 'en' ? 'ja' : 'en')}
-            className="h-8 px-3 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main transition-colors flex items-center justify-center shrink-0"
+            className="h-8 w-10 bg-bg-input hover:bg-bg-surface text-[10px] font-mono font-bold border border-border-main text-text-main transition-colors flex items-center justify-center shrink-0"
+            title={lang === 'en' ? 'Switch Language' : '言語切り替え'}
           >
             {lang === 'en' ? 'JP' : 'EN'}
           </button>
           <button 
             onClick={toggleFullscreen}
             className="w-8 h-8 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main transition-colors flex items-center justify-center shrink-0"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            title={isFullscreen ? (lang === 'en' ? 'Exit Fullscreen' : 'フルスクリーン解除') : (lang === 'en' ? 'Fullscreen' : 'フルスクリーン')}
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
