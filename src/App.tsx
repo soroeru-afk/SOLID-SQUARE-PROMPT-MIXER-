@@ -705,9 +705,8 @@ export default function App() {
         return cleanedLine;
       })
       .join('\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .replace(/^[\s,]+/g, '')
-      .trim();
+      .replace(/^[ \t,]+/g, '')
+      .replace(/[ \t]+$/g, '');
   };
 
 
@@ -811,8 +810,8 @@ export default function App() {
       }
       
       result = result.replace(/,\s*,/g, ',');
-      result = result.replace(/^,\s*/, '');
-      return result.trim();
+      result = result.replace(/^[ \t,]+/, '');
+      return result.replace(/[ \t]+$/, '');
     });
 
     setNegativeEditorText(prev => {
@@ -861,8 +860,8 @@ export default function App() {
       }
       
       result = result.replace(/,\s*,/g, ',');
-      result = result.replace(/^,\s*/, '');
-      return result.trim();
+      result = result.replace(/^[ \t,]+/, '');
+      return result.replace(/[ \t]+$/, '');
     });
   }, [autoOptimize, positiveCursorPos, positiveSelectionEnd, negativeCursorPos, negativeSelectionEnd, setEditorText, setNegativeEditorText]);
 

@@ -458,9 +458,8 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
         return cleanedLine;
       })
       .join('\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .replace(/^[\s,]+/g, '')
-      .trim();
+      .replace(/^[ \t,]+/g, '')
+      .replace(/[ \t]+$/g, '');
   };
 
   const handleCleanText = () => {
