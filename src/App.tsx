@@ -689,6 +689,7 @@ export default function App() {
     return text
       .split('\n')
       .map(line => {
+        if (!line.trim()) return '';
         let cleanedLine = line
           .replace(/[\u3000]/g, ' ')
           .replace(/[ \t]+/g, ' ')
@@ -917,7 +918,8 @@ export default function App() {
         const end = Math.max(actualPos, endPos);
         const before = safePrev.slice(0, start);
         const after = safePrev.slice(end);
-        const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+        const isBeforeEmptyLine = before.length === 0 || before.endsWith('\n');
+        const prefix = autoOptimize && !isBeforeEmptyLine && !before.match(/,\s*$/) ? ', ' : '';
         const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
         const insertedStr = prefix + text + suffix;
         const cleaned = cleanString(before + insertedStr + after);
@@ -936,7 +938,8 @@ export default function App() {
         const end = Math.max(actualPos, endPos);
         const before = safePrev.slice(0, start);
         const after = safePrev.slice(end);
-        const prefix = autoOptimize && before.length > 0 && !before.match(/,\s*$/) && !before.endsWith('\n') ? ', ' : '';
+        const isBeforeEmptyLine = before.length === 0 || before.endsWith('\n');
+        const prefix = autoOptimize && !isBeforeEmptyLine && !before.match(/,\s*$/) ? ', ' : '';
         const suffix = autoOptimize && after.length > 0 && !after.match(/^\s*,/) && !after.startsWith('\n') ? ', ' : '';
         const insertedStr = prefix + text + suffix;
         const cleaned = cleanString(before + insertedStr + after);

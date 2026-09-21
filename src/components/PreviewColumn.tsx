@@ -128,6 +128,87 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const tabsRef = useRef(tabs);
+  const activeTabIdRef = useRef(activeTabId);
+  const onTabChangeRef = useRef(onTabChange);
+
+  useEffect(() => {
+    tabsRef.current = tabs;
+    activeTabIdRef.current = activeTabId;
+    onTabChangeRef.current = onTabChange;
+  });
+
+  useEffect(() => {
+    const el = tabsScrollRef.current;
+    if (!el) return;
+
+    let lastWheelTime = 0;
+    const handleWheel = (e: WheelEvent) => {
+      if (e.shiftKey) return;
+
+      const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      if (Math.abs(delta) < 25) return;
+
+      const currentTabs = tabsRef.current;
+      const currentActiveId = activeTabIdRef.current;
+
+      if (currentTabs.length <= 1) return;
+
+      e.preventDefault();
+      const now = Date.now();
+
+      if (now - lastWheelTime < 120) return;
+
+      const currentIndex = currentTabs.findIndex(t => t.id === currentActiveId);
+      const direction = delta < 0 ? 1 : -1;
+
+      let nextIndex = 0;
+      if (currentIndex === -1) {
+        nextIndex = 0;
+      } else {
+        nextIndex = currentIndex + direction;
+        if (nextIndex < 0) {
+          nextIndex = 0;
+        } else if (nextIndex >= currentTabs.length) {
+          nextIndex = currentTabs.length - 1;
+        }
+      }
+
+      if (nextIndex === currentIndex) return;
+
+      lastWheelTime = now;
+      const targetTab = currentTabs[nextIndex];
+      if (targetTab && onTabChangeRef.current) {
+        onTabChangeRef.current(targetTab.id);
+
+        if (nextIndex === 0) {
+          el.scrollLeft = 0;
+        } else if (nextIndex === currentTabs.length - 1) {
+          el.scrollLeft = el.scrollWidth - el.clientWidth;
+        } else {
+          const targetEl = el.children[nextIndex] as HTMLElement | undefined;
+          if (targetEl) {
+            const tabLeft = targetEl.offsetLeft;
+            const tabRight = tabLeft + targetEl.offsetWidth;
+            const stripLeft = el.scrollLeft;
+            const stripRight = stripLeft + el.clientWidth;
+
+            if (tabLeft < stripLeft) {
+              el.scrollLeft = tabLeft;
+            } else if (tabRight > stripRight) {
+              el.scrollLeft = tabRight - el.clientWidth;
+            }
+          }
+        }
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
+
   const startScroll = (direction: 'left' | 'right') => {
     if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
     const scroll = () => {
@@ -442,6 +523,7 @@ export const PreviewColumn: React.FC<PreviewColumnProps> = ({
     return text
       .split('\n')
       .map(line => {
+        if (!line.trim()) return '';
         let cleanedLine = line
           .replace(/[\u3000]/g, ' ')
           .replace(/[ \t]+/g, ' ')
