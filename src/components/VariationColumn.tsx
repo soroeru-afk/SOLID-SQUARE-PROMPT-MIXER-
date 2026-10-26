@@ -3,7 +3,7 @@ import { VariationPart } from '../types';
 import { Accordion } from './Accordion';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { User, Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine, ArrowRightToLine, Copy, Pin } from 'lucide-react';
+import { User, Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine, ArrowRightToLine, Copy, Pin, Upload, Download } from 'lucide-react';
 import { Language, t } from '../i18n';
 import { AttributeMixer } from './AttributeMixer';
 import { DuplicateSearchModal } from './DuplicateSearchModal';
@@ -42,11 +42,13 @@ interface VariationColumnProps {
   theme: string;
   activeTab?: 'parts' | 'mixer';
   setActiveTab?: (tab: 'parts' | 'mixer') => void;
+  onExport?: () => void;
+  onImportFileSelect?: (file: File) => void;
   children?: React.ReactNode;
 }
 
 export const VariationColumn: React.FC<VariationColumnProps> = ({ 
-  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteBulk, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyToMixer, onCopyBulkToMaster, onCopyBulkToMixer, onMixAttributes, onInsertText, onCopyToParts, lang, theme, activeTab = 'parts', setActiveTab, children
+  parts, customCategories = [], customSectionNames = {}, onRenameSection, selectedIds, onTogglePart, onTogglePin, onTogglePartNegative, onAdd, onUpdate, onDuplicate, onDelete, onDeleteBulk, onDeleteAll, onAddCategory, onRenameCategory, onDeleteCategory, onReorderCategory, onReorder, onCopyToMaster, onCopyToMixer, onCopyBulkToMaster, onCopyBulkToMixer, onMixAttributes, onInsertText, onCopyToParts, lang, theme, activeTab = 'parts', setActiveTab, onExport, onImportFileSelect, children
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
@@ -365,6 +367,46 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
               <User size={12} /> {t('prompt_mixer', lang)}
             </button>
           )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-3 py-2 bg-bg-panel border-b border-border-main shrink-0">
+        <div className="flex items-center justify-between text-[10px] font-mono w-full">
+          <div className="flex-1 text-text-dim flex items-center font-bold tracking-wider">
+            {activeTab === 'parts' ? t('variation_parts', lang) : t('prompt_mixer', lang)}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onImportFileSelect && (
+              <label 
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-bg-surface border border-border-main text-text-dim hover:text-text-main text-[10px] font-mono font-bold cursor-pointer transition-colors"
+                title={lang === 'en' ? 'Import (Parts & Mixer)' : 'インポート'}
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('import_json', lang)}</span>
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f && onImportFileSelect) onImportFileSelect(f);
+                    e.target.value = '';
+                  }} 
+                />
+              </label>
+            )}
+            {onExport && (
+              <button 
+                type="button"
+                onClick={onExport}
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-bg-surface border border-border-main text-text-dim hover:text-text-main text-[10px] font-mono font-bold transition-colors"
+                title={lang === 'en' ? 'Export (Parts & Mixer)' : 'エクスポート'}
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('export_config', lang)}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

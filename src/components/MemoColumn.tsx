@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { MasterPrompt } from '../types';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { MoreHorizontal, Pencil, Trash2, Check, X, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Plus, List, ArrowRightToLine, ArrowLeftToLine, Copy, Pin, Star, Sparkles, AlertTriangle, Upload } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Check, X, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Plus, List, ArrowRightToLine, ArrowLeftToLine, Copy, Pin, Star, Sparkles, AlertTriangle, Upload, Download } from 'lucide-react';
 import { Language, t } from '../i18n';
 import { MARK_OPTIONS, renderMarkSymbol } from './MasterColumn';
 import { AutoResizeTextarea } from './AutoResizeTextarea';
@@ -22,11 +22,13 @@ interface MemoColumnProps {
   onDeleteAll?: () => void;
   onMoveBulk?: (ids: string[], direction: 'top' | 'up' | 'down' | 'bottom') => void;
   onReorder?: (startIndex: number, endIndex: number) => void;
+  onExport?: () => void;
+  onImportFileSelect?: (file: File) => void;
   lang: Language;
 }
 
 export const MemoColumn: React.FC<MemoColumnProps> = ({ 
-  masters, selectedId, onSelect, onAdd, onImportFiles, onUpdate, onDuplicate, onDelete, onDeleteBulk, onDeleteAll, onMoveBulk, onReorder, lang, theme 
+  masters, selectedId, onSelect, onAdd, onImportFiles, onUpdate, onDuplicate, onDelete, onDeleteBulk, onDeleteAll, onMoveBulk, onReorder, onExport, onImportFileSelect, lang, theme 
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'dropdown'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -292,21 +294,53 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
           ) : (
             <div className="flex-1 text-text-dim flex items-center font-bold tracking-wider">{t('prompt_memo', lang)}</div>
           )}
-          <div className="flex items-center bg-bg-input border border-border-main shrink-0">
-            <button 
-              onClick={() => setViewMode('list')} 
-              className={`px-2.5 py-1 transition-colors flex items-center justify-center font-bold ${viewMode === 'list' ? 'bg-text-main text-bg-base' : 'text-text-dim hover:text-text-main hover:bg-bg-surface'}`}
-              title={t('view_list', lang)}
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-            <button 
-              onClick={() => setViewMode('dropdown')} 
-              className={`px-2.5 py-1 border-l border-border-main transition-colors flex items-center justify-center font-bold ${viewMode === 'dropdown' ? 'bg-text-main text-bg-base' : 'text-text-dim hover:text-text-main hover:bg-bg-surface'}`}
-              title={t('view_dropdown', lang)}
-            >
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onImportFileSelect && (
+              <label 
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-bg-surface border border-border-main text-text-dim hover:text-text-main text-[10px] font-mono font-bold cursor-pointer transition-colors"
+                title={lang === 'en' ? 'Import (Compare & Select)' : '比較インポート'}
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('import_json', lang)}</span>
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f && onImportFileSelect) onImportFileSelect(f);
+                    e.target.value = '';
+                  }} 
+                />
+              </label>
+            )}
+            {onExport && (
+              <button 
+                type="button"
+                onClick={onExport}
+                className="flex items-center gap-1 px-2 py-1 bg-bg-input hover:bg-bg-surface border border-border-main text-text-dim hover:text-text-main text-[10px] font-mono font-bold transition-colors"
+                title={lang === 'en' ? 'Export to JSON' : 'エクスポート'}
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('export_config', lang)}</span>
+              </button>
+            )}
+            <div className="flex items-center bg-bg-input border border-border-main shrink-0">
+              <button 
+                onClick={() => setViewMode('list')} 
+                className={`px-2.5 py-1 transition-colors flex items-center justify-center font-bold ${viewMode === 'list' ? 'bg-text-main text-bg-base' : 'text-text-dim hover:text-text-main hover:bg-bg-surface'}`}
+                title={t('view_list', lang)}
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button 
+                onClick={() => setViewMode('dropdown')} 
+                className={`px-2.5 py-1 border-l border-border-main transition-colors flex items-center justify-center font-bold ${viewMode === 'dropdown' ? 'bg-text-main text-bg-base' : 'text-text-dim hover:text-text-main hover:bg-bg-surface'}`}
+                title={t('view_dropdown', lang)}
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

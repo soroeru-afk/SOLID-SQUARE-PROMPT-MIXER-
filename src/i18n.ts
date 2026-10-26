@@ -143,7 +143,12 @@ export const translations = {
   mem: { en: 'MEM', ja: 'メモリ' },
   confirm_clear: { en: 'SURE?', ja: '本当によろしいですか？' },
   import_file: { en: 'LOAD FILE', ja: 'ファイル読込' },
-  import_memo: { en: 'IMPORT FILE', ja: 'ファイル読込' }
+  import_memo: { en: 'IMPORT FILE', ja: 'ファイル読込' },
+  import_master: { en: 'Import (Master)', ja: 'インポート (マスター)' },
+  export_master: { en: 'Export (Master)', ja: 'エクスポート (マスター)' },
+  export_memo: { en: 'Export (Memo)', ja: 'エクスポート (メモ)' },
+  import_compare: { en: 'IMPORT (COMPARE)', ja: 'インポート (比較)' },
+  export: { en: 'EXPORT', ja: 'エクスポート' }
 };
 
 export function t(key: keyof typeof translations, lang: Language): string {

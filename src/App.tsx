@@ -7,6 +7,8 @@ import { MemoColumn } from './components/MemoColumn';
 import { SavePartModal } from './components/SavePartModal';
 import { SaveMasterModal } from './components/SaveMasterModal';
 import { SaveMixerModal } from './components/SaveMixerModal';
+import { PromptComparisonImportModal } from './components/PromptComparisonImportModal';
+import { PartComparisonImportModal } from './components/PartComparisonImportModal';
 import { ColorSettingsModal } from './components/ColorSettingsModal';
 import { Toast } from './components/Toast';
 import { initialData } from './data';
@@ -23,13 +25,19 @@ const STORAGE_KEY = 'prompt_console_data';
 
 
 const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
-  const fileTime = parsed.exportDate ? new Date(parsed.exportDate).getTime() : 0;
+  const root = parsed.data || parsed.prompt_console_data || parsed.state || parsed;
+  const fileTime = (parsed.exportDate || root.exportDate) ? new Date(parsed.exportDate || root.exportDate).getTime() : 0;
+  const mixerCategories = root.attributeMixerCategories || root.mixerCategories;
+  const mixerPresets = root.attributeMixerPresets || root.mixerPresets || root.presets;
+  const mixerCombos = root.attributeMixerCombos || root.mixerCombos || root.combos || root.combinations;
+  const tabsData = root.uiEditorTabs || root.tabs;
+  const sectionOrder = root.variationSectionOrder || root.sectionOrder;
 
   // Categories
-  if (parsed.attributeMixerCategories) {
+  if (mixerCategories) {
     const localUpdated = Number(localStorage.getItem('attribute_mixer_categories_updated_at') || 0);
     if (!isAutoLoad || localUpdated <= fileTime) {
-      const incomingCats = typeof parsed.attributeMixerCategories === 'string' ? JSON.parse(parsed.attributeMixerCategories) : parsed.attributeMixerCategories;
+      const incomingCats = typeof mixerCategories === 'string' ? JSON.parse(mixerCategories) : mixerCategories;
       
       // Get existing
       const existingCatsStr = localStorage.getItem('attribute_mixer_categories_v2') || localStorage.getItem('attribute_mixer_categories_v1') || localStorage.getItem('attribute_mixer_categories');
@@ -41,22 +49,27 @@ const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
       // Merge
       const mergedCats = [...existingCats];
       const existingIds = new Set(existingCats.map((c: any) => c.id));
-      for (const cat of incomingCats) {
-        if (!existingIds.has(cat.id)) {
-          mergedCats.push(cat);
-          existingIds.add(cat.id);
+      if (Array.isArray(incomingCats)) {
+        for (const cat of incomingCats) {
+          if (!existingIds.has(cat.id)) {
+            mergedCats.push(cat);
+            existingIds.add(cat.id);
+          }
         }
       }
       
-      localStorage.setItem('attribute_mixer_categories_v2', JSON.stringify(mergedCats));
+      const catData = JSON.stringify(mergedCats);
+      localStorage.setItem('attribute_mixer_categories_v2', catData);
+      localStorage.setItem('attribute_mixer_categories_v1', catData);
+      localStorage.setItem('attribute_mixer_categories', catData);
     }
   }
   
   // Presets
-  if (parsed.attributeMixerPresets) {
+  if (mixerPresets) {
     const localUpdated = Number(localStorage.getItem('attribute_mixer_presets_updated_at') || 0);
     if (!isAutoLoad || localUpdated <= fileTime) {
-      const incomingPresets = typeof parsed.attributeMixerPresets === 'string' ? JSON.parse(parsed.attributeMixerPresets) : parsed.attributeMixerPresets;
+      const incomingPresets = typeof mixerPresets === 'string' ? JSON.parse(mixerPresets) : mixerPresets;
       
       const existingPresetsStr = localStorage.getItem('attribute_mixer_custom_presets_v7') || localStorage.getItem('attribute_mixer_custom_presets_v6') || localStorage.getItem('attribute_mixer_custom_presets_v5') || localStorage.getItem('attribute_mixer_custom_presets_v4') || localStorage.getItem('attribute_mixer_custom_presets_v3') || localStorage.getItem('attribute_mixer_custom_presets_v2') || localStorage.getItem('attribute_mixer_custom_presets_v1') || localStorage.getItem('attribute_mixer_custom_presets');
       let existingPresets: any = {};
@@ -65,24 +78,34 @@ const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
       }
       
       const mergedPresets = { ...existingPresets };
-      for (const catId in incomingPresets) {
-        if (!mergedPresets[catId]) {
-          mergedPresets[catId] = incomingPresets[catId];
-        } else {
-          const existingValues = new Set(mergedPresets[catId].map((i: any) => i.value));
-          const newItems = incomingPresets[catId].filter((i: any) => !existingValues.has(i.value));
-          mergedPresets[catId] = [...mergedPresets[catId], ...newItems];
+      if (incomingPresets && typeof incomingPresets === 'object') {
+        for (const catId in incomingPresets) {
+          if (!mergedPresets[catId]) {
+            mergedPresets[catId] = incomingPresets[catId];
+          } else if (Array.isArray(incomingPresets[catId])) {
+            const existingValues = new Set((mergedPresets[catId] || []).map((i: any) => i.value));
+            const newItems = incomingPresets[catId].filter((i: any) => !existingValues.has(i.value));
+            mergedPresets[catId] = [...mergedPresets[catId], ...newItems];
+          }
         }
       }
-      localStorage.setItem('attribute_mixer_custom_presets_v7', JSON.stringify(mergedPresets));
+      const presetData = JSON.stringify(mergedPresets);
+      localStorage.setItem('attribute_mixer_custom_presets_v7', presetData);
+      localStorage.setItem('attribute_mixer_custom_presets_v6', presetData);
+      localStorage.setItem('attribute_mixer_custom_presets_v5', presetData);
+      localStorage.setItem('attribute_mixer_custom_presets_v4', presetData);
+      localStorage.setItem('attribute_mixer_custom_presets_v3', presetData);
+      localStorage.setItem('attribute_mixer_custom_presets_v2', presetData);
+      localStorage.setItem('attribute_mixer_custom_presets_v1', presetData);
+      localStorage.setItem('attribute_mixer_custom_presets', presetData);
     }
   }
 
   // Combos
-  if (parsed.attributeMixerCombos) {
+  if (mixerCombos) {
     const localUpdated = Number(localStorage.getItem('attribute_mixer_combos_updated_at') || 0);
     if (!isAutoLoad || localUpdated <= fileTime) {
-      const incomingCombos = typeof parsed.attributeMixerCombos === 'string' ? JSON.parse(parsed.attributeMixerCombos) : parsed.attributeMixerCombos;
+      const incomingCombos = typeof mixerCombos === 'string' ? JSON.parse(mixerCombos) : mixerCombos;
       
       const existingCombosStr = localStorage.getItem('attribute_mixer_combinations_v1') || localStorage.getItem('attribute_mixer_combinations');
       let existingCombos = [];
@@ -92,25 +115,31 @@ const mergeMixerData = (parsed: any, isAutoLoad: boolean = false) => {
       
       const mergedCombos = [...existingCombos];
       const existingComboIds = new Set(existingCombos.map((c: any) => c.id));
-      for (const combo of incomingCombos) {
-        if (!existingComboIds.has(combo.id)) {
-          mergedCombos.push(combo);
-          existingComboIds.add(combo.id);
+      if (Array.isArray(incomingCombos)) {
+        for (const combo of incomingCombos) {
+          if (!existingComboIds.has(combo.id)) {
+            mergedCombos.push(combo);
+            existingComboIds.add(combo.id);
+          }
         }
       }
-      localStorage.setItem('attribute_mixer_combinations_v1', JSON.stringify(mergedCombos));
+      const comboData = JSON.stringify(mergedCombos);
+      localStorage.setItem('attribute_mixer_combinations_v1', comboData);
+      localStorage.setItem('attribute_mixer_combinations', comboData);
     }
   }
   
-  if (parsed.uiEditorTabs) {
-    const incomingTabs = typeof parsed.uiEditorTabs === 'string' ? JSON.parse(parsed.uiEditorTabs) : parsed.uiEditorTabs;
+  if (tabsData && !isAutoLoad) {
+    const incomingTabs = typeof tabsData === 'string' ? JSON.parse(tabsData) : tabsData;
     localStorage.setItem('ui_editor_tabs', JSON.stringify(incomingTabs));
   }
-  if (parsed.variationSectionOrder) {
-    const incomingOrder = typeof parsed.variationSectionOrder === 'string' ? JSON.parse(parsed.variationSectionOrder) : parsed.variationSectionOrder;
+  if (sectionOrder) {
+    const incomingOrder = typeof sectionOrder === 'string' ? JSON.parse(sectionOrder) : sectionOrder;
     localStorage.setItem('variation_section_order', JSON.stringify(incomingOrder));
   }
   window.dispatchEvent(new Event('attributeMixerDataImported'));
+  window.dispatchEvent(new Event('mixer_presets_updated'));
+  window.dispatchEvent(new Event('mixer_categories_updated'));
 };
 
 export default function App() {
@@ -564,6 +593,23 @@ export default function App() {
       saveTimerRef.current = null;
     }, 2000);
   }, []);
+  const [comparisonImportState, setComparisonImportState] = useState<{
+    isOpen: boolean;
+    type: 'master' | 'negative' | 'memo';
+    incoming: MasterPrompt[];
+    existing: MasterPrompt[];
+  } | null>(null);
+  const [partComparisonImportState, setPartComparisonImportState] = useState<{
+    isOpen: boolean;
+    incomingParts: VariationPart[];
+    incomingCustomCategories: { name: string; section: 1 | 2 | 3 | 4 | 5 }[];
+    existingParts: VariationPart[];
+    importedMixerData?: {
+      presets?: any;
+      combos?: any;
+      categories?: any;
+    };
+  } | null>(null);
   useEffect(() => {
     getFileHandle('export_directory').then(async handle => {
       if (handle && handle.name) {
@@ -589,7 +635,7 @@ export default function App() {
       if (latestFile) {
         const text = await latestFile.text();
         const parsed = JSON.parse(text);
-        applyOverallImport(parsed, latestFile.name);
+        applyOverallImport(parsed, latestFile.name, true);
       } else {
         setSaveSuccessMessage('No JSON files found in directory');
         setTimeout(() => setSaveSuccessMessage(null), 3000);
@@ -1351,7 +1397,7 @@ export default function App() {
 
 
 
-  const applyOverallImport = useCallback((parsed: any, filename?: string) => {
+  const applyOverallImport = useCallback((parsed: any, filename?: string, isAutoLoad: boolean = false) => {
     try {
       const root = parsed.data || parsed.prompt_console_data || parsed.state || parsed;
 
@@ -1454,36 +1500,8 @@ export default function App() {
         customSectionNames: normalizedSectionNames !== null ? normalizedSectionNames : (prev.customSectionNames || {})
       }));
 
-      // Update mixer storage
-      if (mixerCategories) {
-        const catData = typeof mixerCategories === 'string' ? mixerCategories : JSON.stringify(mixerCategories);
-        localStorage.setItem('attribute_mixer_categories_v2', catData);
-        localStorage.setItem('attribute_mixer_categories_v1', catData);
-        localStorage.setItem('attribute_mixer_categories', catData);
-      }
-
-      if (mixerPresets) {
-        const presetData = typeof mixerPresets === 'string' ? mixerPresets : JSON.stringify(mixerPresets);
-        localStorage.setItem('attribute_mixer_custom_presets_v7', presetData);
-        localStorage.setItem('attribute_mixer_custom_presets_v6', presetData);
-        localStorage.setItem('attribute_mixer_custom_presets_v5', presetData);
-        localStorage.setItem('attribute_mixer_custom_presets_v4', presetData);
-        localStorage.setItem('attribute_mixer_custom_presets_v3', presetData);
-        localStorage.setItem('attribute_mixer_custom_presets_v2', presetData);
-        localStorage.setItem('attribute_mixer_custom_presets_v1', presetData);
-        localStorage.setItem('attribute_mixer_custom_presets', presetData);
-      }
-
-      if (mixerCombos) {
-        const comboData = typeof mixerCombos === 'string' ? mixerCombos : JSON.stringify(mixerCombos);
-        localStorage.setItem('attribute_mixer_combinations_v1', comboData);
-        localStorage.setItem('attribute_mixer_combinations', comboData);
-      }
-
-      if (sectionOrder) {
-        const orderData = typeof sectionOrder === 'string' ? sectionOrder : JSON.stringify(sectionOrder);
-        localStorage.setItem('variation_section_order', orderData);
-      }
+      // Update mixer storage with timestamp protection & smart merge
+      mergeMixerData(parsed, isAutoLoad);
 
       if (tabsData && Array.isArray(tabsData) && tabsData.length > 0) {
         setTabs(tabsData);
@@ -1704,6 +1722,282 @@ export default function App() {
     }
   };
 
+  const handleExportMaster = async (targetType: 'master' | 'negative' = 'master') => {
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const formattedDate = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+
+    const isNeg = targetType === 'negative';
+    const exportData = {
+      title: isNeg ? "Solid Square Prompt Mixer (Negative Prompts)" : "Solid Square Prompt Mixer (Master Prompts)",
+      exportDate: formattedDate,
+      masters: (data.masters || []).map(m => ({ ...m, content: cleanString(m.content) })),
+      negatives: (data.negatives || []).map(n => ({ ...n, content: cleanString(n.content) })),
+    };
+
+    const fileName = isNeg ? `PM-ネガティブ_${dateStr}.json` : `PM-マスター_${dateStr}.json`;
+    const jsonString = JSON.stringify(exportData, null, 2);
+
+    const fallbackDownload = () => {
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    if ('showSaveFilePicker' in window && window.self === window.top) {
+      try {
+        let dirHandle = await getFileHandle('export_directory');
+        let fileHandle = null;
+        let hasDirPermission = false;
+
+        if (dirHandle) {
+          const permission = await dirHandle.queryPermission({ mode: 'readwrite' });
+          if (permission === 'granted') {
+            hasDirPermission = true;
+          } else {
+            const request = await dirHandle.requestPermission({ mode: 'readwrite' });
+            if (request === 'granted') {
+              hasDirPermission = true;
+            }
+          }
+        }
+
+        if (hasDirPermission && dirHandle) {
+          fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+        } else {
+          fileHandle = await (window as any).showSaveFilePicker({
+            id: 'prompt_mixer_export_master',
+            suggestedName: fileName,
+            types: [{
+              description: 'JSON Files',
+              accept: { 'application/json': ['.json'] },
+            }],
+          });
+        }
+
+        if (fileHandle) {
+          const writable = await fileHandle.createWritable();
+          await writable.write(jsonString);
+          await writable.close();
+          setSaveSuccessMessage(isNeg ? 'ネガティブプロンプトのエクスポート完了！' : 'マスタープロンプトのエクスポート完了！');
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('File System API Error:', err);
+          fallbackDownload();
+          setSaveSuccessMessage(isNeg ? 'ネガティブエクスポート完了！ (Downloaded)' : 'マスターエクスポート完了！ (Downloaded)');
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
+        }
+      }
+    } else {
+      fallbackDownload();
+      setSaveSuccessMessage(isNeg ? 'ネガティブエクスポート完了！ (Downloaded)' : 'マスターエクスポート完了！ (Downloaded)');
+      setTimeout(() => setSaveSuccessMessage(null), 3000);
+    }
+  };
+
+  const handleExportMemos = async () => {
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const formattedDate = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+
+    const exportData = {
+      title: "Solid Square Prompt Mixer (Memos)",
+      exportDate: formattedDate,
+      memos: (data.memos || []).map(m => ({ ...m, content: cleanString(m.content) })),
+    };
+
+    const fileName = `PM-メモ_${dateStr}.json`;
+    const jsonString = JSON.stringify(exportData, null, 2);
+
+    const fallbackDownload = () => {
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    if ('showSaveFilePicker' in window && window.self === window.top) {
+      try {
+        let dirHandle = await getFileHandle('export_directory');
+        let fileHandle = null;
+        let hasDirPermission = false;
+
+        if (dirHandle) {
+          const permission = await dirHandle.queryPermission({ mode: 'readwrite' });
+          if (permission === 'granted') {
+            hasDirPermission = true;
+          } else {
+            const request = await dirHandle.requestPermission({ mode: 'readwrite' });
+            if (request === 'granted') {
+              hasDirPermission = true;
+            }
+          }
+        }
+
+        if (hasDirPermission && dirHandle) {
+          fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+        } else {
+          fileHandle = await (window as any).showSaveFilePicker({
+            id: 'prompt_mixer_export_memo',
+            suggestedName: fileName,
+            types: [{
+              description: 'JSON Files',
+              accept: { 'application/json': ['.json'] },
+            }],
+          });
+        }
+
+        if (fileHandle) {
+          const writable = await fileHandle.createWritable();
+          await writable.write(jsonString);
+          await writable.close();
+          setSaveSuccessMessage('メモのエクスポート完了！');
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('File System API Error:', err);
+          fallbackDownload();
+          setSaveSuccessMessage('メモエクスポート完了！ (Downloaded)');
+          setTimeout(() => setSaveSuccessMessage(null), 3000);
+        }
+      }
+    } else {
+      fallbackDownload();
+      setSaveSuccessMessage('メモエクスポート完了！ (Downloaded)');
+      setTimeout(() => setSaveSuccessMessage(null), 3000);
+    }
+  };
+
+  const handlePrepareComparisonImport = (file: File, targetType: 'master' | 'negative' | 'memo') => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        let parsed: any;
+        try {
+          parsed = JSON.parse(text);
+        } catch (e) {
+          alert(lang === 'en' ? 'Failed to parse JSON file.' : 'JSONファイルの解析に失敗しました。');
+          return;
+        }
+
+        const root = parsed.data || parsed.prompt_console_data || parsed.state || parsed;
+
+        let rawItems: any[] = [];
+        if (targetType === 'master') {
+          rawItems = root.masters || root.masterPrompts || (Array.isArray(root) ? root : []);
+        } else if (targetType === 'negative') {
+          rawItems = root.negatives || root.negativePrompts || root.masters || (Array.isArray(root) ? root : []);
+        } else if (targetType === 'memo') {
+          rawItems = root.memos || root.memoList || root.prompts || (Array.isArray(root) ? root : []);
+        }
+
+        if (!Array.isArray(rawItems) || rawItems.length === 0) {
+          const possible = targetType === 'memo' ? (root.memos || root.masters) : (root.masters || root.negatives || root.memos);
+          if (Array.isArray(possible) && possible.length > 0) {
+            rawItems = possible;
+          } else {
+            alert(lang === 'en' ? 'No valid items found in this file.' : '選択されたファイル内に読み込めるデータが見つかりませんでした。');
+            return;
+          }
+        }
+
+        const normalized: MasterPrompt[] = rawItems.map((item: any, idx: number) => ({
+          id: String(item.id || `inc_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 6)}`),
+          name: String(item.name || item.title || `Item ${idx + 1}`),
+          content: String(item.content || item.value || item.prompt || ''),
+          negativeContent: item.negativeContent !== undefined ? String(item.negativeContent) : undefined,
+          mark: item.mark ? String(item.mark) : undefined,
+        }));
+
+        let existing: MasterPrompt[] = [];
+        if (targetType === 'master') {
+          existing = data.masters || [];
+        } else if (targetType === 'negative') {
+          existing = data.negatives || [];
+        } else if (targetType === 'memo') {
+          existing = data.memos || [];
+        }
+
+        setComparisonImportState({
+          isOpen: true,
+          type: targetType,
+          incoming: normalized,
+          existing,
+        });
+      } catch (err) {
+        console.error('Failed to prepare comparison import', err);
+        alert(lang === 'en' ? 'Failed to process import file.' : 'インポートファイルの処理中にエラーが発生しました。');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleApplyComparisonImport = (
+    { toAdd, toUpdate }: { toAdd: MasterPrompt[]; toUpdate: { id: string; updates: Partial<MasterPrompt> }[] },
+    targetType: 'master' | 'negative' | 'memo'
+  ) => {
+    setData(prev => {
+      const updateMap = new Map(toUpdate.map(u => [u.id, u.updates]));
+
+      if (targetType === 'master') {
+        const updatedMasters = (prev.masters || []).map(item => {
+          if (updateMap.has(item.id)) {
+            return { ...item, ...updateMap.get(item.id) };
+          }
+          return item;
+        });
+        return {
+          ...prev,
+          masters: [...toAdd, ...updatedMasters],
+        };
+      } else if (targetType === 'negative') {
+        const updatedNegatives = (prev.negatives || []).map(item => {
+          if (updateMap.has(item.id)) {
+            return { ...item, ...updateMap.get(item.id) };
+          }
+          return item;
+        });
+        return {
+          ...prev,
+          negatives: [...toAdd, ...updatedNegatives],
+        };
+      } else {
+        const updatedMemos = (prev.memos || []).map(item => {
+          if (updateMap.has(item.id)) {
+            return { ...item, ...updateMap.get(item.id) };
+          }
+          return item;
+        });
+        return {
+          ...prev,
+          memos: [...toAdd, ...updatedMemos],
+        };
+      }
+    });
+
+    const totalCount = toAdd.length + toUpdate.length;
+    const typeLabel = targetType === 'memo' ? 'メモ' : (targetType === 'negative' ? 'ネガティブプロンプト' : 'マスタープロンプト');
+    setSaveSuccessMessage(`${typeLabel} を ${totalCount} 件取り込みました（新規: ${toAdd.length}件, 上書き: ${toUpdate.length}件）`);
+    setTimeout(() => setSaveSuccessMessage(null), 3500);
+  };
+
   const handleImportOverall = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1721,10 +2015,7 @@ export default function App() {
     e.target.value = '';
   };
 
-  const handleImportParts = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleImportPartsFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
@@ -1736,65 +2027,142 @@ export default function App() {
         const mixerCombos = root.attributeMixerCombos || root.mixerCombos || root.combos || root.combinations;
         const mixerCategories = root.attributeMixerCategories || root.mixerCategories;
 
-        if (Array.isArray(rawParts) && rawParts.length > 0) {
-          const normalizedParts: VariationPart[] = rawParts.map((p: any, idx: number) => ({
-            id: String(p.id || `p_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 6)}`),
-            section: (Number(p.section) || 1) as 1 | 2 | 3 | 4 | 5,
-            category: String(p.category || 'General'),
-            name: String(p.name || p.title || `Part ${idx + 1}`),
-            content: String(p.content || p.value || ''),
-            isPinned: Boolean(p.isPinned),
-            isNegative: Boolean(p.isNegative)
-          }));
-
-          let normalizedCustomCategories: { name: string, section: 1 | 2 | 3 | 4 | 5 }[] = [];
-          if (Array.isArray(rawCustomCats)) {
-            normalizedCustomCategories = rawCustomCats.map((c: any) => ({
-              name: String(c.name || c.category || ''),
-              section: (Number(c.section) || 1) as 1 | 2 | 3 | 4 | 5
-            })).filter(c => c.name.trim().length > 0);
-          }
-
-          setData(prev => ({
-            ...prev,
-            parts: normalizedParts,
-            customCategories: normalizedCustomCategories.length > 0 ? normalizedCustomCategories : (prev.customCategories || [])
-          }));
+        if (!Array.isArray(rawParts) || rawParts.length === 0) {
+          alert(lang === 'en' ? 'No variation parts found in this JSON file.' : '選択されたファイル内にパーツデータが見つかりませんでした。');
+          return;
         }
 
-        if (mixerCategories) {
-          const catData = typeof mixerCategories === 'string' ? mixerCategories : JSON.stringify(mixerCategories);
-          localStorage.setItem('attribute_mixer_categories_v2', catData);
-          localStorage.setItem('attribute_mixer_categories_v1', catData);
-          localStorage.setItem('attribute_mixer_categories', catData);
-        }
-        if (mixerPresets) {
-          const presetData = typeof mixerPresets === 'string' ? mixerPresets : JSON.stringify(mixerPresets);
-          localStorage.setItem('attribute_mixer_custom_presets_v7', presetData);
-          localStorage.setItem('attribute_mixer_custom_presets_v6', presetData);
-          localStorage.setItem('attribute_mixer_custom_presets_v5', presetData);
-          localStorage.setItem('attribute_mixer_custom_presets_v4', presetData);
-          localStorage.setItem('attribute_mixer_custom_presets_v3', presetData);
-          localStorage.setItem('attribute_mixer_custom_presets_v2', presetData);
-          localStorage.setItem('attribute_mixer_custom_presets_v1', presetData);
-          localStorage.setItem('attribute_mixer_custom_presets', presetData);
-        }
-        if (mixerCombos) {
-          const comboData = typeof mixerCombos === 'string' ? mixerCombos : JSON.stringify(mixerCombos);
-          localStorage.setItem('attribute_mixer_combinations_v1', comboData);
-          localStorage.setItem('attribute_mixer_combinations', comboData);
+        const normalizedParts: VariationPart[] = rawParts.map((p: any, idx: number) => ({
+          id: String(p.id || `p_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 6)}`),
+          section: (Number(p.section) || 1) as 1 | 2 | 3 | 4 | 5,
+          category: String(p.category || 'General'),
+          name: String(p.name || p.title || `Part ${idx + 1}`),
+          content: String(p.content || p.value || ''),
+          isPinned: Boolean(p.isPinned),
+          isNegative: Boolean(p.isNegative),
+        }));
+
+        let normalizedCustomCategories: { name: string; section: 1 | 2 | 3 | 4 | 5 }[] = [];
+        if (Array.isArray(rawCustomCats)) {
+          normalizedCustomCategories = rawCustomCats.map((c: any) => ({
+            name: String(c.name || c.category || ''),
+            section: (Number(c.section) || 1) as 1 | 2 | 3 | 4 | 5,
+          })).filter(c => c.name.trim().length > 0);
         }
 
-        window.dispatchEvent(new Event('attributeMixerDataImported'));
-        window.dispatchEvent(new Event('mixer_presets_updated'));
-        window.dispatchEvent(new Event('mixer_categories_updated'));
-        setSaveSuccessMessage(lang === 'en' ? 'Parts Import completed!' : 'パーツのインポートが完了しました！');
-        setTimeout(() => setSaveSuccessMessage(null), 3000);
+        setPartComparisonImportState({
+          isOpen: true,
+          incomingParts: normalizedParts,
+          incomingCustomCategories: normalizedCustomCategories,
+          existingParts: data.parts || [],
+          importedMixerData: {
+            presets: mixerPresets,
+            combos: mixerCombos,
+            categories: mixerCategories,
+          },
+        });
       } catch (err) {
-        alert('Failed to parse JSON file.');
+        console.error('Failed to parse parts import JSON', err);
+        alert(lang === 'en' ? 'Failed to parse JSON file.' : 'JSONファイルの解析に失敗しました。');
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleApplyPartComparisonImport = (
+    {
+      toAdd,
+      toUpdate,
+      newCategories,
+    }: {
+      toAdd: VariationPart[];
+      toUpdate: { id: string; updates: Partial<VariationPart> }[];
+      newCategories: { name: string; section: 1 | 2 | 3 | 4 | 5 }[];
+    },
+    importedMixerData?: {
+      presets?: any;
+      combos?: any;
+      categories?: any;
+    }
+  ) => {
+    setData(prev => {
+      const updateMap = new Map(toUpdate.map(u => [u.id, u.updates]));
+      const updatedExistingParts = (prev.parts || []).map(p => {
+        if (updateMap.has(p.id)) {
+          return { ...p, ...updateMap.get(p.id) };
+        }
+        return p;
+      });
+
+      // Merge custom categories
+      const existingCatsSet = new Set((prev.customCategories || []).map(c => `${c.section}:::${c.name.trim().toLowerCase()}`));
+      const additionalCats: { name: string; section: 1 | 2 | 3 | 4 | 5 }[] = [];
+
+      newCategories.forEach(cat => {
+        const key = `${cat.section}:::${cat.name.trim().toLowerCase()}`;
+        if (!existingCatsSet.has(key)) {
+          existingCatsSet.add(key);
+          additionalCats.push(cat);
+        }
+      });
+
+      toAdd.forEach(p => {
+        const key = `${p.section}:::${p.category.trim().toLowerCase()}`;
+        if (!existingCatsSet.has(key)) {
+          existingCatsSet.add(key);
+          additionalCats.push({ name: p.category, section: p.section });
+        }
+      });
+
+      return {
+        ...prev,
+        parts: [...toAdd, ...updatedExistingParts],
+        customCategories: [...(prev.customCategories || []), ...additionalCats],
+      };
+    });
+
+    // Update mixer storage if present in imported file
+    if (importedMixerData) {
+      if (importedMixerData.categories) {
+        const catData = typeof importedMixerData.categories === 'string' ? importedMixerData.categories : JSON.stringify(importedMixerData.categories);
+        localStorage.setItem('attribute_mixer_categories_v2', catData);
+        localStorage.setItem('attribute_mixer_categories_v1', catData);
+        localStorage.setItem('attribute_mixer_categories', catData);
+      }
+      if (importedMixerData.presets) {
+        const presetData = typeof importedMixerData.presets === 'string' ? importedMixerData.presets : JSON.stringify(importedMixerData.presets);
+        localStorage.setItem('attribute_mixer_custom_presets_v7', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v6', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v5', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v4', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v3', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v2', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets_v1', presetData);
+        localStorage.setItem('attribute_mixer_custom_presets', presetData);
+      }
+      if (importedMixerData.combos) {
+        const comboData = typeof importedMixerData.combos === 'string' ? importedMixerData.combos : JSON.stringify(importedMixerData.combos);
+        localStorage.setItem('attribute_mixer_combinations_v1', comboData);
+        localStorage.setItem('attribute_mixer_combinations', comboData);
+      }
+      window.dispatchEvent(new Event('attributeMixerDataImported'));
+      window.dispatchEvent(new Event('mixer_presets_updated'));
+      window.dispatchEvent(new Event('mixer_categories_updated'));
+    }
+
+    const totalCount = toAdd.length + toUpdate.length;
+    setSaveSuccessMessage(
+      lang === 'en'
+        ? `Parts imported: ${totalCount} (New: ${toAdd.length}, Updated: ${toUpdate.length})`
+        : `パーツを ${totalCount} 件取り込みました（新規: ${toAdd.length}件, 上書き: ${toUpdate.length}件）`
+    );
+    setTimeout(() => setSaveSuccessMessage(null), 3500);
+  };
+
+  const handleImportParts = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    handleImportPartsFile(file);
     e.target.value = '';
   };
 
@@ -2145,6 +2513,8 @@ export default function App() {
                     theme={theme}
                     activeTab={activeVariationTab}
                     setActiveTab={setActiveVariationTab}
+                    onExport={handleExportParts}
+                    onImportFileSelect={handleImportPartsFile}
                   />
                 )}
 
@@ -2181,6 +2551,8 @@ export default function App() {
                     uniqueCategories={uniqueCategories}
                     activeTab={activeMasterTab}
                     setActiveTab={setActiveMasterTab}
+                    onExport={() => handleExportMaster(activeMasterTab)}
+                    onImportFileSelect={(file) => handlePrepareComparisonImport(file, activeMasterTab)}
                     lang={lang}
                   />
                 )}
@@ -2200,6 +2572,8 @@ export default function App() {
                     onDeleteAll={handleDeleteAllMemo}
                     onMoveBulk={handleMoveBulkMemos}
                     onReorder={handleReorderMemos}
+                    onExport={handleExportMemos}
+                    onImportFileSelect={(file) => handlePrepareComparisonImport(file, 'memo')}
                     lang={lang}
                   />
                 )}
@@ -2242,20 +2616,6 @@ export default function App() {
                           className="flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border transition-colors cursor-pointer bg-text-main text-bg-base border-text-main hover:opacity-80"
                         >
                           {lang === 'en' ? 'Export (Overall)' : 'エクスポート (全体)'}
-                        </button>
-                      </div>
-
-                      <div className="text-[10px] font-mono text-text-dim text-center uppercase tracking-wider mt-1">▼ {lang === 'en' ? 'Parts & Mixer Only' : 'パーツ選択・ミキサーのみ'} ▼</div>
-                      <div className="flex gap-2">
-                        <label className="flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border transition-colors cursor-pointer bg-bg-input hover:bg-bg-surface text-text-main border-border-main">
-                          {lang === 'en' ? 'Import (Parts)' : 'インポート (パーツ)'}
-                          <input type="file" accept=".json" className="hidden" onChange={handleImportParts} />
-                        </label>
-                        <button 
-                          onClick={handleExportParts} 
-                          className="flex-1 flex items-center justify-center px-2 py-1.5 text-[10px] font-mono font-bold border transition-colors cursor-pointer bg-text-main text-bg-base border-text-main hover:opacity-80"
-                        >
-                          {lang === 'en' ? 'Export (Parts)' : 'エクスポート (パーツ)'}
                         </button>
                       </div>
                     </div>
@@ -2520,6 +2880,31 @@ export default function App() {
         </div>
       )}
       
+      {comparisonImportState && (
+        <PromptComparisonImportModal
+          isOpen={comparisonImportState.isOpen}
+          onClose={() => setComparisonImportState(null)}
+          type={comparisonImportState.type}
+          existingItems={comparisonImportState.existing}
+          incomingRawItems={comparisonImportState.incoming}
+          onApply={(params) => handleApplyComparisonImport(params, comparisonImportState.type)}
+          lang={lang}
+        />
+      )}
+
+      {partComparisonImportState && (
+        <PartComparisonImportModal
+          isOpen={partComparisonImportState.isOpen}
+          onClose={() => setPartComparisonImportState(null)}
+          existingParts={partComparisonImportState.existingParts}
+          incomingParts={partComparisonImportState.incomingParts}
+          incomingCustomCategories={partComparisonImportState.incomingCustomCategories}
+          customSectionNames={data.customSectionNames}
+          onApply={(params) => handleApplyPartComparisonImport(params, partComparisonImportState.importedMixerData)}
+          lang={lang}
+        />
+      )}
+
       <ColorSettingsModal
         isOpen={isColorSettingsOpen}
         onClose={() => setIsColorSettingsOpen(false)}
