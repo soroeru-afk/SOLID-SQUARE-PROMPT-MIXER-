@@ -62,6 +62,7 @@ export const translations = {
   theme_dark: { en: 'DARK', ja: 'ダーク' },
   theme_black: { en: 'BLACK', ja: 'ブラック' },
   theme_red: { en: 'RED', ja: 'レッド' },
+  theme_pink: { en: 'PINK', ja: 'ピンク' },
   theme_light: { en: 'LIGHT', ja: 'ライト' },
   theme_navy: { en: 'NAVY', ja: 'ネイビー' },
   theme_mono: { en: 'MONO', ja: 'モノトーン' },

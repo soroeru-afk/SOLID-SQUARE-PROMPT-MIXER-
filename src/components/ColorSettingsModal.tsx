@@ -69,7 +69,9 @@ export const ColorSettingsModal: React.FC<ColorSettingsModalProps> = ({
       dark: {},
       black: {},
       navy: {},
-      mono: {}
+      pink: {},
+      mono: {},
+      red: {}
     };
     setColorsState(reset);
     saveCustomThemeColors(reset);
@@ -105,8 +107,8 @@ export const ColorSettingsModal: React.FC<ColorSettingsModalProps> = ({
             <label className="text-[11px] font-mono text-text-dim block mb-2 font-bold">
               {lang === 'en' ? 'TARGET THEME:' : '設定対象テーマ:'}
             </label>
-            <div className="grid grid-cols-5 gap-1 bg-bg-base p-1 border border-border-main">
-              {(['light', 'dark', 'black', 'navy', 'mono'] as ThemeName[]).map(themeName => {
+            <div className="grid grid-cols-7 gap-1 bg-bg-base p-1 border border-border-main">
+              {(['navy', 'dark', 'black', 'pink', 'light', 'mono', 'red'] as ThemeName[]).map(themeName => {
                 const isCurrent = themeName === selectedThemeTab;
                 const isGlobalActive = themeName === currentTheme;
                 return (

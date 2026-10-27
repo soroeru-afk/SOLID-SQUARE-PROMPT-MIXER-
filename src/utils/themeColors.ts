@@ -1,40 +1,59 @@
-export type ThemeName = 'light' | 'dark' | 'black' | 'navy' | 'mono';
+export type ThemeName = 'light' | 'dark' | 'black' | 'navy' | 'pink' | 'mono' | 'red';
 
 export interface ThemeColorConfig {
   markColor?: string;
   toolbarIconColor?: string;
 }
 
-export const THEME_DEFAULT_COLORS: Record<ThemeName, { markColor: string; toolbarIconColor: string; label: string; nameJa: string }> = {
-  light: {
-    markColor: '#334155',
-    toolbarIconColor: '#475569',
-    label: 'LIGHT',
-    nameJa: 'ライト'
+export const THEME_DEFAULT_COLORS: Record<ThemeName, { markColor: string; toolbarIconColor: string; label: string; nameJa: string; dotColor: string }> = {
+  navy: {
+    markColor: '#93C5FD',
+    toolbarIconColor: '#93C5FD',
+    label: 'NAVY',
+    nameJa: 'ネイビー',
+    dotColor: '#3B82F6'
   },
   dark: {
     markColor: '#B5C8DC',
     toolbarIconColor: '#A4B8CE',
     label: 'DARK',
-    nameJa: 'ダーク'
+    nameJa: 'ダーク',
+    dotColor: '#64748B'
   },
   black: {
     markColor: '#B5C8DC',
     toolbarIconColor: '#A4B8CE',
     label: 'BLACK',
-    nameJa: 'ブラック'
+    nameJa: 'ブラック',
+    dotColor: '#171717'
   },
-  navy: {
-    markColor: '#93C5FD',
-    toolbarIconColor: '#93C5FD',
-    label: 'NAVY',
-    nameJa: 'ネイビー'
+  pink: {
+    markColor: '#F472B6',
+    toolbarIconColor: '#F472B6',
+    label: 'PINK',
+    nameJa: 'ピンク',
+    dotColor: '#E05688'
+  },
+  light: {
+    markColor: '#334155',
+    toolbarIconColor: '#475569',
+    label: 'LIGHT',
+    nameJa: 'ライト',
+    dotColor: '#E2E8F0'
   },
   mono: {
     markColor: '#000000',
     toolbarIconColor: '#000000',
     label: 'MONO',
-    nameJa: 'モノトーン'
+    nameJa: 'モノトーン',
+    dotColor: '#FFFFFF'
+  },
+  red: {
+    markColor: '#FFB0B0',
+    toolbarIconColor: '#FFA0A0',
+    label: 'RED',
+    nameJa: 'レッド',
+    dotColor: '#EF4444'
   },
 };
 
@@ -69,7 +88,9 @@ export function getCustomThemeColors(): Record<ThemeName, ThemeColorConfig> {
     dark: {},
     black: {},
     navy: {},
+    pink: {},
     mono: {},
+    red: {},
   };
 }
 

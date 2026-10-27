@@ -17,7 +17,9 @@ import { Language, t, translations } from './i18n';
 import { ArrowLeftRight, Undo2, Redo2, ChevronLeft, ChevronRight, Check, Maximize, Minimize, Layers, FileText, Bookmark, HardDrive, ChevronDown, ChevronUp, Palette } from 'lucide-react';
 import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 import { calculateCursorPos } from './utils/cursorUtils';
-import { applyThemeColors } from './utils/themeColors';
+import { applyThemeColors, ThemeName, THEME_DEFAULT_COLORS } from './utils/themeColors';
+
+const THEME_CYCLE: ThemeName[] = ['navy', 'dark', 'black', 'pink', 'light', 'mono', 'red'];
 import { getOrderedCategories } from './utils/categoryUtils';
 import { DEFAULT_CATEGORIES, CategoryDef } from './components/AttributeMixer';
 
@@ -146,9 +148,33 @@ export default function App() {
   const [lang, setLang] = useState<Language>(() => {
     return (localStorage.getItem('ui_lang') as Language) || 'ja';
   });
-  const [theme, setTheme] = useState<'dark' | 'red' | 'light' | 'navy' | 'black' | 'mono'>(() => {
-    return (localStorage.getItem('ui_theme') as any) || 'light';
+  const [theme, setTheme] = useState<ThemeName>(() => {
+    return (localStorage.getItem('ui_theme') as ThemeName) || 'light';
   });
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
+        setIsThemeMenuOpen(false);
+      }
+    };
+    if (isThemeMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isThemeMenuOpen]);
+
+  const handleToggleTheme = () => {
+    setTheme(current => {
+      const idx = THEME_CYCLE.indexOf(current);
+      const nextIdx = (idx + 1) % THEME_CYCLE.length;
+      return THEME_CYCLE[nextIdx];
+    });
+  };
   const [paperMode, setPaperMode] = useState<boolean>(() => {
     return localStorage.getItem('ui_paper_mode') === 'true';
   });
@@ -285,6 +311,7 @@ export default function App() {
       else if (theme === 'black') color = '#000000';
       else if (theme === 'red') color = '#140505';
       else if (theme === 'navy') color = '#060913';
+      else if (theme === 'pink') color = '#140d12';
       else if (theme === 'mono') color = '#ffffff';
       metaThemeColor.setAttribute('content', color);
     }
@@ -2382,13 +2409,78 @@ export default function App() {
               {sidebarPosition === 'left' ? (lang === 'en' ? 'SIDEBAR: L' : 'サイドバー: 左') : (lang === 'en' ? 'SIDEBAR: R' : 'サイドバー: 右')}
             </span>
           </button>
-          <button 
-            onClick={() => setTheme(t => t === 'dark' ? 'black' : t === 'black' ? 'light' : t === 'light' ? 'mono' : t === 'mono' ? 'navy' : t === 'navy' ? 'dark' : 'light')}
-            className="h-8 w-[128px] bg-bg-input hover:bg-bg-surface border border-border-main text-[10px] font-mono font-bold text-text-main transition-colors flex items-center justify-center shrink-0"
-            title={lang === 'en' ? 'Switch Theme' : 'テーマ切り替え'}
-          >
-            {t('theme', lang)}: {t(`theme_${theme}` as keyof typeof translations, lang)}
-          </button>
+          {/* Theme Selector with Dropdown and Toggle */}
+          <div className="relative shrink-0" ref={themeMenuRef}>
+            <div className="flex items-center h-8 bg-bg-input border border-border-main hover:border-border-hover transition-colors">
+              <button 
+                onClick={handleToggleTheme}
+                className="h-full px-2.5 flex items-center gap-1.5 text-[10px] font-mono font-bold text-text-main hover:bg-bg-surface transition-colors"
+                title={lang === 'en' ? 'Click to cycle theme (Toggle)' : 'クリックでテーマ順送り切替（トグル）'}
+              >
+                <span 
+                  className="w-2 h-2 shrink-0 border border-black/40" 
+                  style={{ backgroundColor: THEME_DEFAULT_COLORS[theme]?.dotColor || '#E05688' }} 
+                />
+                <span className="uppercase tracking-wider">
+                  {THEME_DEFAULT_COLORS[theme]?.label || theme.toUpperCase()}
+                </span>
+              </button>
+
+              <div className="h-4 w-px bg-border-main" />
+
+              <button 
+                onClick={() => setIsThemeMenuOpen(prev => !prev)}
+                className={`h-full px-1.5 flex items-center justify-center text-text-dim hover:text-text-main hover:bg-bg-surface transition-colors ${
+                  isThemeMenuOpen ? 'bg-bg-surface text-text-main' : ''
+                }`}
+                title={lang === 'en' ? 'Select Theme Menu' : 'テーマ選択メニューを開く'}
+              >
+                {isThemeMenuOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            {/* Dropdown Menu */}
+            {isThemeMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-44 bg-bg-panel border border-border-main shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100 flex flex-col font-mono">
+                <div className="px-2.5 py-1.5 border-b border-border-main flex items-center gap-1.5 text-[9px] text-text-dim uppercase tracking-wider bg-bg-surface/50">
+                  <Palette className="w-3 h-3 text-accent-main" />
+                  <span>THEME SWITCH</span>
+                </div>
+                <div className="py-1">
+                  {THEME_CYCLE.map((tName) => {
+                    const config = THEME_DEFAULT_COLORS[tName];
+                    const isSelected = theme === tName;
+                    return (
+                      <button
+                        key={tName}
+                        onClick={() => {
+                          setTheme(tName);
+                          setIsThemeMenuOpen(false);
+                        }}
+                        className={`w-full px-2.5 py-1.5 text-[10px] font-bold flex items-center justify-between text-left transition-colors ${
+                          isSelected 
+                            ? 'bg-accent-dim/30 text-text-main font-black' 
+                            : 'text-text-dim hover:text-text-main hover:bg-bg-surface'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span 
+                            className="w-2 h-2 shrink-0 border border-black/40" 
+                            style={{ backgroundColor: config.dotColor }} 
+                          />
+                          <span className="uppercase tracking-wider">{config.label}</span>
+                          {lang === 'ja' && (
+                            <span className="text-[9px] opacity-60 font-normal">({config.nameJa})</span>
+                          )}
+                        </div>
+                        {isSelected && <Check className="w-3 h-3 text-accent-main" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
           <button 
             onClick={() => setPaperMode(!paperMode)}
             className={`h-8 w-[138px] text-[10px] font-mono font-bold border transition-colors flex items-center justify-center shrink-0 ${

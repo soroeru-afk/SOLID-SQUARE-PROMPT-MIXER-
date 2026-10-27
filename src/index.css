@@ -63,6 +63,22 @@
   --toolbar-icon-color: #FFA0A0;
 }
 
+.theme-pink {
+  --bg-base: #140d12;
+  --bg-panel: #1a1017;
+  --bg-input: #22151e;
+  --bg-surface: #2e1b29;
+  --border-main: #452136;
+  --border-hover: #78345a;
+  --text-main: #fce7f3;
+  --text-dim: #be6b8e;
+  --accent-main: #db2777;
+  --accent-dim: rgba(219, 39, 119, 0.25);
+  --thumb-bg: #db2777;
+  --mark-color: #f472b6;
+  --toolbar-icon-color: #f472b6;
+}
+
 .theme-light {
   --bg-base: #f4f4f5;
   --bg-panel: #e4e4e7;
