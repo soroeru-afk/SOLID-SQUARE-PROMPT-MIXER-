@@ -314,7 +314,7 @@ export default function App() {
       else if (theme === 'red') color = '#140505';
       else if (theme === 'navy') color = '#060913';
       else if (theme === 'pink') color = '#140d12';
-      else if (theme === 'peper') color = '#F2EFE6';
+      else if (theme === 'peper' || (theme as string) === 'paper') color = '#EBE4D5';
       else if (theme === 'mono') color = '#ffffff';
       metaThemeColor.setAttribute('content', color);
     }
