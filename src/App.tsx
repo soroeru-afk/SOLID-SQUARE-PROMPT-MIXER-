@@ -19,7 +19,7 @@ import { getFileHandle, setFileHandle, clearFileHandle } from './idb';
 import { calculateCursorPos } from './utils/cursorUtils';
 import { applyThemeColors, ThemeName, THEME_DEFAULT_COLORS } from './utils/themeColors';
 
-const THEME_CYCLE: ThemeName[] = ['navy', 'dark', 'black', 'pink', 'light', 'mono', 'red'];
+const THEME_CYCLE: ThemeName[] = ['navy', 'dark', 'black', 'pink', 'light', 'mono', 'red', 'peper'];
 import { getOrderedCategories } from './utils/categoryUtils';
 import { DEFAULT_CATEGORIES, CategoryDef } from './components/AttributeMixer';
 
@@ -149,7 +149,9 @@ export default function App() {
     return (localStorage.getItem('ui_lang') as Language) || 'ja';
   });
   const [theme, setTheme] = useState<ThemeName>(() => {
-    return (localStorage.getItem('ui_theme') as ThemeName) || 'light';
+    const saved = localStorage.getItem('ui_theme');
+    if (saved === 'paper') return 'peper';
+    return (saved as ThemeName) || 'light';
   });
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement>(null);
@@ -302,7 +304,7 @@ export default function App() {
   const [isColorSettingsOpen, setIsColorSettingsOpen] = useState(false);
 
   useEffect(() => {
-    document.documentElement.className = `theme-${theme}`;
+    document.documentElement.className = (theme === 'peper' || (theme as string) === 'paper') ? 'theme-peper theme-paper' : `theme-${theme}`;
     applyThemeColors(theme);
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
@@ -312,6 +314,7 @@ export default function App() {
       else if (theme === 'red') color = '#140505';
       else if (theme === 'navy') color = '#060913';
       else if (theme === 'pink') color = '#140d12';
+      else if (theme === 'peper') color = '#F2EFE6';
       else if (theme === 'mono') color = '#ffffff';
       metaThemeColor.setAttribute('content', color);
     }
@@ -2392,7 +2395,7 @@ export default function App() {
       <header className="flex items-center justify-between px-4 py-2 border-b border-border-main bg-bg-panel h-14 shrink-0">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className="w-2.5 h-2.5 bg-text-main"></div>
+            <div className="w-2.5 h-2.5 bg-accent-main"></div>
             <h1 className="font-mono font-bold text-sm sm:text-base tracking-widest text-text-main uppercase">{t('app_title', lang)}</h1>
           </div>
           <div className="h-4 w-px bg-border-main"></div>
@@ -2537,7 +2540,7 @@ export default function App() {
                     }}
                     className={`flex-1 py-1.5 px-2 border font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
                       sidebarTab === 'parts' 
-                        ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') 
+                        ? (theme === 'mono' ? 'bg-black text-white border-black' : ((theme === 'peper' || (theme as string) === 'paper') ? 'bg-[#73634F] text-white border-[#73634F]' : 'bg-bg-surface text-text-main border-text-main')) 
                         : 'border-transparent text-text-dim hover:text-text-main'
                     }`}
                   >
@@ -2548,7 +2551,7 @@ export default function App() {
                     onClick={() => setSidebarTab('master')}
                     className={`flex-1 py-1.5 px-2 border font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
                       sidebarTab === 'master' 
-                        ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') 
+                        ? (theme === 'mono' ? 'bg-black text-white border-black' : ((theme === 'peper' || (theme as string) === 'paper') ? 'bg-[#73634F] text-white border-[#73634F]' : 'bg-bg-surface text-text-main border-text-main')) 
                         : 'border-transparent text-text-dim hover:text-text-main'
                     }`}
                   >
@@ -2561,7 +2564,7 @@ export default function App() {
                     }}
                     className={`flex-1 py-1.5 px-2 border font-bold transition-colors text-center flex items-center justify-center gap-1.5 ${
                       sidebarTab === 'memo' 
-                        ? (theme === 'mono' ? 'bg-black text-white border-black' : 'bg-bg-surface text-text-main border-text-main') 
+                        ? (theme === 'mono' ? 'bg-black text-white border-black' : ((theme === 'peper' || (theme as string) === 'paper') ? 'bg-[#73634F] text-white border-[#73634F]' : 'bg-bg-surface text-text-main border-text-main')) 
                         : 'border-transparent text-text-dim hover:text-text-main'
                     }`}
                   >

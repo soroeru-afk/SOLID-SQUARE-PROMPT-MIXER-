@@ -127,6 +127,22 @@
   --toolbar-icon-color: #93C5FD;
 }
 
+.theme-peper, .theme-paper {
+  --bg-base: #F2EFE6;
+  --bg-panel: #EBE4D5;
+  --bg-input: #FFFFFF;
+  --bg-surface: #E3DDD0;
+  --border-main: #D0C8B8;
+  --border-hover: #7D7265;
+  --text-main: #201D1A;
+  --text-dim: #7D7265;
+  --accent-main: #D95430;
+  --accent-dim: rgba(217, 84, 48, 0.2);
+  --thumb-bg: #D95430;
+  --mark-color: #D95430;
+  --toolbar-icon-color: #D95430;
+}
+
 body {
   @apply bg-bg-base text-text-main font-mono antialiased overflow-y-hidden overflow-x-auto;
 }
@@ -180,6 +196,49 @@ input[type=range].custom-slider::-webkit-slider-runnable-track {
 }
 .theme-mono .badge-count {
   background-color: #000000;
+}
+.theme-peper .badge-count,
+.theme-paper .badge-count {
+  background-color: #D95430;
+  color: #FFFFFF;
+}
+
+.theme-peper ::selection,
+.theme-paper ::selection {
+  background-color: rgba(217, 84, 48, 0.25);
+  color: #201D1A;
+}
+
+/* Peper theme solid buttons: default dark/black elements to goldish-brown #73634F with white text */
+.theme-peper .bg-text-main,
+.theme-paper .bg-text-main {
+  background-color: #73634F !important;
+  color: #FFFFFF !important;
+  border-color: #73634F !important;
+}
+.theme-peper .bg-text-main:hover,
+.theme-paper .bg-text-main:hover {
+  background-color: #635442 !important;
+  border-color: #635442 !important;
+}
+
+/* Specific red-marked locations: orange #D95430 with white text */
+.theme-peper .btn-peper-orange,
+.theme-paper .btn-peper-orange {
+  background-color: #D95430 !important;
+  color: #FFFFFF !important;
+  border-color: #D95430 !important;
+}
+.theme-peper .btn-peper-orange:hover,
+.theme-paper .btn-peper-orange:hover {
+  background-color: #c24624 !important;
+  border-color: #c24624 !important;
+}
+
+/* Main editor tabs in Peper theme: crisp plain white with zero beige */
+.theme-peper [data-tab-element="true"],
+.theme-paper [data-tab-element="true"] {
+  background-color: #FFFFFF !important;
 }
 
 /* Solid Square Design: Zero Border Radius Override */

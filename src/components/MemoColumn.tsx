@@ -511,7 +511,7 @@ export const MemoColumn: React.FC<MemoColumnProps> = ({
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`block p-3 group cursor-pointer transition-colors relative ${(theme === 'light' || theme === 'mono') ? 'bg-white shadow-sm' : (isSelected ? 'bg-bg-input' : 'bg-transparent')} ${isSelected ? 'border border-border-hover' : 'border border-border-main hover:border-border-hover'}`}
+              className={`block p-3 group cursor-pointer transition-colors relative ${(theme === 'light' || theme === 'mono' || (theme as string) === 'peper' || (theme as string) === 'paper') ? 'bg-white shadow-xs' : (isSelected ? 'bg-bg-input' : 'bg-transparent')} ${isSelected ? (((theme as string) === 'peper' || (theme as string) === 'paper') ? 'border-2 border-[#D95430]' : 'border border-border-hover') : 'border border-border-main hover:border-border-hover'}`}
               onClick={(e) => {
                 e.preventDefault();
                 currentOnSelect(item.id);

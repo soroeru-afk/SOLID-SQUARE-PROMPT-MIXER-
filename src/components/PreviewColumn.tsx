@@ -1721,7 +1721,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
   };
 
   const renderHighlightedText = (text: string, isNegative: boolean) => {
-    const isLight = paperMode || (theme === 'light' || theme === 'mono') || theme === 'paper';
+    const isLight = paperMode || (theme === 'light' || theme === 'mono') || theme === 'paper' || (theme as string) === 'peper';
     const highlightColorClass = isLight ? 'text-[#059669]' : 'text-[#34d399]';
     const highlightBgClass = isLight ? 'bg-[#059669]' : 'bg-[#34d399]';
 
@@ -1775,7 +1775,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
   const charCount = (editorText?.length || 0) + (negativeEditorText?.length || 0);
   const MAX_CHARS = 4096;
 
-  const isEditorLightBg = paperMode || theme === 'light' || theme === 'mono';
+  const isEditorLightBg = paperMode || theme === 'light' || theme === 'mono' || theme === 'paper' || (theme as string) === 'peper';
   const editorCaretColor = isEditorLightBg ? '#000000' : '#ffffff';
 
   return (
@@ -1978,19 +1978,19 @@ const handleResizeStart = (e: React.MouseEvent) => {
           </span>
           <button 
             onClick={() => handleCopy('main')}
-            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-opacity bg-text-main text-bg-base border border-text-main hover:opacity-80 text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-opacity btn-peper-orange bg-text-main text-bg-base border border-text-main hover:opacity-80 text-center"
           >
             {t('copy_main', lang)}
           </button>
           <button 
             onClick={() => handleCopy('negative')}
-            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-opacity bg-text-main text-bg-base border border-text-main hover:opacity-80 text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-opacity btn-peper-orange bg-text-main text-bg-base border border-text-main hover:opacity-80 text-center"
           >
             {t('copy_negative_only', lang)}
           </button>
           <button 
             onClick={() => handleCopy('all')}
-            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-opacity bg-text-main text-bg-base border border-text-main hover:opacity-80 text-center"
+            className="shrink-0 w-20 h-8 text-[10px] font-mono font-bold transition-opacity btn-peper-orange bg-text-main text-bg-base border border-text-main hover:opacity-80 text-center"
           >
             {t('copy_all', lang)}
           </button>
@@ -2269,8 +2269,8 @@ const handleResizeStart = (e: React.MouseEvent) => {
                       isDragOver 
                         ? 'border-border-hover bg-bg-surface' 
                         : activeTabId === tab.id 
-                          ? 'bg-bg-surface border-border-hover text-text-main font-bold ring-1 ring-inset ring-border-hover' 
-                          : 'bg-bg-base border-border-main text-text-dim hover:bg-bg-input hover:text-text-main hover:border-border-hover'
+                          ? ((theme === 'peper' || (theme as string) === 'paper') ? 'bg-white border-2 border-[#D95430] text-[#201D1A] font-bold shadow-xs' : 'bg-bg-surface border-border-hover text-text-main font-bold ring-1 ring-inset ring-border-hover')
+                          : ((theme === 'peper' || (theme as string) === 'paper') ? 'bg-white border border-border-main text-[#201D1A] font-semibold hover:border-border-hover' : 'bg-bg-base border-border-main text-text-dim hover:bg-bg-input hover:text-text-main hover:border-border-hover')
                     }`}
                     onClick={() => {
                       if (draggedTabIndex === null && onTabChange) {
@@ -2372,7 +2372,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
             <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
               <button 
                 onClick={() => handleSaveSetClick()}
-                className="flex items-center gap-1 px-2.5 py-1 bg-text-main text-bg-base border border-text-main hover:opacity-80 text-[9px] font-mono font-bold transition-opacity"
+                className="flex items-center gap-1 px-2.5 py-1 btn-peper-orange bg-text-main text-bg-base border border-text-main hover:opacity-80 text-[9px] font-mono font-bold transition-opacity"
               >
                 <Save className="w-3 h-3" /> {t('save_as_set', lang)}
               </button>

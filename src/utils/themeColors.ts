@@ -1,4 +1,4 @@
-export type ThemeName = 'light' | 'dark' | 'black' | 'navy' | 'pink' | 'mono' | 'red';
+export type ThemeName = 'light' | 'dark' | 'black' | 'navy' | 'pink' | 'mono' | 'red' | 'peper';
 
 export interface ThemeColorConfig {
   markColor?: string;
@@ -55,9 +55,19 @@ export const THEME_DEFAULT_COLORS: Record<ThemeName, { markColor: string; toolba
     nameJa: 'レッド',
     dotColor: '#EF4444'
   },
+  peper: {
+    markColor: '#D95430',
+    toolbarIconColor: '#D95430',
+    label: 'PEPER',
+    nameJa: 'ペーパー',
+    dotColor: '#D95430'
+  },
 };
 
 export const COLOR_PALETTE_PRESETS = [
+  { hex: '#D95430', label: 'Paper Orange' },
+  { hex: '#73634F', label: 'Paper Gold Brown' },
+  { hex: '#7D7265', label: 'Paper Khaki Gray' },
   { hex: '#EAB308', label: 'Gold / Yellow' },
   { hex: '#38BDF8', label: 'Sky Blue' },
   { hex: '#2563EB', label: 'Blue' },
@@ -91,6 +101,7 @@ export function getCustomThemeColors(): Record<ThemeName, ThemeColorConfig> {
     pink: {},
     mono: {},
     red: {},
+    peper: {},
   };
 }
 
@@ -103,9 +114,10 @@ export function saveCustomThemeColors(colors: Record<ThemeName, ThemeColorConfig
 }
 
 export function applyThemeColors(currentTheme: ThemeName) {
+  const normTheme = ((currentTheme as string) === 'paper' ? 'peper' : currentTheme) as ThemeName;
   const custom = getCustomThemeColors();
-  const themeSetting = custom[currentTheme] || {};
-  const defaultColors = THEME_DEFAULT_COLORS[currentTheme] || THEME_DEFAULT_COLORS.dark;
+  const themeSetting = custom[normTheme] || {};
+  const defaultColors = THEME_DEFAULT_COLORS[normTheme] || THEME_DEFAULT_COLORS.dark;
 
   const markColor = themeSetting.markColor || defaultColors.markColor;
   const toolbarIconColor = themeSetting.toolbarIconColor || defaultColors.toolbarIconColor;

@@ -508,7 +508,7 @@ export const MasterColumn: React.FC<MasterColumnProps> = ({
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`block p-3 group cursor-pointer transition-colors relative ${(theme === 'light' || theme === 'mono') ? (isNegative ? 'bg-red-50' : 'bg-white shadow-sm') : (isSelected ? (isNegative ? 'bg-red-500/10' : 'bg-bg-input') : (isNegative ? 'bg-red-500/5' : 'bg-transparent'))} ${isSelected ? (isNegative ? 'border border-red-500/50' : 'border border-border-hover') : (isNegative ? 'border border-red-500/30 hover:border-red-500/50' : 'border border-border-main hover:border-border-hover')}`}
+              className={`block p-3 group cursor-pointer transition-colors relative ${(theme === 'light' || theme === 'mono' || (theme as string) === 'peper' || (theme as string) === 'paper') ? (isNegative ? 'bg-red-50' : 'bg-white shadow-xs') : (isSelected ? (isNegative ? 'bg-red-500/10' : 'bg-bg-input') : (isNegative ? 'bg-red-500/5' : 'bg-transparent'))} ${isSelected ? (isNegative ? 'border border-red-500/50' : ((theme as string) === 'peper' || (theme as string) === 'paper') ? 'border-2 border-[#D95430]' : 'border border-border-hover') : (isNegative ? 'border border-red-500/30 hover:border-red-500/50' : 'border border-border-main hover:border-border-hover')}`}
               onClick={(e) => {
                 e.preventDefault();
                 currentOnSelect(item.id);

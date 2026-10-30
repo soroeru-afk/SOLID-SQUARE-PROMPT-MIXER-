@@ -990,7 +990,7 @@ const deleteCheckedItems = () => {
               >
                 {cat.isNegative && "⛔ "}
                 {isSelected && (
-                  <div className={`flex items-center justify-center min-w-[16px] h-4 px-1 shrink-0 text-[10px] font-mono font-bold ${theme === 'mono' ? 'bg-black text-white' : (theme === 'navy' ? 'bg-blue-600 text-white' : 'bg-gray-500 text-white')}`} title="選択数">
+                  <div className={`flex items-center justify-center min-w-[16px] h-4 px-1 shrink-0 text-[10px] font-mono font-bold ${theme === 'mono' ? 'bg-black text-white' : (theme === 'navy' ? 'bg-blue-600 text-white' : (((theme as string) === 'peper' || (theme as string) === 'paper') ? 'bg-[#D95430] text-white' : 'bg-gray-500 text-white'))}`} title="選択数">
                     {currentIndices.filter(idx => idx !== 0).length}
                   </div>
                 )}
@@ -1036,7 +1036,9 @@ const deleteCheckedItems = () => {
                 className={`flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono font-bold transition-colors border ${
                   theme === 'mono'
                     ? 'bg-black text-white hover:bg-gray-800 border-black'
-                    : 'bg-gray-500 hover:bg-gray-400 text-white border-gray-600'
+                    : (((theme as string) === 'peper' || (theme as string) === 'paper')
+                      ? 'bg-[#73634F] hover:bg-[#635442] text-white border-[#73634F]'
+                      : 'bg-gray-500 hover:bg-gray-400 text-white border-gray-600')
                 }`}
               >
                 <Check className="w-3.5 h-3.5" /> {lang === 'en' ? 'Save Edit' : '編集保存'}
@@ -1140,7 +1142,7 @@ const deleteCheckedItems = () => {
           <div className="flex gap-2 items-center pl-4 w-full min-w-0 relative">
             <div className="relative flex-1 min-w-0" ref={activeDropdown === key ? dropdownRef : undefined}>
               <div 
-                className={`flex-1 min-w-0 bg-bg-input border ${isSelected ? (theme === 'mono' ? 'border-black' : 'border-border-hover') : 'border-border-main'} px-2.5 py-1.5 text-[12px] text-text-main font-mono truncate transition-colors cursor-pointer flex justify-between items-center hover:border-border-hover`}
+                className={`flex-1 min-w-0 bg-bg-input border ${isSelected ? (theme === 'mono' ? 'border-black' : (((theme as string) === 'peper' || (theme as string) === 'paper') ? 'border-[#D95430]' : 'border-border-hover')) : 'border-border-main'} px-2.5 py-1.5 text-[12px] text-text-main font-mono truncate transition-colors cursor-pointer flex justify-between items-center hover:border-border-hover`}
                 onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === key ? null : key); }}
               >
                 <span className="truncate">

@@ -300,32 +300,32 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
           </div>
 
           {/* Subheader: Stats and Count Overview */}
-          <div className="px-4 py-2.5 bg-bg-input/60 border-b border-border-main flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="px-4 py-2.5 bg-bg-surface/80 border-b border-border-main flex flex-wrap items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-2 text-[11px] font-mono">
-              <span className="text-text-dim">
+              <span className="text-[#332B24] font-bold">
                 {lang === 'en' ? 'PARTS IN FILE:' : '取り込み対象:'}{' '}
-                <strong className="text-text-main">{stats.total}</strong>
+                <strong className="text-black font-black">{stats.total}</strong>
               </span>
-              <span className="text-border-main">|</span>
-              <span className="text-emerald-500 font-bold flex items-center gap-1">
+              <span className="text-[#A09585]">|</span>
+              <span className="text-emerald-800 dark:text-emerald-400 font-bold flex items-center gap-1">
                 <PlusCircle className="w-3 h-3" />
                 {lang === 'en' ? 'NEW:' : '新規:'} {stats.newCount}
               </span>
-              <span className="text-border-main">|</span>
-              <span className="text-amber-500 font-bold flex items-center gap-1">
+              <span className="text-[#A09585]">|</span>
+              <span className="text-amber-800 dark:text-amber-400 font-bold flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
                 {lang === 'en' ? 'DIFF/CONFLICT:' : '変更・競合:'} {stats.conflictCount}
               </span>
-              <span className="text-border-main">|</span>
-              <span className="text-text-dim flex items-center gap-1">
+              <span className="text-[#A09585]">|</span>
+              <span className="text-[#4A4035] font-bold flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" />
                 {lang === 'en' ? 'IDENTICAL:' : '同一一致:'} {stats.identicalCount}
               </span>
             </div>
 
             <div className="flex items-center gap-2 text-[11px] font-mono">
-              <span className="text-text-dim">{lang === 'en' ? 'SELECTED:' : 'インポート選択中:'}</span>
-              <span className="px-2 py-0.5 bg-text-main text-bg-base font-bold">
+              <span className="text-[#332B24] font-bold">{lang === 'en' ? 'SELECTED:' : 'インポート選択中:'}</span>
+              <span className="px-2 py-0.5 bg-[#73634F] text-white font-bold">
                 {stats.selectedCount} / {stats.total}
               </span>
             </div>
@@ -333,15 +333,15 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
 
           {/* Section Filter Bar (Crucial for managing numerous parts smoothly) */}
           <div className="px-3 py-2 bg-bg-panel border-b border-border-main flex flex-wrap items-center gap-1.5 shrink-0">
-            <span className="text-[10px] font-mono text-text-dim font-bold uppercase tracking-wider mr-1">
+            <span className="text-[10px] font-mono text-[#4A4035] font-bold uppercase tracking-wider mr-1">
               SECTION:
             </span>
             <button
               onClick={() => setFilterSection('all')}
               className={`px-2.5 py-1 text-[10px] font-mono font-bold border transition-colors ${
                 filterSection === 'all'
-                  ? 'bg-text-main text-bg-base border-text-main'
-                  : 'bg-bg-input text-text-dim border-border-main hover:text-text-main hover:bg-bg-surface'
+                  ? 'bg-[#73634F] text-white border-[#73634F]'
+                  : 'bg-white text-[#332B24] border-border-main hover:bg-bg-surface'
               }`}
             >
               {lang === 'en' ? 'ALL SECTIONS' : '全セクション'} ({stats.total})
@@ -355,8 +355,8 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
                   onClick={() => setFilterSection(sec)}
                   className={`px-2.5 py-1 text-[10px] font-mono font-bold border transition-colors ${
                     filterSection === sec
-                      ? 'bg-text-main text-bg-base border-text-main'
-                      : 'bg-bg-input text-text-dim border-border-main hover:text-text-main hover:bg-bg-surface'
+                      ? 'bg-[#73634F] text-white border-[#73634F]'
+                      : 'bg-white text-[#332B24] border-border-main hover:bg-bg-surface'
                   }`}
                 >
                   SEC {sec}: {secName} ({count})
@@ -368,19 +368,19 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
           {/* Secondary Controls Bar: Status Filter & Bulk Selection & Conflict Handling & Search */}
           <div className="p-3 bg-bg-panel border-b border-border-main flex flex-wrap items-center justify-between gap-2.5 shrink-0">
             {/* Status Filter Tabs */}
-            <div className="flex items-center border border-border-main bg-bg-base text-[10px] font-mono">
+            <div className="flex items-center border border-border-main bg-white text-[10px] font-mono">
               <button
                 onClick={() => setFilterTab('all')}
                 className={`px-3 py-1 font-bold transition-colors ${
-                  filterTab === 'all' ? 'bg-text-main text-bg-base' : 'text-text-dim hover:text-text-main'
+                  filterTab === 'all' ? 'bg-[#73634F] text-white' : 'text-[#4A4035] hover:text-black hover:bg-bg-surface'
                 }`}
               >
-                {lang === 'en' ? 'ALL' : 'すべて'}
+                {lang === 'en' ? 'ALL' : 'すべて'} ({stats.total})
               </button>
               <button
                 onClick={() => setFilterTab('conflict')}
                 className={`px-3 py-1 border-l border-border-main font-bold transition-colors ${
-                  filterTab === 'conflict' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'text-text-dim hover:text-amber-400'
+                  filterTab === 'conflict' ? 'bg-amber-800 text-white border-amber-800' : 'text-amber-800 hover:bg-amber-50'
                 }`}
               >
                 {lang === 'en' ? 'DIFF' : '変更・競合'} ({stats.conflictCount})
@@ -388,7 +388,7 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
               <button
                 onClick={() => setFilterTab('new')}
                 className={`px-3 py-1 border-l border-border-main font-bold transition-colors ${
-                  filterTab === 'new' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'text-text-dim hover:text-emerald-400'
+                  filterTab === 'new' ? 'bg-emerald-800 text-white border-emerald-800' : 'text-emerald-800 hover:bg-emerald-50'
                 }`}
               >
                 {lang === 'en' ? 'NEW' : '新規'} ({stats.newCount})
@@ -396,7 +396,7 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
               <button
                 onClick={() => setFilterTab('identical')}
                 className={`px-3 py-1 border-l border-border-main font-bold transition-colors ${
-                  filterTab === 'identical' ? 'bg-text-main text-bg-base' : 'text-text-dim hover:text-text-main'
+                  filterTab === 'identical' ? 'bg-[#73634F] text-white' : 'text-[#4A4035] hover:text-black hover:bg-bg-surface'
                 }`}
               >
                 {lang === 'en' ? 'SAME' : '同一'} ({stats.identicalCount})
@@ -407,25 +407,25 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
             <div className="flex items-center gap-1.5 text-[10px] font-mono">
               <button
                 onClick={() => handleSelectAll(true)}
-                className="px-2 py-1 bg-bg-input border border-border-main text-text-dim hover:text-text-main hover:bg-bg-surface transition-colors"
+                className="px-2 py-1 bg-white border border-border-main text-[#332B24] font-bold hover:bg-bg-surface transition-colors"
               >
                 {lang === 'en' ? 'Select All' : '全選択'}
               </button>
               <button
                 onClick={() => handleSelectAll(false)}
-                className="px-2 py-1 bg-bg-input border border-border-main text-text-dim hover:text-text-main hover:bg-bg-surface transition-colors"
+                className="px-2 py-1 bg-white border border-border-main text-[#332B24] font-bold hover:bg-bg-surface transition-colors"
               >
                 {lang === 'en' ? 'Deselect All' : '全解除'}
               </button>
               <button
                 onClick={() => handleSelectByStatus('new')}
-                className="px-2 py-1 bg-bg-input border border-border-main text-emerald-500 hover:bg-emerald-500/10 transition-colors"
+                className="px-2 py-1 bg-white border border-emerald-700 text-emerald-800 font-bold hover:bg-emerald-50 transition-colors"
               >
                 {lang === 'en' ? 'Select New' : '新規のみ選択'}
               </button>
               <button
                 onClick={() => handleSelectByStatus('conflict')}
-                className="px-2 py-1 bg-bg-input border border-border-main text-amber-500 hover:bg-amber-500/10 transition-colors"
+                className="px-2 py-1 bg-white border border-amber-800 text-amber-900 font-bold hover:bg-amber-50 transition-colors"
               >
                 {lang === 'en' ? 'Select Diff' : '変更のみ選択'}
               </button>
@@ -434,12 +434,12 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
             {/* Batch Conflict Resolution */}
             {stats.conflictCount > 0 && (
               <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                <span className="text-text-dim">{lang === 'en' ? 'Diff action:' : '競合時の一括動作:'}</span>
-                <div className="flex border border-border-main bg-bg-base">
+                <span className="text-[#4A4035] font-bold">{lang === 'en' ? 'Diff action:' : '競合時の一括動作:'}</span>
+                <div className="flex border border-border-main bg-white">
                   <button
                     onClick={() => handleSetAllConflictResolution('overwrite')}
                     className={`px-2 py-1 transition-colors ${
-                      defaultConflictResolution === 'overwrite' ? 'bg-text-main text-bg-base font-bold' : 'text-text-dim hover:text-text-main'
+                      defaultConflictResolution === 'overwrite' ? 'bg-[#73634F] text-white font-bold' : 'text-[#4A4035] hover:text-black'
                     }`}
                   >
                     {lang === 'en' ? 'Overwrite' : '上書き'}
@@ -447,7 +447,7 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
                   <button
                     onClick={() => handleSetAllConflictResolution('add_new')}
                     className={`px-2 py-1 border-l border-border-main transition-colors ${
-                      defaultConflictResolution === 'add_new' ? 'bg-text-main text-bg-base font-bold' : 'text-text-dim hover:text-text-main'
+                      defaultConflictResolution === 'add_new' ? 'bg-[#73634F] text-white font-bold' : 'text-[#4A4035] hover:text-black'
                     }`}
                   >
                     {lang === 'en' ? 'Keep Both' : '別名追加'}
@@ -458,13 +458,13 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
 
             {/* Search Input */}
             <div className="relative w-56 ml-auto">
-              <Search className="w-3.5 h-3.5 absolute left-2 top-2 text-text-dim pointer-events-none" />
+              <Search className="w-3.5 h-3.5 absolute left-2 top-2 text-[#7D7265] pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder={lang === 'en' ? 'Search parts or category...' : 'パーツ名・カテゴリ・内容を検索...'}
-                className="w-full bg-bg-input border border-border-main text-[10px] font-mono pl-7 pr-2 py-1 text-text-main focus:outline-none focus:border-border-hover"
+                className="w-full bg-white border border-border-main text-[10px] font-mono pl-7 pr-2 py-1 text-[#201D1A] placeholder:text-[#7D7265] focus:outline-none focus:border-border-hover"
               />
             </div>
           </div>
@@ -488,55 +488,55 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
                     className={`border transition-colors ${
                       item.selected
                         ? isConflict
-                          ? 'border-amber-500/50 bg-bg-panel'
+                          ? 'border-amber-600 bg-white shadow-xs'
                           : isNew
-                          ? 'border-emerald-500/40 bg-bg-panel'
-                          : 'border-border-hover bg-bg-panel'
-                        : 'border-border-main/50 bg-bg-panel/60 opacity-60'
+                          ? 'border-emerald-600 bg-white shadow-xs'
+                          : 'border-[#73634F] bg-white shadow-xs'
+                        : 'border-border-main bg-white'
                     }`}
                   >
                     {/* Part Row Header */}
-                    <div className="p-2.5 bg-bg-input/60 border-b border-border-main/70 flex flex-wrap items-center justify-between gap-2">
+                    <div className="p-2.5 bg-bg-surface/60 border-b border-border-main flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5 flex-1 min-w-[240px]">
                         <button
                           type="button"
                           onClick={() => handleToggleItem(item.id)}
-                          className="text-text-main hover:text-accent-main transition-colors shrink-0"
+                          className="text-[#201D1A] hover:text-[#D95430] transition-colors shrink-0"
                         >
                           {item.selected ? (
-                            <CheckSquare className="w-4 h-4 text-accent-main" />
+                            <CheckSquare className="w-4 h-4 text-[#D95430]" />
                           ) : (
-                            <Square className="w-4 h-4 text-text-dim" />
+                            <Square className="w-4 h-4 text-[#7D7265]" />
                           )}
                         </button>
 
                         {/* Status Badge */}
                         {isNew && (
-                          <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shrink-0">
+                          <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-400 shrink-0">
                             NEW (新規)
                           </span>
                         )}
                         {isConflict && (
-                          <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/40 shrink-0">
+                          <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider bg-amber-100 text-amber-900 border border-amber-400 shrink-0">
                             DIFF (変更・競合)
                           </span>
                         )}
                         {isIdentical && (
-                          <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider bg-bg-base text-text-dim border border-border-main shrink-0">
+                          <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider bg-white text-[#332B24] border border-border-main shrink-0">
                             SAME (同一一致)
                           </span>
                         )}
 
                         {/* Section & Category Badge */}
-                        <span className="px-1.5 py-0.5 text-[10px] font-mono bg-bg-base border border-border-main text-text-dim shrink-0">
-                          SEC {item.incoming.section}: {secName} &gt; <strong className="text-text-main">{item.incoming.category}</strong>
+                        <span className="px-1.5 py-0.5 text-[10px] font-mono bg-white border border-border-main text-[#332B24] shrink-0">
+                          SEC {item.incoming.section}: {secName} &gt; <strong className="text-black font-bold">{item.incoming.category}</strong>
                         </span>
 
                         {/* Part Name */}
-                        <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-text-main truncate">
+                        <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#1A1816] truncate">
                           <span className="truncate">{item.incoming.name}</span>
                           {item.incoming.isNegative && (
-                            <span className="text-[9px] px-1 py-0.2 bg-red-950/40 text-red-400 border border-red-500/30 font-normal">
+                            <span className="text-[9px] px-1.5 py-0.5 bg-red-100 text-red-900 border border-red-300 font-bold shrink-0">
                               NEGATIVE
                             </span>
                           )}
@@ -546,15 +546,15 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
                       {/* Conflict Resolution Selector */}
                       {isConflict && (
                         <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
-                          <span className="text-text-dim">{lang === 'en' ? 'Action:' : '取り込み方法:'}</span>
-                          <div className="flex border border-border-main bg-bg-base">
+                          <span className="text-[#4A4035] font-bold">{lang === 'en' ? 'Action:' : '取り込み方法:'}</span>
+                          <div className="flex border border-border-main bg-white">
                             <button
                               type="button"
                               onClick={() => handleSetResolution(item.id, 'overwrite')}
                               className={`px-2 py-0.5 font-bold transition-colors ${
                                 item.resolution === 'overwrite'
-                                  ? 'bg-amber-500/20 text-amber-400 border-r border-border-main'
-                                  : 'text-text-dim hover:text-text-main border-r border-border-main'
+                                  ? 'bg-amber-800 text-white border-r border-border-main'
+                                  : 'text-[#4A4035] hover:text-black border-r border-border-main'
                               }`}
                             >
                               {lang === 'en' ? 'Overwrite' : '上書き'}
@@ -564,8 +564,8 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
                               onClick={() => handleSetResolution(item.id, 'add_new')}
                               className={`px-2 py-0.5 font-bold transition-colors ${
                                 item.resolution === 'add_new'
-                                  ? 'bg-text-main text-bg-base'
-                                  : 'text-text-dim hover:text-text-main'
+                                  ? 'bg-[#73634F] text-white'
+                                  : 'text-[#4A4035] hover:text-black'
                               }`}
                             >
                               {lang === 'en' ? 'Keep Both' : '別名追加'}
@@ -581,55 +581,55 @@ export const PartComparisonImportModal: React.FC<PartComparisonImportModalProps>
                         /* Side-by-side comparison */
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {/* Current Part in App */}
-                          <div className="border border-border-main bg-bg-base p-2.5 flex flex-col gap-1.5">
-                            <div className="flex items-center justify-between text-[10px] font-bold text-text-dim border-b border-border-main pb-1">
+                          <div className="border border-border-main bg-white p-2.5 flex flex-col gap-1.5 shadow-xs">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-[#201D1A] border-b border-border-main pb-1">
                               <span>【{lang === 'en' ? 'CURRENT IN APP' : '現在アプリ内にあるパーツ'}】</span>
-                              <span className="text-text-dim">
+                              <span className="text-[#554C41]">
                                 SEC {item.existing.section} &gt; {item.existing.category} &gt; {item.existing.name}
                               </span>
                             </div>
-                            <div className="text-text-main whitespace-pre-wrap break-all max-h-32 overflow-y-auto leading-relaxed bg-bg-input/40 p-1.5 border border-border-main/50">
-                              {item.existing.content || <span className="text-text-dim italic">(空)</span>}
+                            <div className="text-[#1A1816] font-medium whitespace-pre-wrap break-all max-h-32 overflow-y-auto leading-relaxed bg-white p-2 border border-border-main">
+                              {item.existing.content || <span className="text-gray-500 italic">(空)</span>}
                             </div>
                             {item.existing.isNegative && (
-                              <span className="text-[9px] text-red-400 font-bold">※ ネガティブ指定</span>
+                              <span className="text-[10px] text-red-900 dark:text-red-400 font-bold">※ ネガティブ指定</span>
                             )}
                           </div>
 
                           {/* Incoming Part from File */}
-                          <div className="border border-amber-500/40 bg-bg-base p-2.5 flex flex-col gap-1.5">
-                            <div className="flex items-center justify-between text-[10px] font-bold text-amber-400 border-b border-amber-500/30 pb-1">
+                          <div className="border border-amber-600/50 bg-white p-2.5 flex flex-col gap-1.5 shadow-xs">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-amber-900 border-b border-amber-300 pb-1">
                               <span>【{lang === 'en' ? 'FILE TO IMPORT' : 'ファイル内の取り込みパーツ'}】</span>
-                              <span className="text-amber-400">
+                              <span className="text-amber-900 font-bold">
                                 SEC {item.incoming.section} &gt; {item.incoming.category} &gt; {item.incoming.name}
                               </span>
                             </div>
-                            <div className="text-text-main whitespace-pre-wrap break-all max-h-32 overflow-y-auto leading-relaxed bg-amber-500/5 p-1.5 border border-amber-500/30">
-                              {item.incoming.content || <span className="text-text-dim italic">(空)</span>}
+                            <div className="text-[#1A1816] font-medium whitespace-pre-wrap break-all max-h-32 overflow-y-auto leading-relaxed bg-white p-2 border border-amber-300">
+                              {item.incoming.content || <span className="text-gray-500 italic">(空)</span>}
                             </div>
                             {item.incoming.isNegative && (
-                              <span className="text-[9px] text-red-400 font-bold">※ ネガティブ指定</span>
+                              <span className="text-[10px] text-red-900 dark:text-red-400 font-bold">※ ネガティブ指定</span>
                             )}
                           </div>
                         </div>
                       ) : (
                         /* Single view for New or Identical */
-                        <div className="border border-border-main bg-bg-base p-2.5 flex flex-col gap-1.5">
-                          <div className="flex items-center justify-between text-[10px] font-bold text-text-dim border-b border-border-main pb-1">
+                        <div className="border border-border-main bg-white p-2.5 flex flex-col gap-1.5 shadow-xs">
+                          <div className="flex items-center justify-between text-[10px] font-bold text-[#201D1A] border-b border-border-main pb-1">
                             <span>
                               {isNew
                                 ? (lang === 'en' ? 'NEW PART TO ADD' : '新規追加されるパーツ')
                                 : (lang === 'en' ? 'IDENTICAL CONTENT (Already exists in app)' : '同一内容（既にアプリ内に登録済み）')}
                             </span>
-                            <span className="text-text-dim">
+                            <span className="text-[#554C41] font-bold">
                               SEC {item.incoming.section} &gt; {item.incoming.category} &gt; {item.incoming.name}
                             </span>
                           </div>
-                          <div className="text-text-main whitespace-pre-wrap break-all max-h-28 overflow-y-auto leading-relaxed bg-bg-input/40 p-1.5 border border-border-main/50">
-                            {item.incoming.content || <span className="text-text-dim italic">(空)</span>}
+                          <div className="text-[#1A1816] font-medium whitespace-pre-wrap break-all max-h-28 overflow-y-auto leading-relaxed bg-white p-2 border border-border-main">
+                            {item.incoming.content || <span className="text-gray-500 italic">(空)</span>}
                           </div>
                           {item.incoming.isNegative && (
-                            <span className="text-[9px] text-red-400 font-bold">※ ネガティブ指定</span>
+                            <span className="text-[10px] text-red-900 dark:text-red-400 font-bold">※ ネガティブ指定</span>
                           )}
                         </div>
                       )}

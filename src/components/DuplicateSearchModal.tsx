@@ -160,7 +160,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className={`w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl ${theme === 'light' || theme === 'mono' ? 'bg-white' : 'bg-bg-base border border-border-main'}`}>
+      <div className={`w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl ${theme === 'light' || theme === 'mono' || (theme as string) === 'peper' || (theme as string) === 'paper' ? 'bg-white' : 'bg-bg-base border border-border-main'}`}>
         
         <div className="flex justify-between items-center p-4 border-b border-border-main">
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
@@ -349,7 +349,7 @@ export const DuplicateSearchModal: React.FC<DuplicateSearchModalProps> = ({
       )}
       {mergingGroupIds && (
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
-          <div className={`w-full max-w-lg p-5 flex flex-col gap-4 shadow-2xl ${theme === 'light' || theme === 'mono' ? 'bg-white' : 'bg-bg-panel border border-border-main'}`}>
+          <div className={`w-full max-w-lg p-5 flex flex-col gap-4 shadow-2xl ${theme === 'light' || theme === 'mono' || (theme as string) === 'peper' || (theme as string) === 'paper' ? 'bg-[#F2EFE6] border border-border-main' : 'bg-bg-panel border border-border-main'}`}>
             <h3 className="text-sm font-bold text-text-main uppercase font-mono">
               {lang === 'en' ? 'Merge Parts' : 'パーツをまとめる'}
             </h3>
