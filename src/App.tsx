@@ -308,15 +308,20 @@ export default function App() {
     applyThemeColors(theme);
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      let color = '#0A0A0B';
-      if (theme === 'light') color = '#f9fafb';
-      else if (theme === 'black') color = '#000000';
-      else if (theme === 'red') color = '#140505';
-      else if (theme === 'navy') color = '#060913';
-      else if (theme === 'pink') color = '#140d12';
-      else if (theme === 'peper' || (theme as string) === 'paper') color = '#EBE4D5';
-      else if (theme === 'mono') color = '#ffffff';
-      metaThemeColor.setAttribute('content', color);
+      const panelColorMap: Record<string, string> = {
+        dark: '#14161A',
+        black: '#050505',
+        red: '#1c0a0a',
+        pink: '#1a1017',
+        light: '#e4e4e7',
+        mono: '#f4f4f5',
+        navy: '#0d1222',
+        peper: '#EBE4D5',
+        paper: '#EBE4D5'
+      };
+      const computedPanel = getComputedStyle(document.documentElement).getPropertyValue('--bg-panel').trim();
+      const finalColor = computedPanel || panelColorMap[theme] || '#14161A';
+      metaThemeColor.setAttribute('content', finalColor);
     }
   }, [theme]);
 
