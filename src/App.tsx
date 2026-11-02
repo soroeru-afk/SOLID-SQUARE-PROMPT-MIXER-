@@ -513,16 +513,18 @@ export default function App() {
 
   const handleTabClose = useCallback((id: string) => {
     setTabs(prev => {
-      if (prev.length === 1) {
+      if (prev.length <= 1) {
         const newId = `tab-${Date.now()}`;
-        delete historyRef.current[prev[0].id];
-        delete indexRef.current[prev[0].id];
+        delete historyRef.current[prev[0]?.id || ''];
+        delete indexRef.current[prev[0]?.id || ''];
         setActiveTabId(newId);
         return [{ id: newId, name: 'TAB 01', pos: '', neg: '' }];
       }
+      const closedIndex = prev.findIndex(t => t.id === id);
       const newTabs = prev.filter(t => t.id !== id);
-      if (activeTabId === id) {
-        setActiveTabId(newTabs[newTabs.length - 1].id);
+      if (activeTabId === id && newTabs.length > 0) {
+        const nextIndex = Math.min(Math.max(0, closedIndex), newTabs.length - 1);
+        setActiveTabId(newTabs[nextIndex].id);
       }
       delete historyRef.current[id];
       delete indexRef.current[id];

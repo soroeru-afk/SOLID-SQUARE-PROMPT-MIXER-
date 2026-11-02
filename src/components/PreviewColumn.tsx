@@ -5,6 +5,7 @@ import { Language, t } from '../i18n';
 import { SavePartModal } from './SavePartModal';
 import { SaveMasterModal } from './SaveMasterModal';
 import { SaveMemoModal } from './SaveMemoModal';
+import { ConfirmModal } from './ConfirmModal';
 import { extractMetadataFromImage } from '../utils/imageMetadata';
 import { calculateCursorPos } from '../utils/cursorUtils';
 
@@ -2284,7 +2285,7 @@ const handleResizeStart = (e: React.MouseEvent) => {
                         draggable={false}
                         onClick={(e) => { 
                           e.stopPropagation(); 
-                          if (onTabClose) onTabClose(tab.id);
+                          setConfirmCloseTabId(tab.id);
                         }}
                         className={`ml-1 w-3.5 h-3.5 flex items-center justify-center rounded transition-all ${
                           activeTabId === tab.id 
@@ -2667,6 +2668,18 @@ const handleResizeStart = (e: React.MouseEvent) => {
           setIsSaveMasterModalOpen(false);
         }}
         onCancel={() => setIsSaveMasterModalOpen(false)}
+        lang={lang}
+      />
+      <ConfirmModal
+        isOpen={confirmCloseTabId !== null}
+        message={lang === 'en' ? 'Are you sure you want to close this tab?' : 'このタブを閉じますか？'}
+        onConfirm={() => {
+          if (confirmCloseTabId && onTabClose) {
+            onTabClose(confirmCloseTabId);
+          }
+          setConfirmCloseTabId(null);
+        }}
+        onCancel={() => setConfirmCloseTabId(null)}
         lang={lang}
       />
     </>
