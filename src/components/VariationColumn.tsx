@@ -3,7 +3,8 @@ import { VariationPart } from '../types';
 import { Accordion } from './Accordion';
 import { ConfirmModal } from './ConfirmModal';
 import { AddModal } from './AddModal';
-import { User, Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, ArrowLeftToLine, ArrowRightToLine, Copy, Pin, Upload, Download } from 'lucide-react';
+import { User, Pencil, Trash2, Check, X, Plus, ChevronUp, ChevronDown, ChevronRight, ChevronsUp, ChevronsDown, ArrowLeftToLine, ArrowRightToLine, Copy, Pin, Upload, Download } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Language, t } from '../i18n';
 import { AttributeMixer } from './AttributeMixer';
 import { DuplicateSearchModal } from './DuplicateSearchModal';
@@ -271,7 +272,87 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
   const [expandId, setExpandId] = useState(0);
   const [collapseId, setCollapseId] = useState(0);
-  const [isAllExpanded, setIsAllExpanded] = useState(false);
+
+  const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>(() => {
+    const saved = localStorage.getItem('variation_collapsed_sections');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem('variation_collapsed_sections', JSON.stringify(collapsedSections));
+  }, [collapsedSections]);
+
+  const [expandLevel, setExpandLevel] = useState<number>(() => {
+    const saved = localStorage.getItem('variation_collapsed_sections');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const allClosed = [1, 2, 3, 4, 5].every(id => parsed[id]);
+        if (allClosed) return 0;
+      } catch (e) {}
+    }
+    return 1;
+  });
+
+  const toggleSectionCollapse = (secId: number) => {
+    setCollapsedSections(prev => {
+      const next = { ...prev, [secId]: !prev[secId] };
+      const allClosed = sectionOrder.every(id => next[id]);
+      const noneClosed = sectionOrder.every(id => !next[id]);
+      if (allClosed) {
+        setExpandLevel(0);
+      } else if (noneClosed && expandLevel === 0) {
+        setExpandLevel(1);
+      }
+      return next;
+    });
+  };
+
+  const handleExpandNext = () => {
+    if (expandLevel === 0) {
+      setCollapsedSections({});
+      setCollapseId(prev => prev + 1);
+      setExpandLevel(1);
+    } else if (expandLevel === 1) {
+      setCollapsedSections({});
+      setExpandId(prev => prev + 1);
+      setExpandLevel(2);
+    } else {
+      const allCollapsed: Record<number, boolean> = {};
+      sectionOrder.forEach(secId => {
+        allCollapsed[secId] = true;
+      });
+      setCollapsedSections(allCollapsed);
+      setCollapseId(prev => prev + 1);
+      setExpandLevel(0);
+    }
+  };
+
+  const handleCollapsePrev = () => {
+    if (expandLevel === 2) {
+      setCollapsedSections({});
+      setCollapseId(prev => prev + 1);
+      setExpandLevel(1);
+    } else {
+      const allCollapsed: Record<number, boolean> = {};
+      sectionOrder.forEach(secId => {
+        allCollapsed[secId] = true;
+      });
+      setCollapsedSections(allCollapsed);
+      setCollapseId(prev => prev + 1);
+      setExpandLevel(0);
+    }
+  };
+
+  const getSectionBorderBar = (secId: string) => {
+    switch (secId) {
+      case '1': return 'border-l-blue-500';
+      case '2': return 'border-l-orange-500';
+      case '3': return 'border-l-green-500';
+      case '4': return 'border-l-purple-500';
+      default: return 'border-l-gray-500';
+    }
+  };
   
   useEffect(() => {
     const handleImport = () => {
@@ -469,20 +550,38 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
               <Search size={12} />
               {lang === 'en' ? 'Find Duplicates' : '重複サーチ'}
             </button>
-            <button 
-              onClick={() => {
-                if (isAllExpanded) {
-                  setCollapseId(prev => prev + 1);
-                } else {
-                  setExpandId(prev => prev + 1);
+            <div className="flex items-center border border-border-main bg-bg-input shadow-xs">
+              <button 
+                onClick={handleCollapsePrev}
+                className="px-2 py-1 text-[10px] font-mono font-bold hover:bg-bg-surface text-text-main transition-colors flex items-center gap-1 border-r border-border-main"
+                title={lang === 'en' ? 'Collapse 1 level' : '1段階閉じる'}
+              >
+                <ChevronsUp size={12} />
+                {lang === 'en' ? 'Collapse' : '全て閉じる'}
+              </button>
+              <button 
+                onClick={handleExpandNext}
+                className="px-2.5 py-1 text-[10px] font-mono font-bold hover:bg-bg-surface text-text-main transition-colors flex items-center gap-1"
+                title={lang === 'en' ? 'Expand 1 level' : '1段階開く'}
+              >
+                <ChevronsDown size={12} />
+                {lang === 'en' ? 'Expand' : '全て開く'}
+              </button>
+              <div 
+                className="px-2 py-1 text-[10px] font-mono font-bold border-l border-border-main bg-bg-panel text-text-dim flex items-center gap-0.5 select-none"
+                title={
+                  expandLevel === 0 
+                    ? (lang === 'en' ? 'Stage 0: Main headers only (All collapsed)' : '段階 0: 大カテゴリのみ (全閉)')
+                    : expandLevel === 1 
+                      ? (lang === 'en' ? 'Stage 1: Categories open' : '段階 1: 中カテゴリ項目まで展開')
+                      : (lang === 'en' ? 'Stage 2: All prompts open' : '段階 2: プロンプトまで全開')
                 }
-                setIsAllExpanded(!isAllExpanded);
-              }} 
-              className="px-2.5 py-1 text-[10px] font-mono font-bold border border-border-main bg-bg-input hover:bg-bg-surface text-text-main transition-colors whitespace-nowrap flex items-center justify-center gap-1.5 shrink-0"
-            >
-              {isAllExpanded ? <ChevronsUp size={12} /> : <ChevronsDown size={12} />}
-              {isAllExpanded ? t('collapse_all', lang) : t('expand_all', lang)}
-            </button>
+              >
+                <span className="text-[9px] text-text-main font-bold">
+                  {expandLevel === 0 ? 'Lv.0' : expandLevel === 1 ? 'Lv.1' : 'Lv.2'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -495,26 +594,40 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
             if (!secData) return null;
             const catEntries = Object.entries(secData.categories) as [string, VariationPart[]][];
 
+            const isSectionCollapsed = searchQuery.trim() ? false : !!collapsedSections[secIdNum];
+            const borderBarColor = getSectionBorderBar(secId);
+            const totalPartsInSection = catEntries.reduce((sum, [, items]) => sum + items.length, 0);
+
             return (
               <div 
                 key={secId} 
-                className="space-y-4"
+                className="space-y-2"
                 onDragOver={(e) => handleSectionDragOver(e, Number(secId))} onDrop={(e) => handleSectionContainerDrop(e, Number(secId))}
               >
-                <div draggable={editingId === null && editingCategory === null && editingSectionId === null} onDragStart={(e) => handleSectionDragStart(e, Number(secId))} onDragEnd={handleSectionDragEnd} style={{ cursor: "grab" }} className={`flex items-center justify-between p-2 border-l-4 shadow-sm bg-transparent group text-text-main ${
-                  secId === '1' ? 'border-blue-500' : 
-                  secId === '2' ? 'border-orange-500' : 
-                  secId === '3' ? 'border-green-500' : 
-                  secId === '4' ? 'border-purple-500' :
-                  'border-gray-500'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <div className="flex flex-col">
-                      <button onClick={() => moveSection(Number(secId), 'up')} className="hover:text-text-main text-text-dim opacity-0 group-hover:opacity-100 transition-opacity"><ChevronUp size={12} /></button>
-                      <button onClick={() => moveSection(Number(secId), 'down')} className="hover:text-text-main text-text-dim opacity-0 group-hover:opacity-100 transition-opacity"><ChevronDown size={12} /></button>
+                <div 
+                  draggable={editingId === null && editingCategory === null && editingSectionId === null} 
+                  onDragStart={(e) => handleSectionDragStart(e, Number(secId))} 
+                  onDragEnd={handleSectionDragEnd} 
+                  style={{ cursor: editingSectionId === null ? "pointer" : "default" }}
+                  onClick={() => {
+                    if (editingSectionId === null) {
+                      toggleSectionCollapse(Number(secId));
+                    }
+                  }}
+                  className={`flex items-center justify-between p-2 border border-border-main border-l-4 ${borderBarColor} bg-gray-500/15 hover:bg-gray-500/20 shadow-xs group text-zinc-900 select-none transition-colors`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex flex-col shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => moveSection(Number(secId), 'up')} className="hover:text-black text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity"><ChevronUp size={12} /></button>
+                      <button onClick={() => moveSection(Number(secId), 'down')} className="hover:text-black text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity"><ChevronDown size={12} /></button>
                     </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0 text-zinc-800 group-hover:text-black transition-colors">
+                      {isSectionCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                    </div>
+
                     {editingSectionId === Number(secId) ? (
-                      <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="text"
                           value={editSectionName}
@@ -527,7 +640,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                               setEditingSectionId(null);
                             }
                           }}
-                          className="text-xs font-mono font-bold uppercase bg-bg-input border border-border-main px-1 py-0.5 outline-none w-32 text-text-main"
+                          className="text-xs font-mono font-bold uppercase bg-bg-input border border-border-main px-1 py-0.5 outline-none w-36 text-zinc-900"
                           autoFocus
                           onBlur={() => {
                             onRenameSection?.(Number(secId), editSectionName);
@@ -536,30 +649,61 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                         />
                       </div>
                     ) : (
-                      <h3 className="text-xs font-mono font-bold uppercase flex items-center group/title cursor-text" onClick={(e) => {
-                        if (onRenameSection) {
-                          e.stopPropagation();
-                          setEditingSectionId(Number(secId));
-                          setEditSectionName(secData.name);
-                        }
-                      }}>
-                        {secData.name}
-                        {onRenameSection && <Pencil className="w-3 h-3 ml-2 opacity-0 group-hover/title:opacity-100 transition-opacity text-text-dim" />}
+                      <h3 
+                        className="text-xs font-mono font-bold uppercase flex items-center truncate tracking-wider text-zinc-900" 
+                        title={lang === 'en' ? 'Click to expand/collapse' : 'クリックして開閉'}
+                      >
+                        <span className="truncate">{secData.name}</span>
                       </h3>
                     )}
                   </div>
-                  {onAddCategory && (
-                    <button 
-                      onClick={() => setConfirmAddCategoryData(Number(secId))}
-                      className="px-1.5 py-0.5 bg-transparent border border-transparent hover:border-current opacity-0 group-hover:opacity-100 flex items-center transition-all"
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span 
+                      className="text-[9px] font-mono px-1.5 py-0.5 border border-zinc-400/50 bg-black/10 text-zinc-900 leading-none font-bold shadow-2xs select-none"
+                      title={`${catEntries.length} categories, ${totalPartsInSection} parts`}
                     >
-                      <Plus className="w-3 h-3" />
-                      <span className="text-[9px] ml-1 font-mono">CAT</span>
-                    </button>
-                  )}
+                      {catEntries.length} CAT
+                    </span>
+                    {onAddCategory && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmAddCategoryData(Number(secId));
+                        }}
+                        className="px-1.5 py-0.5 bg-black/5 hover:bg-black/15 border border-zinc-400/50 opacity-0 group-hover:opacity-100 flex items-center transition-all text-zinc-800 hover:text-black font-bold"
+                        title={lang === 'en' ? 'Add Category' : 'カテゴリーを追加'}
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span className="text-[9px] ml-1 font-mono font-bold">CAT</span>
+                      </button>
+                    )}
+                    {onRenameSection && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingSectionId(Number(secId));
+                          setEditSectionName(secData.name);
+                        }}
+                        className="p-1 hover:text-black text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title={lang === 'en' ? 'Rename Section' : '名前を変更'}
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {catEntries.length > 0 && (
-                  <div className="space-y-2">
+
+                <AnimatePresence initial={false}>
+                  {!isSectionCollapsed && catEntries.length > 0 && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: 'easeInOut' }}
+                      className="space-y-2 overflow-hidden"
+                    >
                     {catEntries.map(([category, catParts]) => {
                       const totalCount = catParts.length;
                       return (
@@ -856,8 +1000,9 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                         </div>
                     );
                   })}
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             );
           })}
