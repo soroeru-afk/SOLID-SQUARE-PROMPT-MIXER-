@@ -1779,6 +1779,20 @@ const handleResizeStart = (e: React.MouseEvent) => {
   const isEditorLightBg = paperMode || theme === 'light' || theme === 'mono' || theme === 'paper' || (theme as string) === 'peper';
   const editorCaretColor = isEditorLightBg ? '#000000' : '#ffffff';
 
+  const sharedEditorStyles: React.CSSProperties = {
+    fontSize: `${editorFontSize}px`,
+    lineHeight: editorLineHeight,
+    fontWeight: editorFontWeight,
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+    letterSpacing: 'normal',
+    wordSpacing: 'normal',
+    tabSize: 2,
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
+    boxSizing: 'border-box',
+  };
+
   return (
     <>
       
@@ -2427,10 +2441,10 @@ const handleResizeStart = (e: React.MouseEvent) => {
           </motion.div>
         )}
       </AnimatePresence>
-                        <div 
+            <div 
               ref={positiveHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono [&::-webkit-scrollbar]:hidden [scrollbar-width:none] ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
-              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-0 rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto overflow-x-hidden block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none ${paperMode ? 'text-[#201D1A]' : 'text-text-main'}`}
+              style={sharedEditorStyles}
               aria-hidden="true"
             >
               {editorText ? <>{renderHighlightedText(editorText, false)}{editorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">{t('placeholder', lang)}</span>}
@@ -2463,9 +2477,8 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   positiveHighlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
                 }
               }}
-              
-              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight, caretColor: editorCaretColor }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-blue-600 selection:text-white'} bg-transparent text-transparent outline-none resize-none`}
+              style={{ ...sharedEditorStyles, caretColor: editorCaretColor }}
+              className={`syntax-overlay-textarea absolute inset-0 w-full h-full p-4 pt-2 m-0 border-0 rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto overflow-x-hidden block tracking-normal focus:ring-0 shadow-none font-mono [&::-webkit-scrollbar]:hidden [scrollbar-width:none] bg-transparent text-transparent outline-none resize-none ${searchSelectionActive ? 'search-selection-active' : ''}`}
               spellCheck={false}
             />
           </div>
@@ -2566,8 +2579,8 @@ const handleResizeStart = (e: React.MouseEvent) => {
           <div className="flex-1 relative flex flex-col mt-1">
             <div 
               ref={negativeHighlightRef}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono [&::-webkit-scrollbar]:hidden [scrollbar-width:none] ${paperMode ? 'text-gray-800' : 'text-text-dim'}`}
-              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight }}
+              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-0 rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto overflow-x-hidden block tracking-normal focus:ring-0 shadow-none pointer-events-none font-mono [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none ${paperMode ? 'text-[#201D1A]' : 'text-text-main'}`}
+              style={sharedEditorStyles}
               aria-hidden="true"
             >
               {negativeEditorText ? <>{renderHighlightedText(negativeEditorText, true)}{negativeEditorText.endsWith('\n') ? '\u200B' : ''}</> : <span className="opacity-50">Negative prompt...</span>}
@@ -2600,9 +2613,8 @@ const handleResizeStart = (e: React.MouseEvent) => {
                   negativeHighlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
                 }
               }}
-              
-              style={{ fontSize: `${editorFontSize}px`, lineHeight: editorLineHeight, fontWeight: editorFontWeight, caretColor: editorCaretColor }}
-              className={`absolute inset-0 w-full h-full p-4 pt-2 m-0 border-none rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto block tracking-normal focus:ring-0 shadow-none font-mono ${searchSelectionActive ? 'selection:bg-transparent selection:text-transparent' : 'selection:bg-red-600 selection:text-white'} bg-transparent text-transparent outline-none resize-none`}
+              style={{ ...sharedEditorStyles, caretColor: editorCaretColor }}
+              className={`syntax-overlay-textarea negative-editor absolute inset-0 w-full h-full p-4 pt-2 m-0 border-0 rounded-none appearance-none whitespace-pre-wrap break-words overflow-y-auto overflow-x-hidden block tracking-normal focus:ring-0 shadow-none font-mono [&::-webkit-scrollbar]:hidden [scrollbar-width:none] bg-transparent text-transparent outline-none resize-none ${searchSelectionActive ? 'search-selection-active' : ''}`}
               spellCheck={false}
             />
           </div>

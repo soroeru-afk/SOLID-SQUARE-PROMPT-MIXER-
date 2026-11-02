@@ -209,6 +209,39 @@ input[type=range].custom-slider::-webkit-slider-runnable-track {
   color: #201D1A;
 }
 
+/* Syntax highlight overlay textarea rules: text inside transparent textareas MUST NEVER become visible upon selection */
+.syntax-overlay-textarea {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.syntax-overlay-textarea::selection {
+  background-color: rgba(59, 130, 246, 0.35) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.syntax-overlay-textarea.negative-editor::selection {
+  background-color: rgba(239, 68, 68, 0.35) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.theme-peper .syntax-overlay-textarea::selection,
+.theme-paper .syntax-overlay-textarea::selection,
+.theme-peper .syntax-overlay-textarea.negative-editor::selection,
+.theme-paper .syntax-overlay-textarea.negative-editor::selection {
+  background-color: rgba(217, 84, 48, 0.3) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.syntax-overlay-textarea.search-selection-active::selection {
+  background-color: transparent !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
 /* Peper theme solid buttons: default dark/black elements to goldish-brown #73634F with white text */
 .theme-peper .bg-text-main,
 .theme-paper .bg-text-main {
