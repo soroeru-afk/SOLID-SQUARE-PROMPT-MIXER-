@@ -614,15 +614,15 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                       toggleSectionCollapse(Number(secId));
                     }
                   }}
-                  className={`flex items-center justify-between p-2 border border-border-main border-l-4 ${borderBarColor} bg-gray-500/15 hover:bg-gray-500/20 shadow-xs group text-zinc-900 select-none transition-colors`}
+                  className={`flex items-center justify-between p-2 border border-border-main border-l-4 ${borderBarColor} bg-gray-500/15 hover:bg-gray-500/20 shadow-xs group text-text-main select-none transition-colors`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="flex flex-col shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => moveSection(Number(secId), 'up')} className="hover:text-black text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity"><ChevronUp size={12} /></button>
-                      <button onClick={() => moveSection(Number(secId), 'down')} className="hover:text-black text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity"><ChevronDown size={12} /></button>
+                      <button onClick={() => moveSection(Number(secId), 'up')} className="hover:text-text-main text-text-dim opacity-0 group-hover:opacity-100 transition-opacity"><ChevronUp size={12} /></button>
+                      <button onClick={() => moveSection(Number(secId), 'down')} className="hover:text-text-main text-text-dim opacity-0 group-hover:opacity-100 transition-opacity"><ChevronDown size={12} /></button>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0 text-zinc-800 group-hover:text-black transition-colors">
+                    <div className="flex items-center gap-1.5 shrink-0 text-text-main group-hover:text-text-main transition-colors">
                       {isSectionCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
                     </div>
 
@@ -640,7 +640,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                               setEditingSectionId(null);
                             }
                           }}
-                          className="text-xs font-mono font-bold uppercase bg-bg-input border border-border-main px-1 py-0.5 outline-none w-36 text-zinc-900"
+                          className="text-xs font-mono font-bold uppercase bg-bg-input border border-border-main px-1 py-0.5 outline-none w-36 text-text-main"
                           autoFocus
                           onBlur={() => {
                             onRenameSection?.(Number(secId), editSectionName);
@@ -650,7 +650,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                       </div>
                     ) : (
                       <h3 
-                        className="text-xs font-mono font-bold uppercase flex items-center truncate tracking-wider text-zinc-900" 
+                        className="text-xs font-mono font-bold uppercase flex items-center truncate tracking-wider text-text-main" 
                         title={lang === 'en' ? 'Click to expand/collapse' : 'クリックして開閉'}
                       >
                         <span className="truncate">{secData.name}</span>
@@ -660,7 +660,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
 
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span 
-                      className="text-[9px] font-mono px-1.5 py-0.5 border border-zinc-400/50 bg-black/10 text-zinc-900 leading-none font-bold shadow-2xs select-none"
+                      className="text-[9px] font-mono px-1.5 py-0.5 border border-border-main bg-bg-panel text-text-main leading-none font-bold shadow-xs select-none"
                       title={`${catEntries.length} categories, ${totalPartsInSection} parts`}
                     >
                       {catEntries.length} CAT
@@ -671,7 +671,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                           e.stopPropagation();
                           setConfirmAddCategoryData(Number(secId));
                         }}
-                        className="px-1.5 py-0.5 bg-black/5 hover:bg-black/15 border border-zinc-400/50 opacity-0 group-hover:opacity-100 flex items-center transition-all text-zinc-800 hover:text-black font-bold"
+                        className="px-1.5 py-0.5 bg-bg-input hover:bg-bg-surface border border-border-main flex items-center transition-all text-text-main hover:border-border-hover font-bold shadow-2xs"
                         title={lang === 'en' ? 'Add Category' : 'カテゴリーを追加'}
                       >
                         <Plus className="w-3 h-3" />
@@ -686,7 +686,7 @@ export const VariationColumn: React.FC<VariationColumnProps> = ({
                           setEditingSectionId(Number(secId));
                           setEditSectionName(secData.name);
                         }}
-                        className="p-1 hover:text-black text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-1 bg-bg-input hover:bg-bg-surface border border-border-main text-text-main hover:border-border-hover transition-colors shadow-2xs"
                         title={lang === 'en' ? 'Rename Section' : '名前を変更'}
                       >
                         <Pencil className="w-3 h-3" />
